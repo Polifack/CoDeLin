@@ -1,0 +1,134 @@
+Given a sentence with words
+
+    w1 .. wn
+
+we associate the words with the nodes
+
+    0,1 .. n
+
+where the node 0 is the dummy root of the sentence.
+
+For example
+
+    the girl is nice
+
+we will get
+
+(0,root), (1, the), (2, girl), (3, is), (4, nice)
+
+------------
+
+The dependency parser will find the set of labeled
+relations in the form of
+
+    (h, d, l)
+
+where h is the 'head_number', the point from where the 'arrow'
+outputs; d is the 'dependent_number', the point from where
+the 'arrow' ends and l is the dependecy label, this means, 
+the relation
+
+To encode the dependency tree we will just need to give each
+word wi a discrete label of the form
+
+    (xi, li)
+
+where li is the dependency label and xi is the position of the
+head. 
+
+The value of xi can be coded with naive encoding or relative encoding
+for the simplest approachs and PoS based or Bracket based for advanced
+encodings
+
+naive: the value of xi is just the node number
+
+relat: the value of xi is the difference between node number
+
+PoS  : xi is a tuple (pi, oi), 
+       where oi indicates the number of 'positions' to move to the left (oi is negative)
+       or to the right (oi is positive) that the word where depends on is where the pi PoS tag is
+       
+       this means: oi: natural number
+                   pi: PoS tag
+
+       for example: if oi=2 and pi=V then we have to move to the right 2 PoS tags V
+                    this means, we find the 2nd V PoS tag to the right of the word
+
+        for example: if oi=-1 and pi=D then we have to move to the first D PoS tag
+                     to the left of the word
+
+brack: the value of xi is a string following the regexp: (<)?((\)*|(/)*)(>)?
+       
+       characters meaning:
+
+            < : word w-1 has an incoming arc from the right
+            \ : the number of this character apperances indicates 
+                the outgoing arcs to the left from word wi 
+            / : the number of this character apperances indicates
+                the outgoing arcs to the right from word wi
+            > : word w has an incoming arc from the left
+
+        therefore:
+
+            right dependency from word i to j: /> in label of word xi+1 and xj
+            left dependency from word j to i: <\ in label of word xi+1 and xj
+
+NOTE:   the bracketing encoding only support projective trees, this means, the tree has no
+        crossing dependencies (https://www.cs.upc.edu/~horacio/snlp/depparsing-snlp.pdf : 9)
+
+
+------------
+
+Sentence:               I Saw A Fox
+
+Dependency Graph:       (PRP I)<-nsubj-(VBD saw)--dobj-->(NN fox)
+                                                (DT a)<-det-|
+
+Stanza Graph: 
+                word.id     word.text       word.head       word.deprel
+                -----------------------------------------------------------
+                id: 1       word: I         head id: 2      deprel: nsubj
+                id: 2       word: saw       head id: 0      deprel: root
+                id: 3       word: a         head id: 4      deprel: det
+                id: 4       word: fox       head id: 2      deprel: obj
+
+Label Encoding (naive): I:(2, nsubj), saw:(0, root), a:(4, det), fox:(2, dobj)
+
+--------------
+
+Treebank:
+
+# text = Su gentilicio es Chinonais.
+
+word_id     word_text       word_clean  word_pos    ?       word_shape                                              depends_on      dependency_type     ?       ?
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+1	        Su	            su	        DET	        _	    Number=Sing|Person=3|Poss=Yes|PronType=Prs	            2	            det	                _	    _
+2	        gentilicio	    gentilicio	NOUN	    _	    Gender=Masc|Number=Sing	                                0	            root	            _	    _
+3	        es	            ser	        AUX	        _	    Mood=Ind|Number=Sing|Person=3|Tense=Pres|VerbForm=Fin	2	            cop	                _	    _
+4	        Chinonais	    chinonais	PROPN	    _	    _	                                                    2	            nsubj	            _	    SpaceAfter=No
+5	        .	            .	        PUNCT	    _	    _	                                                    2	            punct	            _	    _
+
+Label Encoding (naive): 
+
+        Su (2, det) ; gentilicio (0, root) ; es (2, cop) ; Chinoais (2, nsubj) ; . (2, punct)
+
+Label Encoding (pos): 
+
+        ((1, NOUN), det)            vamos hasta la word (depends_on) 2 contando todos los pos que sean iguales al de la word 2 (NOUN)
+        ((-1, ROOT), root)          vamos hasta la word (depends_on) 0 contando todos los pos que sean iguales al de la word 0 (ROOT)
+        ((-1, NOUN), cop)           vamos hasta la word (depends_on) 2 contando todos los pos que sean iguales al de la word 2 (NOUN)
+        ((-1, NOUN), nsubj)         vamos hasta la word (depends_on) 2 contando todos los pos que sean iguales al de la word 2 (NOUN)
+        ((-1, NOUN), punct)         vamos hasta la word (depends_on) 2 contando todos los pos que sean iguales al de la word 2 (NOUN)
+
+
+
+--------------
+brack encoding
+
+- encoding con stacks para el bracketing con parentesis abiertos y cerrados
+- funciona con arboles no proyectivos, pero no funciona con aquellos que cruzan dependencias izquierdas con izquierdas, dchas con dchas etc
+- no comprobar proyectividad por eficiencia, se asume la codificacion parcial
+
+- implementar la comprobacion de proyectividad para el training de la lstm
+
+-> encoding brackets 2 planar en otro paper

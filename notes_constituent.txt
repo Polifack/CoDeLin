@@ -1,0 +1,183 @@
+Requirements:
+
+- Python
+- English
+
+----------------------------------------------
+
+- Las funciones para codificar y decodificar serían independientes del tagger que se usen.
+- La función para codificar cogería una estructura de
+        constituyentes,
+        dependencias,
+        constituyentes discontinuos,
+        etc.
+  y devolvería una lista de etiquetas.
+
+- La función para decodificar tendrá que incluir las heurísticas
+correspondientes, que serían configurables. Como queremos que sean
+independientes del tagger, en principio nos olvidaríamos de heurísticas que
+dependan del tagger (por ejemplo de probabilidades o niveles de confianza que
+devuelva). Se podría pensar en que el diseño permitiera integrar eso, pero en
+la práctica de momento no estamos usando esas cosas.
+
+- Habría unos scripts de línea de comandos que se podrían llamar algo como psl-encode y psl-decode, con flags, de forma que se podrían hacer ejecuciones como:
+
+        ./psl-encode
+            --formalism=constituent
+            --encoding=dynamic
+            --threshold=2
+            --unary_handling=collapse
+            --tuple-separator=","
+            --input-format=ptb
+
+        ./psl-decode
+            --formalism=dependency
+            --encoding=2pbracket
+            --tuple-separator=","
+            --postprocessing=synthead,simple-cycle-breaking
+            --output-format=conll
+
+  y llamarían a las funciones correspondientes (las funciones en sí tendrían que tener una API entendible porque otra opción sería no usar eso y llamar a las funciones correspondientes para evitar entradas-salidas a disco si uno quiere ser eficiente, claro).
+
+-Se probaría todo ello con algún tagger concreto (por ejemplo NCRF++) para ver que las heurísticas de postprocesado funcionen bien en la práctica y para tener números de precisión, etc. que mostrar en la memoria.
+
+- Para los arboles consideramos stanza and spacy
+- Uso de stanza porque spacy es muy cerrado en las implementaciones
+
+----------------------------------------------
+
+Segun entiendo, un constituyent tree en Stanza para la frase "this is a test" tiene forma de:
+
+        (ROOT (S (NP (DT This)) (VP (VBZ is) (NP (DT a) (NN test)))))
+
+Y esto en Dependency Parsing seria:
+
+            ROOT        This            is              a               test
+            0           1               2               3               4
+
+naive       (none)      (2, S)          (0, ROOT)       (4, DT)        (2, NP)
+relpos      (none)      (+1, S)         (-2, ROOT)      (+1, DT)       (-2, NP)
+
+Y esto en Sequence Labeling seria:
+
+            This            is          a           test            .
+            0               1           2           3               4
+
+naive       (ROOT,1)       (VP,2)      (NP,3)      (ROOT,1)       (none)
+relpos      (ROOT,+1)      (VP,+1)     (NP,+2)     (ROOT,-2)      (none)
+
+----------------------------------------------
+
+Usar conatainers? 
+
+- Docker
+- Venv [*]
+- Anaconda           
+
+Uso de libreria de arboles?
+nltk.Tree o 
+implementar arboles a proposito para la practica
+
+----------------------------------------------
+
+hacer encode/decode y medir tiempo de ejecucion 
+probar a hacer decode con etiquetas incorrectas
+
+usar los arboles de stanza
+usar arboles programados
+
+medir tiempos y ver cual es mas eficiente
+medir arboles por segundo
+
+uso de arboles parented
+
+-----------------------
+
+nca = number of common ancestors
+dca = deepest common ancestor
+
+-----------------------
+
+pos (part of speech) tagging: analisis morfologico
+
+dealing with unary chains:
+
+        distincion entre 
+                intermediate unary chains 
+                        - aquellas que no acaban en un terminal, esto es, nodo hoja
+                        - ie: sujeto -- [sintagma_nominal] -- pronombre -- "yo"
+                leaf unary chains 
+                        - aquellas que acaban pos tag, esto es, nodo hoja
+                        - ie: sujeto -- sintagma_nominal -- [pronombre] -- "yo"
+
+        las intermedias se pueden colapsar en un solo simbolo que se puede encodear facil.
+        para ello lo que hacemos es, en un arbol que tiene una rama unaria de X a Y lo codeamos como "X->Y"
+
+        para las leafs:
+                -uso de una funcion adicional para enriquecer el part of speech tagging
+                -transformacion de las labels en una 3-tupla donde encodeamos la leaf unary chain
+        
+
+dealing with not surjectivity
+
+        Problemas con nodos del arbol con mas de dos hijos: when a label sequence encodes several 
+        conflicting nonterminals at a given position in the tree, we compute the tree using 
+        the first such nonterminal and ignoring the rest.
+
+-----------------------
+
+    notes: 
+        if the number of common ancestors for word n-1 is strictly smaller than for the word n implies that
+        the word n-1 is in a different subtree than the word n, therefore the subtree for the word n has
+        to be inserted in the parent of the subtree of word n-1
+    
+    def decode(self):
+        add a ROOT from where to start building the tree        
+        for each label
+            get the data
+            last common node label (unpacking intermediate unary tree) = $lc 
+            number of common ancestors = $nc
+            reset the current position in the tree to the root = $current_level
+            descend n_commons nodes, for each step descending create a NULL node if the last_common does not match
+            
+            descend from root $nc steps, modifying the $current_level variable
+                if the current level has no childs or
+                if we are in a level deeper than the previous label level
+                create and insert an empty node that will be filled by the $lc label or intermediate unary tree
+            
+            now $current level is in the position where to append the leaf unary tree
+            
+            if we are in the first element 
+                append the leaf unary chain at this level
+            else
+                if the level_index is smaller than the n_commons in the previous iteration
+                    append the unary chain at the previous_level
+                else:
+                    append the unary chain at this level
+            
+            save the deepest level of this iteration = $previous_level
+
+        remove the root node
+        return tree
+
+
+------------------------
+
+cadenas erroneas:
+
+-> 1a etiqueta 10 niveles, se crean nodos nulos y se acaban llenanod pero si es incorrecta, que pasa con los nodos que no se llenan? se limpian
+-> un nodo nulo se intenta llenar con cosas distintas (ej: un nodo dice que su es np y otro vp)
+   esto puede ser a n nodos, fill_first, fill_last, fill_mostly
+
+los errores tienen que intentar ser solucionados, construyendo un arbol correcto o incorrecto
+
+la info sobre esto esta en dealing with not surjectivity, pero se deberia poner configurable (ie: pillar el primer noterminal o quedarse con el ultimo 
+o quedarse con el mayoritario)
+
+
+encoding dinamico : storear en clase label el origen del tag
+
+
+------------------------
+
+en el treebank del corpus las etiquetas del pos tienen campos adicionales, estos se deben guardar aparte
