@@ -6,6 +6,10 @@ C_ABSOLUTE_ENCODING = 'ABS'
 C_RELATIVE_ENCODING = 'REL'
 C_DYNAMIC_ENCODING = 'DYN'
 
+C_STRAT_FIRST="strat_first"
+C_STRAT_LAST="strat_last"
+C_STRAT_MAX="strat_max"
+
 class encoded_constituent_label:
     # labels obtained during the encoding of constituent trees
     # nc: number of common ancestors
@@ -28,10 +32,9 @@ class constituent_encoder:
         # append dummy finish node
         tree.append(Tree("FINISH",["finish"]))
 
-    def encode(self, tree):
-        return self.encoder.encode(tree)
-
-class constituent_naive_encoder:
+        # collapse unary nodes
+        tree.collapse_unary(collapsePOS=True, joinChar="+")
+    
     def get_pos_tags(self, tree):
         # if we have a tree with only one child
         if (len(tree)==1):
@@ -45,7 +48,11 @@ class constituent_naive_encoder:
 
         else:
             return tree.pos()
+    
+    def encode(self, tree):
+        return self.encoder.encode(tree)
 
+class constituent_naive_encoder:
     # returns array of leave paths
     def get_path_to_leaves(self, tree):
         ptl=self.get_path_to_leaves_rec([tree], [],[])
@@ -135,6 +142,45 @@ class constituent_decoder:
     def decode(self, labels, pos_tags):
         return self.decoder.decode(labels, pos_tags)
 
+    def postprocess_tree(self, decoded_tree, conflict_strategy):
+        self.fix_null_nodes(decoded_tree)
+        self.fix_conflict_nodes(decoded_tree,conflict_strategy)
+
+    def fix_null_nodes(self, node):
+        if (type(node) is ParentedTree):
+            # search in childs first
+            for i,child in enumerate(node):
+                fix_null_nodes(child)
+
+            # check if current node is null
+            if node.label()=="NULL":
+                parent=node.parent()
+
+                for i,child in enumerate(node):
+                    copy_child=copy.deepcopy(child)
+                    parent.insert(node.parent_index(),copy_child)
+                
+                del parent[node.parent_index()]
+
+    def fix_conflict_nodes(self, node, strategy):
+        if (type(node) is ParentedTree):
+            # search in childs first
+            for i,child in enumerate(node):
+                fix_conflict_nodes(child,strategy)
+
+            # check if current node is null
+            if "|" in node.label():
+                labels = node.label().split("|")
+
+                if strategy==STRAT_FIRST:
+                        node.set_label(labels[0])
+                
+                elif strategy==STRAT_LAST:
+                    node.set_label(labels[(len(labels)-1)])
+
+                elif strategy==STRAT_MAX:
+                    node.set_label(max(set(labels), key=labels.count))
+
 class constituent_absolute_decoder:
     def __init__(self):
         pass
@@ -145,7 +191,6 @@ class constituent_absolute_decoder:
 
         #  split the unary chains
         label.last_common=label.last_common.split("+")
-
 
     def fill_intermediate_node(self, current_level, last_commons):
         if len(last_commons)==1:
@@ -307,6 +352,7 @@ class constituent_relative_decoder:
         tree=tree[-1]
 
         return tree    
+
 
 
 def test_single(ts):
