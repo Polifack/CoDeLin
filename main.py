@@ -5,28 +5,6 @@ import copy
 
 if __name__=="__main__":
     print("Start!")
-    ns="(S (NULL (NP (NULL (DT This)) (NULL (NN time)))) (NULL (NULL (, ,))) (NP (DT the) (NNS firms)) (VP (NULL (VBD were)) (ADJP (JJ ready))) (. .))"
-    cs="(S (NP|VP (DT This) (NN time)) (, ,) (NP (DT the) (NNS firms)) (VP (VBD were) (ADJP|ASDF|ASDF (JJ ready))) (. .))"
-    s="(S (NP (DT This) (NN time)) (, ,) (NP (DT the) (ADJ old) (NNS firms)) (VP (VBD were) (ADJP (JJ ready))) (. .))"
-
-    t = Tree.fromstring(s)
-    t.pretty_print()
-
-    e = constituent_encoder(constituent_absolute_encoder())
-    e.preprocess_tree(t)
-    lbl=e.encode(t)
-    pt = e.get_pos_tags(t)
-    
-    i=0
-    for label in lbl:
-        print(label.last_common)
-        i+=1
-        if i==4:
-            label.last_common="AVP"
-
-    d = constituent_decoder(constituent_absolute_decoder())
-    dt = d.decode(lbl, pt)
-    
-    dt.pretty_print()
-    fix_conflict_nodes(dt, STRAT_MAX)
-    dt.pretty_print()
+    s="(SINV (`` ``) (S (NP (PRP It)) (VP (VBZ 's) (NP (NP (DT a) (NN problem)) (SBAR (WHNP (WDT that)) (S (ADVP (RB clearly)) (VP (VBZ has) (S (VP (TO to) (VP (VB be) (VP (VBN resolved))))))))))) (, ,) ('' '') (VP (VBD said)) (NP (NP (NNP David) (NNP Cooke)) (, ,) (NP (NP (JJ executive) (NN director)) (PP (IN of) (NP (DT the) (NNP RTC))))) (. .))"
+    #test_file("./test/constituency/dev.trees")
+    test_single(s,None)

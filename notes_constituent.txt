@@ -181,3 +181,9 @@ encoding dinamico : storear en clase label el origen del tag
 ------------------------
 
 en el treebank del corpus las etiquetas del pos tienen campos adicionales, estos se deben guardar aparte
+
+------------------------
+
+probar timing nltk
+probar parseTree stanza
+probar arbol adhoc

@@ -124,11 +124,26 @@ Label Encoding (pos):
 
 --------------
 brack encoding
-
+--------------
 - encoding con stacks para el bracketing con parentesis abiertos y cerrados
 - funciona con arboles no proyectivos, pero no funciona con aquellos que cruzan dependencias izquierdas con izquierdas, dchas con dchas etc
 - no comprobar proyectividad por eficiencia, se asume la codificacion parcial
 
 - implementar la comprobacion de proyectividad para el training de la lstm
 
--> encoding brackets 2 planar en otro paper
+- encoding brackets 2 planar en otro paper = tuplana:
+
+    esto significa que hay 2 tipos de parentesis para las que se cruzan
+    ej: parentesis rojos y verdes
+
+
+-> dar la opcion de quitar el desplazamiento y que los parentesis en las palabras i j sean un enlace entre i j
+
+    eliminar la palbra izquierda desplazamientos
+
+------------------------
+posibles errores
+------------------------
+nodo identifica padre como algo que no exitste (ej primera palabra -4)
+aparecen ciclos en el arbol (1->2->3->2->1) : romper un enlace del ciclo
+estructura con varias raices : pillar primera // pillar ultima y colgar todas las otras de ella
