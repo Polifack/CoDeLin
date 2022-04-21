@@ -151,9 +151,9 @@ class constituent_dynamic_encoder(constituent_naive_encoder):
                     abs_val = n_commons
                     rel_val = (n_commons-last_n_common)
                     
-                    # abs_val <= 3 : the node is at most 3 levels from the root
-                    # rel_val >=2 : the node is at least 2 levels deeper
-                    if (abs_val<=3 and rel_val>=2):
+                    # abs_val <= 3 : the node n-1 and n share at most 3 levels
+                    # rel_val <=-2 : the node n-1 is at least 2 levels deeper than node n
+                    if (abs_val<=3 and rel_val<=-2):
                         lbl = encoded_constituent_label(C_ABSOLUTE_ENCODING, abs_val, last_common)
                     else:
                         lbl=encoded_constituent_label(C_RELATIVE_ENCODING,rel_val,last_common)
@@ -353,7 +353,6 @@ class constituent_relative_decoder:
         old_n_commons=0
         old_last_common=''
         old_level=None
-        is_first = True
         
 
         for label,pos_tag in zip(labels,pos_tags):
@@ -377,8 +376,7 @@ class constituent_relative_decoder:
             # positivo -> insert en nivel actual
             # negativo // 0 -> insert en nivel anterior
 
-            if is_first or (label.n_commons > 0):
-                is_first=False
+            if (label.n_commons > 0):
                 self.fill_pos_nodes(current_level,pos_tag)
             else:
                 self.fill_pos_nodes(old_level,pos_tag)
@@ -445,7 +443,7 @@ class constituent_dynamic_decoder:
 
     def descend_nodes_abs(self, n_commons, old_n_commons, current_level):
         for level_index in range(n_commons):
-            if (len(current_level)==0) or (level_index >= old_n_commons):
+            if (len(current_level)==0):
                 current_level.append(ParentedTree("NULL",[]))
             current_level = current_level[-1]
 
@@ -455,42 +453,40 @@ class constituent_dynamic_decoder:
         tree = ParentedTree('ROOT',[])
         current_level = tree
 
-        old_n_commons=0
-        old_last_common=''
-        old_level=None
-        is_first = True
-        
+        old_depth_level=0
+        old_level=None        
 
         for label,pos_tag in zip(labels,pos_tags):
-            # preprocess the label
-            # this returns the delta levels to move obtained during unary chain split
             self.preprocess_label(label)
             
+            # If label was encoded in top-down absolute encoding
             if label.encoding_type==C_ABSOLUTE_ENCODING:
                 current_level=tree
-                current_level=self.descend_nodes_abs(label.n_commons, old_n_commons, current_level)
+                current_level=self.descend_nodes_abs(label.n_commons, old_depth_level, current_level)
+
+                self.fill_intermediate_node(current_level, label.last_common)           
+
+                if (label.n_commons >= old_depth_level):
+                    self.fill_pos_nodes(current_level,pos_tag)
+                else:
+                    self.fill_pos_nodes(old_level,pos_tag)
+
+                old_depth_level=label.n_commons
+                old_level=current_level
+            
+            # If label was encoded in relative encoding
             else:
                 current_level=self.descend_nodes_rel(label.n_commons,current_level)
 
-            tree.pretty_print()
+                self.fill_intermediate_node(current_level, label.last_common)           
 
-            # dealing with intermediate labels
-            self.fill_intermediate_node(current_level, label.last_common)           
+                if (label.n_commons > 0):
+                    self.fill_pos_nodes(current_level,pos_tag)
+                else:
+                    self.fill_pos_nodes(old_level,pos_tag)
 
-            # dealing with PoS
-
-            # positivo -> insert en nivel actual
-            # negativo // 0 -> insert en nivel anterior
-
-            if is_first or (label.n_commons > 0):
-                is_first=False
-                self.fill_pos_nodes(current_level,pos_tag)
-            else:
-                self.fill_pos_nodes(old_level,pos_tag)
-            
-            old_n_commons=label.n_commons
-            old_last_common=label.last_common
-            old_level=current_level
+                old_depth_level+=label.n_commons
+                old_level=current_level
         
         # remove dummy root node
         tree=tree[-1]
@@ -498,52 +494,34 @@ class constituent_dynamic_decoder:
         return tree    
 
 
-def test_single(ts, idx):
-    # Get tree from string
+def test_single(ts, idx, encoding_type, decoding_type):
     t = Tree.fromstring(ts)
-    t.pretty_print()
-
-    # create encoder
-    re=constituent_relative_encoder()
-    ae=constituent_absolute_encoder()
-    de=constituent_dynamic_encoder()
-
-    e = constituent_encoder(de)
-
-    # preprocess it
+    
+    e = constituent_encoder(encoding_type)
     e.preprocess_tree(t)
-
-    # Collapse the unary nodes in the tree
-    t.collapse_unary(collapsePOS=True)
-
-    # get the postags
     pos_tags = e.get_pos_tags(t)
-
-    # get labels
     labels = e.encode(t)
 
-    for pt, l in zip(pos_tags,labels):
-        print(l.encoding_type, pt, l.n_commons, l.last_common)
+    d = constituent_decoder(decoding_type)    
+    dt = d.decode(labels, pos_tags)
 
-    # decode labels
-    rd=constituent_relative_decoder()
-    ad=constituent_absolute_decoder()
-    dd=constituent_dynamic_decoder()
+def test_file(filepath, encoding):
+    if encoding == C_ABSOLUTE_ENCODING:
+        e=constituent_absolute_encoder()
+        d=constituent_absolute_decoder()
+    elif encoding == C_RELATIVE_ENCODING:
+        e=constituent_relative_encoder()
+        d=constituent_relative_decoder()
+    elif encoding == C_DYNAMIC_ENCODING:
+        e=constituent_dynamic_encoder()
+        d=constituent_dynamic_decoder()
+    else:
+        print("[*] Error: Unknown encoder.")
+        exit(1)
 
-    d = constituent_decoder(dd)
-    
-    dt=d.decode(labels, pos_tags)
-    
-    dt.pretty_print()
-    
-    ot=Tree.fromstring(ts)
-
-    if idx is not None and not str(ot)==str(dt):
-        print("Error at ",idx)
-
-def test_file(filepath):
     f=open(filepath)
+    
     i=1
     for line in f:
-        test_single(line,i)
+        test_single(line, i, e, d)
         i+=1
