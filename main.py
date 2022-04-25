@@ -9,6 +9,7 @@ def check_with_time():
     test_file("./test/constituency/dev.trees",C_ABSOLUTE_ENCODING)
     print("[*] decoding and encoding dev.trees absolute encoding:",(time.time()-start_time))
 
+    '''
     start_time=time.time()
     test_file("./test/constituency/dev.trees",C_RELATIVE_ENCODING)
     print("[*] decoding and encoding dev.trees relative encoding:",(time.time()-start_time))
@@ -16,11 +17,12 @@ def check_with_time():
     start_time=time.time()
     test_file("./test/constituency/dev.trees",C_DYNAMIC_ENCODING)
     print("[*] decoding and encoding dev.trees dynamic encoding:",(time.time()-start_time))
-    
+    '''
     start_time=time.time()
     test_file("./test/constituency/test.trees",C_ABSOLUTE_ENCODING)
     print("[*] decoding and encoding test.trees absolute encoding:",(time.time()-start_time))
-
+    
+    '''
     start_time=time.time()
     test_file("./test/constituency/test.trees",C_RELATIVE_ENCODING)
     print("[*] decoding and encoding test.trees relative encoding:",(time.time()-start_time))
@@ -29,7 +31,6 @@ def check_with_time():
     test_file("./test/constituency/test.trees",C_DYNAMIC_ENCODING)
     print("[*] decoding and encoding test.trees dynamic encoding:",(time.time()-start_time))
     
-    ''' 
     start_time=time.time()
     test_file("./test/constituency/train.trees",C_ABSOLUTE_ENCODING)
     print("[*] decoding and encoding train.trees absolute encoding:",(time.time()-start_time))

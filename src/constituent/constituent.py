@@ -78,9 +78,6 @@ class constituent_absolute_encoder(constituent_naive_encoder):
     def encode(self, tree):
         path_to_leaves = self.get_path_to_leaves(tree)
         labels=[]
-
-        # encoding as labels (most_deep_common_ancestor, n_common_ancestors)
-
         for i in range(0, len(path_to_leaves)-1):
             path_n_0=path_to_leaves[i][:-1]
             path_n_1=path_to_leaves[i+1][:-1]

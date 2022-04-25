@@ -3,8 +3,11 @@ from stanza.models.constituency.tree_reader import *
 from src.constituent.constituent import *
 
 import copy
+import time
 import nltk
 
+def preprocess_tree(tree):
+    tree.children=(*tree.children,stanzatree("FINISH",[]))
 def collapse_unary(tree):
     for child in tree.children:
         collapse_unary(child)
@@ -19,7 +22,6 @@ def get_pos_tags_rec(tree,accum):
     if len(tree.children)==1 and tree.is_preterminal():
         accum.append((tree.children[0].label,tree.label))
     return accum
-
 def path_to_leaves(tree):
     return path_to_leaves_rec(tree,[],[],0)
 def path_to_leaves_rec(tree, current_path, paths, idx):
@@ -36,13 +38,9 @@ def path_to_leaves_rec(tree, current_path, paths, idx):
             path_to_leaves_rec(child, common_path, paths,idx)
             idx+=1
     return paths
-
 def encode(tree):
     ptl = path_to_leaves(tree)
     labels=[]
-
-    # encoding as labels (most_deep_common_ancestor, n_common_ancestors)
-
     for i in range(0, len(ptl)-1):
         path_n_0=ptl[i]
         path_n_1=ptl[i+1]
@@ -58,32 +56,15 @@ def encode(tree):
                 break
             
             # increase
-            n_commons+=(len(a.split("+"))-1)
-            n_commons+=1
-            
+            n_commons+=1+(len(a.split("+"))-1)            
             last_common = a
-    
-    # append the last element
-    last_label=encoded_constituent_label(C_ABSOLUTE_ENCODING,1,tree.label)
-    labels.append(last_label)
-
+    print(labels)
     return labels
 
- 
+
 def preprocess_label(label):
     #  split the unary chains
     label.last_common=label.last_common.split("+")
-
-def fill_intermediate_node(current_level, last_commons):
-    if len(last_commons)==1:
-        if (current_level.label=='NULL'):
-            current_level.label=last_commons[0]
-    else:
-        last_commons.reverse()
-        for element in last_commons:
-            current_level.set_label(element)
-            current_level=current_level.parent()
-
 def fill_pos_nodes(current_level, pos_tags):
     word = pos_tags[0]
     pos_chain=pos_tags[1].split("+")
@@ -95,14 +76,13 @@ def fill_pos_nodes(current_level, pos_tags):
     # if the postag has previous nodes
     else:
         pos_chain.reverse()
-        pos_tree = ParentedTree(pos_chain[0], [word])
-        pos_chain=pos_chain[1:]
+        pos_tree = stanzatree(pos_chain[0], stanzatree(word))
+        pos_chain = pos_chain[1:]
         for pos_node in pos_chain:
-            temp_tree=stanzatree(pos_node,[pos_tree])
+            temp_tree=stanzatree(pos_node, pos_tree)
             pos_tree=temp_tree
-    
-    current_level.children.append(pos_tree)
 
+    current_level.children=(*current_level.children,pos_tree)
 def decode(labels, pos_tags):
     tree = stanzatree('ROOT',[])
     current_level = tree
@@ -115,23 +95,43 @@ def decode(labels, pos_tags):
     for label,pos_tag in zip(labels,pos_tags):
         # preprocess the label
         preprocess_label(label)
-
+        #print(pos_tag, label.n_commons, label.last_common)
         # reset current_level to the head of the tree
         current_level = tree
 
-        # descend n_commons levels
-        for level_index in range(label.n_commons): 
-            # if the current level has no childs or
-            # if we are in a level deeper than the previous label level
-            # insert an empty node
-            if (len(current_level.children)==0) or (level_index >= old_n_commons):
-                current_level.children.append(stanzatree('NULL',[]))
-                #current_level.append(ParentedTree("NULL",[]))
+        if len(label.last_common)==1:
+            # descend and create
+            for level_index in range(label.n_commons):
+                if (len(current_level.children)==0) or (level_index >= old_n_commons):
+                    current_level.children = (*current_level.children, stanzatree('NULL',[]))
+                current_level = current_level.children[len(current_level.children)-1]
             
-            current_level = current_level.children[len(current_level.children)-1]
+            # fill intermediate nodes
+            if (current_level.label=='NULL'):
+                current_level.label=label.last_common[0]
         
-        # dealing with intermediate labels
-        fill_intermediate_node(current_level, label.last_common)           
+        else:
+            # descend and create
+            for level_index in range(label.n_commons): 
+                if (len(current_level.children)==0) or (level_index >= old_n_commons):
+                    current_level.children = (*current_level.children, stanzatree('NULL',[]))  
+                current_level = current_level.children[len(current_level.children)-1]
+            
+            # descend to the beginning of the chain
+            descend_levels = label.n_commons-(len(label.last_common))+1
+            current_level = tree
+            for level_index in range(descend_levels): 
+                current_level = current_level.children[len(current_level.children)-1]
+            
+            # fill intermediate nodes
+            for i in range(len(label.last_common)-1):
+                if (current_level.label=='NULL'):
+                    current_level.label=label.last_common[i]
+                current_level=current_level.children[len(current_level.children)-1]
+
+            # set last label
+            current_level.label=label.last_common[i+1]
+          
 
         # dealing with PoS
         if (label.n_commons >= old_n_commons):
@@ -139,12 +139,13 @@ def decode(labels, pos_tags):
         else:
             fill_pos_nodes(old_level,pos_tag)
 
+        #Tree.fromstring(str(tree)).pretty_print()
         old_n_commons=label.n_commons
         old_last_common=label.last_common
         old_level=current_level
     
     # remove dummy root node
-    tree=tree.children[0]
+    #tree=tree.children[0]
 
     return tree
 
@@ -153,14 +154,16 @@ def test_single(txt):
     nt=Tree.fromstring(txt)
     
     # stanza
-    nt.pretty_print()
+    #nt.pretty_print()
+    
     collapse_unary(st)
+    preprocess_tree(st)
     s_postags = get_pos_tags(st)
     s_labels = encode(st)
     s_dt=decode(s_labels,s_postags)
     
-    nt=Tree.fromstring(str(s_dt))
-    nt.pretty_print()
+    #Tree.fromstring(str(s_dt)).pretty_print()
+    return (read_trees(txt)[0]==s_dt)
 
     # nltk
     '''
@@ -182,17 +185,20 @@ def test_file(filepath):
     f=open(filepath)
     i=1
     for line in f:
-        if not (test_single(line)):
-            print("Error at",i)
+        r=test_single(line)
+        if not (r):
+            print("err at",i)
         i+=1
 
 
 if __name__=="__main__":
-    print("Start!")
-
-    ## todo: speed test
-    s="(S (NP (DT The) (NN yield)) (VP (VBD was) (NP (CD 5.245) (NN %))) (. .))"
-    s_2="(S (NP (JJ Investment-grade) (JJ corporate) (NNS bonds)) (VP (VBD ended) (ADJP (NP (QP (CD one) (TO to) (CD 1) (CD 1\/2)) (NN point)) (RBR lower))) (. .))"
-    test_single(s_2)
+    #start_time=time.time()
+    #test_file("./test/constituency/dev.trees")
+    #print("[*] decoding and encoding dev.trees absolute encoding:",(time.time()-start_time))
+    #start_time=time.time()
     #test_file("./test/constituency/test.trees")
+    #print("[*] decoding and encoding dev.trees absolute encoding:",(time.time()-start_time))
+    #start_time=time.time()
+    test_file("./test/constituency/train.trees")
+    #print("[*] decoding and encoding train.trees absolute encoding:",(time.time()-start_time))
     
