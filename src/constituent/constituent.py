@@ -90,6 +90,7 @@ class constituent_absolute_encoder(constituent_naive_encoder):
             for a,b in zip(path_n_0, path_n_1):
                 # if we have an ancestor that is not common break
                 if (a!=b):
+                    last_common=re.sub(r'[0-9]+', '', last_common)
                     lbl=encoded_constituent_label(C_ABSOLUTE_ENCODING,n_commons,last_common)
                     labels.append(lbl)
                     break
@@ -118,6 +119,7 @@ class constituent_relative_encoder(constituent_naive_encoder):
             for a,b in zip(path_n_0, path_n_1):
                 # if we have an ancestor that is not common break
                 if (a!=b):
+                    last_common=re.sub(r'[0-9]+', '', last_common)
                     lbl=encoded_constituent_label(C_RELATIVE_ENCODING,(n_commons-last_n_common),last_common)
                     labels.append(lbl)
                     last_n_common=n_commons
@@ -150,6 +152,7 @@ class constituent_dynamic_encoder(constituent_naive_encoder):
                 if (a!=b):
                     abs_val = n_commons
                     rel_val = (n_commons-last_n_common)
+                    last_common=re.sub(r'[0-9]+', '', last_common)
                     
                     # abs_val <= 3 : the node n-1 and n share at most 3 levels
                     # rel_val <=-2 : the node n-1 is at least 2 levels deeper than node n
@@ -225,9 +228,6 @@ class constituent_absolute_decoder:
         pass
     
     def preprocess_label(self,label):
-        # clean the int added during encoding
-        label.last_common=re.sub(r'[0-9]+', '', label.last_common)
-
         #  split the unary chains
         label.last_common=label.last_common.split("+")
 
@@ -311,9 +311,6 @@ class constituent_relative_decoder:
         pass
     
     def preprocess_label(self,label):
-        # clean the int added during encoding
-        label.last_common=re.sub(r'[0-9]+', '', label.last_common)
-
         #  split the unary chains
         label.last_common=label.last_common.split("+")
 
@@ -395,9 +392,6 @@ class constituent_dynamic_decoder:
         pass
     
     def preprocess_label(self,label):
-        # clean the int added during encoding
-        label.last_common=re.sub(r'[0-9]+', '', label.last_common)
-
         #  split the unary chains
         label.last_common=label.last_common.split("+")
 
@@ -504,6 +498,9 @@ def test_single(ts, idx, encoding_type, decoding_type):
 
     d = constituent_decoder(decoding_type)    
     dt = d.decode(labels, pos_tags)
+    ot = Tree.fromstring(ts)
+    if (str(ot)!=str(dt)):
+        print(False)
 
 def test_file(filepath, encoding):
     if encoding == C_ABSOLUTE_ENCODING:
