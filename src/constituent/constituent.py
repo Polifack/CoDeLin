@@ -19,6 +19,9 @@ class encoded_constituent_label:
         self.encoding_type=et
         self.n_commons=nc
         self.last_common=lc
+    def to_absolute(self, last_label):
+        self.n_commons+=last_label.n_commons
+        self.encoding_type=C_ABSOLUTE_ENCODING
 
 ##############################################################################
 ##############################################################################
@@ -485,7 +488,7 @@ class constituent_dynamic_decoder:
         return tree    
 
 
-def test_single(ts, idx, encoding_type, decoding_type):
+def test_single(ts, encoding_type, decoding_type):
     t = Tree.fromstring(ts)
     
     e = constituent_encoder(encoding_type)
@@ -496,8 +499,6 @@ def test_single(ts, idx, encoding_type, decoding_type):
     d = constituent_decoder(decoding_type)    
     dt = d.decode(labels, pos_tags)
     ot = Tree.fromstring(ts)
-    if (str(ot)!=str(dt)):
-        print(False)
 
 def test_file(filepath, encoding):
     if encoding == C_ABSOLUTE_ENCODING:
@@ -517,5 +518,6 @@ def test_file(filepath, encoding):
     
     i=1
     for line in f:
-        test_single(line, i, e, d)
+        test_single(line, e, d)
         i+=1
+    return i
