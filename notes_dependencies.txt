@@ -375,7 +375,7 @@ Estrategias de asignacion de plano:
                     # if it crosses, check all crossings to the node
                     (fp1, fp2)=propagate(nodes, fp1, fp2, node, fp1)
         
-
+    def 2p-propagate(nodes)
         p1=[]
         p2=[]
         fp1=[]
@@ -395,34 +395,6 @@ Estrategias de asignacion de plano:
                         do_nothing
         
         return p1, p2
-                    
-
-
-function Propagate(Edge sets T, P1, P2, Edge e, Plane i):
-Pi ← Pi ∪ {e};
-// e forbidden from plane i
-for (e′ ∈ T | e′ crosses e) do
-if e′ 6 ∈ P3−i then
-(P1, P2) ← Propagate(T, P1, P2, e′, 3 − i);
-end
-return P1, P2;
-P1 ← ∅, P2 ← ∅, P1 ← ∅, P2 ← ∅;
-for xr ← 1 to n do
-for xl ← xr − 1 downto 0 do
-if ∃a ∈ T | a = (xl, xr, l) ∨ a = (xr, xl, l) then
-nextArc ← a;
-if nextArc 6 ∈ P1 then
-P1 ← P1 ∪ {nextArc};
-Propagate(T, P1, P2,nextArc,2);
-else if nextArc 6 ∈ P2 then
-P2 ← P2 ∪ {nextArc};
-Propagate(T, P1, P2,nextArc,1);
-else
-do nothing (failed to assign nextArc to a plane);
-end
-end
-end
-return P1, P2;
 
 --------------
 brack encoding
@@ -434,9 +406,6 @@ brack encoding
 - implementar la comprobacion de proyectividad para el training de la lstm
 
 - encoding brackets 2 planar en otro paper = tuplana:
-
-    esto significa que hay 2 tipos de parentesis para las que se cruzan
-    ej: parentesis rojos y verdes
 
 -> por que i+1? 
     propiedad arboles dependencias: proyectividad
@@ -452,4 +421,4 @@ posibles errores
 ------------------------
 nodo identifica padre como algo que no exitste (ej primera palabra -4)
 aparecen ciclos en el arbol (1->2->3->2->1) : romper un enlace del ciclo
-estructura con varias raices : pillar primera // pillar ultima y colgar todas las otras de ella
+estructura con varias raices : pillar primera OR pillar ultima y colgar todas las otras de ella

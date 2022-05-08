@@ -119,50 +119,87 @@ class dependency_brk_encoder:
         return lbls
 
 class dependency_brk_2p_encoder:
-    def check_cross(self, current_arc, node):
-        head_inside = (node.head < next_arc.head < node.id)
+    def __init__(self, encoding_type):
+        self.encoder = encoding_type
+
+    # auxiliar functions
+    def check_cross(self, next_arc, node):
+        # las condiciones para que dos nodos se crucen son:
+        #   id del next_arc esta entre la cabeza y el id del nodo siendo comprobado
+        #   cabeza del next_arc no esta entre la cabeza y el id del nodo siendo comprobado
+        # o
+        #   id del next_arc no esta entre la cabeza y el id del nodo siendo comprobado
+        #   cabeza del next_arc esta entre la cabeza y el id del nodo siendo comprobado
+        #
+        # hay que tener en cuenta que si las cabezas coinciden *no* es un cruce
+        
         id_inside = (node.head < next_arc.id < node.id)
-        # xor: only true when one and only one true
-        return (head_inside ^ id_inside)
+        if node.head == next_arc.head and id_inside:
+             return False
+        else:
+            head_inside = (node.head < next_arc.head < node.id)
+            return head_inside^id_inside
+    
+    def get_next_edge(self, nodes, idx_l, idx_r):
+        next_arc=None
+
+        if nodes[idx_l].head==idx_r:
+            next_arc = nodes[idx_l]
         
-    def propagate(self, nodes, fp1, fp2, current_edge, fpc):
-
-        # assign the current edge to the fpc
-        fpc.append(current_edge)
-
-        # check if the current edge crosses nodes in the dependency graph
-        for node in nodes:
-            if current_edge crosses node:
-                # check if the node that crosses current_edge is in fp1
-                if node not in fp1:
-                    # if it crosses, check all crossings to the node
-                    (fp1, fp2)=propagate(nodes, fp1, fp2, node, fp2)
-                # chec if the node that crosses current_edge is in fp2
-                elif e not in fp2:
-                    # if it crosses, check all crossings to the node
-                    (fp1, fp2)=propagate(nodes, fp1, fp2, node, fp1)
+        elif nodes[idx_r].head==idx_l:
+            next_arc = nodes[idx_r]
         
+        return next_arc
 
+    # plane split propagate
+    def two_planar_propagate(self, nodes):
         p1=[]
         p2=[]
         fp1=[]
         fp2=[]
 
-        for r=1 to len(nodes):
-            for l=(r-1) to 0:
-                if exists a = (edge from l to r) or exists a = (edge from r to l):
-                    next_arc=a
+        for i in range(0, (len(nodes))):
+            for j in range(i, -1, -1):
+                # if the node in position 'i' has an arc to 'j' 
+                # or node in position 'j' has an arc to 'i'
+                next_arc=self.get_next_edge(nodes, i, j)
+                if next_arc == None:
+                    continue
+                else:
+                    # check restrictions
+
                     if next_arc not in fp1:
                         p1.append(next_arc)
-                        propagate(nodes, fp1, fp2, next_arc, fp2)
+                        
+                        # recompute restriction set
+                        fp1, fp2 = self.propagate(nodes, fp1, fp2, next_arc, 2)
+                    
                     elif next_arc not in fp2:
                         p2.append(next_arc)
-                        propagate(nodes, fp1, fp2, next_arc, fp1)
-                    else:
-                        do_nothing
-        
+                        
+                        # recompute restriction set
+                        fp1, fp2 = self.propagate(nodes, fp1, fp2, next_arc, 1)
         return p1, p2
 
+    def propagate(self, nodes, fp1, fp2, current_edge, i):
+        # add the current edge to the forbidden plane opposite to the plane
+        # where the node has already been added
+        if i==1:
+            fp1.append(current_edge)
+        if i==2:
+            fp2.append(current_edge)
+        
+        # add all nodes from the dependency graph that crosses the current edge
+        # to the corresponding forbidden plane
+        for node in nodes:
+            if self.check_cross(current_edge, node):
+                if i==2 and node not in fp1:
+                    (fp1, fp2)=self.propagate(nodes, fp1, fp2, node, 1)
+                if i==1 and node not in fp2:
+                    (fp1, fp2)=self.propagate(nodes, fp1, fp2, node, 2)
+        return fp1, fp2
+
+    # plane split greed
     def two_planar_greedy(self,nodes):    
         plane_1 = []
         plane_2 = []
@@ -171,13 +208,7 @@ class dependency_brk_2p_encoder:
             for j in range(i, -1, -1):
                 # if the node in position 'i' has an arc to 'j' 
                 # or node in position 'j' has an arc to 'i'
-                next_arc=None
-
-                if nodes[i].head==j:
-                    next_arc = nodes[i]
-                elif nodes[j].head==i:
-                    next_arc = nodes[j]
-                
+                next_arc=self.get_next_edge(nodes, i, j)
                 if next_arc == None:
                     continue
 
@@ -186,20 +217,10 @@ class dependency_brk_2p_encoder:
                     cross_plane_2 = False
                     
                     for node in plane_1:                
-                        head_inside = (node.head < next_arc.head < node.id)
-                        id_inside = (node.head < next_arc.id < node.id)
-                        # xor: only true when one and only one true
-                        if (head_inside ^ id_inside):
-                            cross_plane_1 = True
-                            break
-                    
+                        cross_plane_1=self.check_cross(next_arc, node)
+                        
                     for node in plane_2:               
-                        head_inside = (node.head < next_arc.head < node.id)
-                        id_inside = (node.head < next_arc.id < node.id)
-                        # xor: only true when one and only one true
-                        if (head_inside ^ id_inside):
-                            cross_plane_2 = True
-                            break
+                        cross_plane_2=self.check_cross(next_arc, node)
                     
                     if not cross_plane_1:
                         plane_1.append(next_arc)
@@ -209,24 +230,30 @@ class dependency_brk_2p_encoder:
         # processs them separately
         return plane_1,plane_2
 
+    # encoding
     def encode(self, nodes):
         # split the dependency graph nodes in two planes
-        p1_nodes, p2_nodes = self.two_planar_greedy(nodes)
-        lbl_brk=self.enc_2p(p1_nodes, p2_nodes)
+        if self.encoder=="grd":
+            p1_nodes, p2_nodes = self.two_planar_greedy(nodes)
+        elif self.encoder=="prp":
+            p1_nodes, p2_nodes = self.two_planar_propagate(nodes)
+        
+        #print("[*] Plane 1:")
+        #for n in p1_nodes:
+        #    print(n.__dict__)
+        #print("[*] Plane 2:")
+        #for n in p2_nodes:
+        #    print(n.__dict__)
+
+        lbl_brk=["" for e in range(0, len(nodes))]
+        lbl_brk=self.enc_p2_step(p1_nodes, lbl_brk,['>','/','\\','<'])
+        lbl_brk=self.enc_p2_step(p2_nodes, lbl_brk,['>*','/*','\\*','<*'])
         
         lbls=[]
         for node in nodes:
-            current = encoded_dependency_label(D_BRACKET_ENCODING, lbl_brk[node.id-1], node.relation)
+            current = encoded_dependency_label(D_BRACKET_ENCODING_2P, lbl_brk[node.id-1], node.relation)
             lbls.append(current)
         return lbls
-
-    def enc_2p(self, p1, p2):
-        lbl_brk=["" for e in range(len(p1)+len(p2))]
-        #['>','/','\\','>']
-        lbl_brk=self.enc_p2_step(p1, lbl_brk,['>','/','\\','<'])
-        lbl_brk=self.enc_p2_step(p2, lbl_brk,['>*','/*','\\*','<*'])
-        
-        return lbl_brk
 
     def enc_p2_step(self, p, lbl_brk, brk_chars):
         for node in p:
@@ -395,10 +422,14 @@ class dependency_brk_2p_decoder:
         for label in labels:
             # join the plane signaler char with the bracket char
             brks=list(label.xi)
+            temp_brks=[]
+            
             for i in range(0, len(brks)):
+                current_char=brks[i]
                 if brks[i]=="*":
-                    brks[i-1]+="*"
-                    del brks[i]
+                    current_char=temp_brks.pop()+brks[i]
+                temp_brks.append(current_char)
+                    
 
             # create a the node
             decoded_nodes[current_node]=dependency_graph_node(current_node, "", 0, "", label.li)
@@ -429,6 +460,8 @@ class dependency_brk_2p_decoder:
 
                     # adding 1 to node_id because labels start in 1 and not in 0
                     decoded_nodes[current_node]=dependency_graph_node(current_node, "", head_id, "", label.li)
+
+                    
                 if char == "<*":
                     # word i-1 tiene arco entrante desde la derecha
                     # esto significa, que la word i-1 depende de la 'i' de la label que popee esto
@@ -494,58 +527,40 @@ def parse_conllu(token_tree):
 def test_treebank(filepath, encoder):
     data_file = open(filepath, "r", encoding="utf-8")
     for token_tree in parse_tree_incr(data_file):
-        nodes, pos_tags = parse_conllu(token_tree)
-        
-        print("[*] Dependency graph:")
-        for node in nodes:
-            print(node.id, node.head, node.relation)
+        test_single(token_tree)
 
-        encoded_labels = encoder.encode(nodes)
-        
-        #print("[*] Encoded labels:")
-        #for label in encoded_labels:
-        #    print('xi:',label.xi,'li:',label.li)
-
-        decoder = dependency_decoder(pos_tags)
-        decoded_nodes = decoder.decode(encoded_labels)
-
-        print("[*] Decoded dependency graph:")
-        for node in decoded_nodes:
-            print(node.id, node.text, node.head, node.relation)
-
-def test_brk(tt):
+def test_single(tt):
     nodes,pos_tags=parse_conllu(tt)
     
-    print("----------------")
-    for p,n in zip(pos_tags,nodes):
-        print(p, n.id, n.head)
+#    print("[*] Dependency graph:")
+#    for node in nodes:
+#        print(node.id, node.head, node.relation)
 
-    be=dependency_brk_encoder()
-    lbls=be.encode(nodes)
-    bd=dependency_brk_decoder()
-    dn=bd.decode(lbls,pos_tags)
+    be=dependency_brk_2p_encoder("prp")
+    encoded_labels=be.encode(nodes)
     
-    print("----------------")
-    for p,n in zip(pos_tags,dn):
-        print(p,n.id,n.head)
+#    print("[*] Encoded labels:")
+#    for label in encoded_labels:
+#        print('xi:',label.xi,'li:',label.li)
+    
+    decoder=dependency_decoder(pos_tags)
+    decoded_nodes=decoder.decode(encoded_labels)
+    
+    print("[*] Decoded dependency graph:")
+    for node, decoded_node in zip(nodes,decoded_nodes):
+        print(node.id==decoded_node.id, node.head==decoded_node.head, node.relation==decoded_node.relation)
 
-    lbls=be.encode_2p(nodes)
-    bd=dependency_brk_decoder()
-    dn=bd.decode_2p(lbls, pos_tags)
-    
-    print("----------------")
-    for p,n in zip(pos_tags,dn):
-        print(p,n.id,n.head)
 
 if __name__=="__main__":
     #data_file=open("/home/poli/TFG/test/dependencies/UD_Spanish-GSD/es_gsd-ud-dev.conllu")
     #data_file=open("/home/poli/TFG/test/dependencies/proj.conllu")
     #sid=79
     #sid=0
-    test_treebank("/home/poli/TFG/test/dependencies/UD_Spanish-GSD/es_gsd-ud-dev.conllu", dependency_brk_2p_encoder())
+    test_treebank("/home/poli/TFG/test/dependencies/UD_Spanish-GSD/es_gsd-ud-dev.conllu", dependency_brk_2p_encoder("grd"))
+    
     #tt=parse_tree_incr(data_file)
     #tt=next(itertools.islice(tt, sid, None))
-    #test_brk(tt)
+    #test_single(tt)
 
 
 
