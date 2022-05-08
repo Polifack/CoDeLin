@@ -61,11 +61,9 @@ brack: the value of xi is a string following the regexp: (<)?((\)*|(/)*)(>)?
        
        characters meaning:
 
-            < : word w-1 has an incoming arc from the right
-            \ : the number of this character apperances indicates 
-                the outgoing arcs to the left from word wi 
-            / : the number of this character apperances indicates
-                the outgoing arcs to the right from word wi
+            < : previous word (word w-1) has an incoming arc from the right
+            \ : the number of this character apperances indicates the outgoing arcs towards the left from word wi 
+            / : the number of this character apperances indicates the outgoing arcs towards the right from word wi-1
             > : word w has an incoming arc from the left
 
         therefore:
@@ -75,9 +73,13 @@ brack: the value of xi is a string following the regexp: (<)?((\)*|(/)*)(>)?
 
 NOTE:   the bracketing encoding only support projective trees, this means, the tree has no
         crossing dependencies (https://www.cs.upc.edu/~horacio/snlp/depparsing-snlp.pdf : 9)
+NOTE1:  it supports non-projective trees where the arcs cross in oposite directions
+NOTE2: the bracketing encoding can support non-projective trees using 2-planar approach
 
 
 ------------
+
+Naive encoding:
 
 Sentence:               I Saw A Fox
 
@@ -93,6 +95,45 @@ Stanza Graph:
                 id: 4       word: fox       head id: 2      deprel: obj
 
 Label Encoding (naive): I:(2, nsubj), saw:(0, root), a:(4, det), fox:(2, dobj)
+
+--------------
+
+Bracket encoding basado en in/out:
+
+Alice = 1       depends on 2        none
+ate = 2         depends on 0        <\
+an = 3          depends on 4        /
+apple = 4       depends on 2        <\>
+
+
+note: j will always be 'more to the right' than i
+
+right_dep (/,>) in (i+1,j)
+left_dep (<,\) in (i+1,j)
+
+==============================================
+alice has a left_dep to ate 
+        i = alice.id (alice) ; i+1 = next(alice) (ate)
+        j = alice.depends_on (ate)
+        
+        ate+='<' ate+='\'
+---------------------------------------
+ate depends on root; skip...
+---------------------------------------
+an has a left_dep to apple 
+        i = an.id (an) ; i+1 = next(an) (apple)
+        j = an.depends_on (apple) 
+        
+        apple+='<' apple+='\'
+---------------------------------------
+apple has a right_dep to ate 
+        i = apple.depends_on (ate) ; i+=1 = next(ate) (an)
+        j = apple.id (apple)
+        
+        an+='/' aapplete+='>'
+==============================================
+LABELS:
+    alice = None    ate=<\      an=/    apple=<\>
 
 --------------
 
@@ -114,18 +155,279 @@ Label Encoding (naive):
 
 Label Encoding (pos): 
 
-        ((1, NOUN), det)            vamos hasta la word (depends_on) 2 contando todos los pos que sean iguales al de la word 2 (NOUN)
-        ((-1, ROOT), root)          vamos hasta la word (depends_on) 0 contando todos los pos que sean iguales al de la word 0 (ROOT)
-        ((-1, NOUN), cop)           vamos hasta la word (depends_on) 2 contando todos los pos que sean iguales al de la word 2 (NOUN)
-        ((-1, NOUN), nsubj)         vamos hasta la word (depends_on) 2 contando todos los pos que sean iguales al de la word 2 (NOUN)
-        ((-1, NOUN), punct)         vamos hasta la word (depends_on) 2 contando todos los pos que sean iguales al de la word 2 (NOUN)
+    Su              ((1, NOUN), det)            vamos hasta la word (depends_on) 2 contando todos los pos que sean iguales al de la word 2 (NOUN)
+    gentilicio      ((-1, ROOT), root)          vamos hasta la word (depends_on) 0 contando todos los pos que sean iguales al de la word 0 (ROOT)
+    es              ((-1, NOUN), cop)           vamos hasta la word (depends_on) 2 contando todos los pos que sean iguales al de la word 2 (NOUN)
+    Chinoais        ((-1, NOUN), nsubj)         vamos hasta la word (depends_on) 2 contando todos los pos que sean iguales al de la word 2 (NOUN)
+    .               ((-1, NOUN), punct)         vamos hasta la word (depends_on) 2 contando todos los pos que sean iguales al de la word 2 (NOUN)
+
+Label encoding (brack)
+    Su                  tiene un arco entrante desde la derecha;            -> poner en next word
+                        no tiene arcos salientes;           
+                        
+                        lbl: None
+    
+    gentilicio          tiene un arco saliente hacia la izda (Su); 
+                        tiene un arco saliente hacia la dcha (es);          -> poner en next word
+                        tiene un arco saliente hacia la dcha (Chinaois);    -> poner en next word
+                        tiene un arco saliente hacia la dcha (.);           -> poner en next word
+                        
+                        la palabra anterior tiene un arco entrante desde la derecha (Su)
+                        
+                        lbl:<\
+
+    
+    es                  tiene un arco entrante desde la izquierda;
+                        no tiene arcos salientes
+                        
+                        lbl: ///>
+    
+    Chinoais            tiene un arco entrante desde la izquierda
+                        no tiene arcos salientes
+
+                        lbl: >
+    
+    .                   tiene un arco entrante desde la izquierda
+                        no tiene arcos salientes
+                        
+                        lbl: >
+
+Label encoding (brack; basado en salientes)
+
+    su has a left_dep to gentilicio 
+    [(<,\) in (i+1,j) ; (i=id; j=dep_on)]
+    gentilicio += '<' ; gentilicio+='\'
+
+    gentilicio has a root_dep
+    skip
+
+    es has a right_dep to gentilicio
+    [(/,>) in (i+1,j) ; (i=dep_on; j=id)]    
+    es += '/' ; es += '>'
+
+    Chinoais has a right_dep to gentilicio
+    [(/,>) in (i+1,j) ; (i=dep_on; j=id)]
+    es += '/' ; Chinoais += '>'
+
+    . has a right_dep to gentilicio 
+    [(/,>) in (i+1,j) ; (i=dep_on; j=id)]
+    es += '/' ; . += '>'
+
+    su: None        gentilicio: <\      es: />//    Chinoais: >   .: >
+
+Label encoding algorithm
+
+    if w.dep_on == 0:
+        skip
+
+    elif w.id < w.dep_on
+        lbl(w.id+1)+='<' ; lbl(w.dep_on)+='\'
+    
+    else:
+        lbl(w.dep_on+1)+='/' ; lbl(w.id)+='>'
+
+Label decoding:
+
+    < -> la palabra anterior tiene una dependencia entrante por la derecha
+    \ -> la palabra currente tiene una dependencia saliente hacia la derecha
+
+    -- 
+    
+    el primer < encontrado se cierra con el primer \ encontrado, lo que significa:
+    w1 tiene < y w2 tiene \ entonces hay una dependencia de w2 a w1
+
+    --
+
+    > -> la palabra currente tiene una dependencia entrante por la izquierda
+    / -> la palabra anterior tiene una dependencia saliente hacia la izquierda
+
+    --
+
+    el primer / encontrado se cierra con el primer > encontrado, lo que significa
+    w1 tiene / y w2 tiene >, entonces hay una dependencia de w1 a w2
 
 
+    esto se puede implementar con un stack, de forma que metemos en el top los caracteres
+    encontrados y su correspondiente w y los vamos cerrando con los caracteres esperados
+
+    caracteres que 'abren'   : < , /
+    caracteres que 'cierran' : > , \    
+
+-------------
+Non projective dependency trees:
+
+conllu:
+
+# sent_id = non_projective
+# text = w1 w2 w3 w4 w5 w6
+1	w1	 w1	W1  _	_	0	root    _	_
+2	w2	 w2	W2	_	_	1	r12 	_	_
+3	w3	 w3	W3  _	_	1	r13	    _	_
+4	w4	 w4	W4	_	_	2	r24 	_	_
+5	w5	 w5	W5	_	_	1	r15 	_	_
+6	w6	 w6	W6	_	_	3	r36 	_	_
+
+processed_conllu:
+
+{'id': 0, 'text': 'ROOT', 'head': 0, 'pos': 'ROOT', 'relation': 'ROOT'}
+{'id': 1, 'text': 'w1', 'head': 0, 'pos': 'W1', 'relation': 'root'}
+{'id': 2, 'text': 'w2', 'head': 1, 'pos': 'W2', 'relation': 'r12 '}
+{'id': 3, 'text': 'w3', 'head': 1, 'pos': 'W3', 'relation': 'r13'}
+{'id': 4, 'text': 'w4', 'head': 2, 'pos': 'W4', 'relation': 'r24 '}
+{'id': 5, 'text': 'w5', 'head': 1, 'pos': 'W5', 'relation': 'r15 '}
+{'id': 6, 'text': 'w6', 'head': 3, 'pos': 'W6', 'relation': 'r36 '}
+
+pos_tags:
+
+[('W1', 'w1'), ('W2', 'w2'), ('W3', 'w3'), ('W4', 'w4'), ('W5', 'w5'), ('W6', 'w6')]
+
+labels:
+
+{'encoding_type': 'BRK', 'xi': '', 'li': 'root'}
+{'encoding_type': 'BRK', 'xi': '/>//', 'li': 'r12 '}
+{'encoding_type': 'BRK', 'xi': '>/', 'li': 'r13'}
+{'encoding_type': 'BRK', 'xi': '>/', 'li': 'r24 '}
+{'encoding_type': 'BRK', 'xi': '>', 'li': 'r15 '}
+{'encoding_type': 'BRK', 'xi': '>', 'li': 'r36 '}
+
+decoded_labels:
+
+{'id': 0, 'text': '', 'head': 0, 'pos': '', 'relation': 'root'}
+{'id': 2, 'text': '', 'head': 1, 'pos': '', 'relation': 'r12 '}
+{'id': 3, 'text': '', 'head': 1, 'pos': '', 'relation': 'r13'}
+{'id': 4, 'text': '', 'head': 2, 'pos': '', 'relation': 'r24 '}
+{'id': 5, 'text': '', 'head': 3, 'pos': '', 'relation': 'r15 '}
+{'id': 6, 'text': '', 'head': 1, 'pos': '', 'relation': 'r36 '}
+
+mistake:
+
+{'id': 5, 'text': 'w5', 'head': 1, 'pos': 'W5', 'relation': 'r15 '}
+
+=/=
+
+{'id': 5, 'text': '', 'head': 3, 'pos': '', 'relation': 'r15 '}
+
+--------------
+Non-planar bracket encoding
+--------------
+pregunta: por que no 3-planar? porque el machine learning no lo aprende, debido a lo poco que aparece
+
+
+Decimos que un arbol es 1-planar si sus edges no se cruzan entre ellos
+
+Decimos que un arbol es 2-planar si se pueden particionar los edges en 2 planos
+y no se cruzan entre ellos
+
+En los treebanks no suele haber cruce de dependencias, por lo que lo optimo es
+evitar el uso del segundo plano
+
+Estrategias de asignacion de plano:
+
+    Second-Plane-Averse Greedy Plane Assignment
+
+    def 2p-greedy(nodes):
+
+        plane_1 = []
+        plane_2 = []
+
+        FOR r=1 TO len(nodes):
+            FOR l=(r-1) TO 0:
+                IF exists a=(edge from l to r) OR exists a=(edge from r to l) THEN:
+                    next_arc = a
+                    crossing_arcs = all arcs b from plane_1 and plane_2 where b crosses a
+                    
+                    IF intersection(crossing_arcs, plane_1)==0 THEN:
+                        plane_1.append(next_arc)
+                    ELIF intersection(crossing_arcs, plane_2)==0 THEN:
+                        plane_2.append(next_arc)
+                    ELSE
+                        do_nothing
+                END
+            END
+        END
+    
+        return plane_1,plane_2
+
+    labels = brk_encode(plane_1) + brk_encode(plane_2)
+
+    Second-Plane-Propatate
+    
+    nodes=all edges
+    fp1=forbidden edges in plane 1
+    fp2=forbidden edges in plane 2
+    current_edge=current edge
+    fpc=forbidden edges in current plane
+    
+    def propagate(nodes, fp1, fp2, current_edge, fpc):
+
+        # assign the current edge to the fpc
+        fpc.append(current_edge)
+
+        # check if the current edge crosses nodes in the dependency graph
+        for node in nodes:
+            if current_edge crosses node:
+                # check if the node that crosses current_edge is in fp1
+                if node not in fp1:
+                    # if it crosses, check all crossings to the node
+                    (fp1, fp2)=propagate(nodes, fp1, fp2, node, fp2)
+                # chec if the node that crosses current_edge is in fp2
+                elif e not in fp2:
+                    # if it crosses, check all crossings to the node
+                    (fp1, fp2)=propagate(nodes, fp1, fp2, node, fp1)
+        
+
+        p1=[]
+        p2=[]
+        fp1=[]
+        fp2=[]
+
+        for r=1 to len(nodes):
+            for l=(r-1) to 0:
+                if exists a = (edge from l to r) or exists a = (edge from r to l):
+                    next_arc=a
+                    if next_arc not in fp1:
+                        p1.append(next_arc)
+                        propagate(nodes, fp1, fp2, next_arc, fp2)
+                    elif next_arc not in fp2:
+                        p2.append(next_arc)
+                        propagate(nodes, fp1, fp2, next_arc, fp1)
+                    else:
+                        do_nothing
+        
+        return p1, p2
+                    
+
+
+function Propagate(Edge sets T, P1, P2, Edge e, Plane i):
+Pi ← Pi ∪ {e};
+// e forbidden from plane i
+for (e′ ∈ T | e′ crosses e) do
+if e′ 6 ∈ P3−i then
+(P1, P2) ← Propagate(T, P1, P2, e′, 3 − i);
+end
+return P1, P2;
+P1 ← ∅, P2 ← ∅, P1 ← ∅, P2 ← ∅;
+for xr ← 1 to n do
+for xl ← xr − 1 downto 0 do
+if ∃a ∈ T | a = (xl, xr, l) ∨ a = (xr, xl, l) then
+nextArc ← a;
+if nextArc 6 ∈ P1 then
+P1 ← P1 ∪ {nextArc};
+Propagate(T, P1, P2,nextArc,2);
+else if nextArc 6 ∈ P2 then
+P2 ← P2 ∪ {nextArc};
+Propagate(T, P1, P2,nextArc,1);
+else
+do nothing (failed to assign nextArc to a plane);
+end
+end
+end
+return P1, P2;
 
 --------------
 brack encoding
 --------------
-- encoding con stacks para el bracketing con parentesis abiertos y cerrados
+- decodign con stacks para el bracketing con parentesis abiertos y cerrados
 - funciona con arboles no proyectivos, pero no funciona con aquellos que cruzan dependencias izquierdas con izquierdas, dchas con dchas etc
 - no comprobar proyectividad por eficiencia, se asume la codificacion parcial
 
@@ -136,10 +438,14 @@ brack encoding
     esto significa que hay 2 tipos de parentesis para las que se cruzan
     ej: parentesis rojos y verdes
 
+-> por que i+1? 
+    propiedad arboles dependencias: proyectividad
+        - no crossed deps
+        - la raiz no esta cubierta por dependencia, esto es, no hay arco por encima
+    esto garantiza que en la misma label no hay \ e / y por tanto reduce la sparsity de las labels
 
--> dar la opcion de quitar el desplazamiento y que los parentesis en las palabras i j sean un enlace entre i j
-
-    eliminar la palbra izquierda desplazamientos
+-> probar a codificar en i j (esto es, sin desplazamiento);
+    - esto puede dar ventajas en el 2-planar porque ya esta pensado para arboles proyectivos
 
 ------------------------
 posibles errores

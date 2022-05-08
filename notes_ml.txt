@@ -1,0 +1,25 @@
+librerias consideradas:
+------------------------
+
+-> keras
+high level:
+-> ncrf++ (hacer los modelos enchufables a cualquier modelo) https://github.com/jiesutd/NCRFpp
+-> stanza
+-> bert | roberta
+-> https://github.com/machamp-nlp/machamp (nueva; deja hacer multitask)
+
+------------------------
+
+multitask learnign (+1 lbl a cada palabra)
+    -> una parte del modelo predice la parte xi de la label y la otra la li
+    -> ventaja para scarcity de labels
+    -> ventaja para NER
+
+------------------------
+estadisticas a medir:
+
+    Dependencias: LAS UAS (UD -> tiene script oficial [!]) CONLL-2007 (?) 
+        http://universaldependencies.org/conll17/evaluation.html
+        https://universaldependencies.org/conll18/evaluation.html [mas nuevo]
+
+    Constituyentes: el script de gold que tenias antes, ejecutar con el fichero collins

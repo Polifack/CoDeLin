@@ -28,3 +28,6 @@ NLTK
 [*] decoding and encoding train.trees 39833  rel encoding: 14.392247438430786
 [*] decoding and encoding train.trees 39833  dyn encoding: 14.512774467468262
 ------------------------------------------------------------------------------------
+
+
+Probar los timings single core taskset --cpu-list 1 python TUCOMANDO

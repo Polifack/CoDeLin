@@ -1,11 +1,12 @@
 from conllu import parse_tree_incr
-
+import itertools
 
 # encoding type constants
 D_ABSOLUTE_ENCODING = 'ABS'
 C_RELATIVE_ENCODING = 'REL'
 D_POS_ENCODING = 'POS'
-D_BRACKET_ENCODING = 'BRA'
+D_BRACKET_ENCODING = 'BRK'
+D_BRACKET_ENCODING_2P = 'BRK_2P'
 
 class dependency_graph_node:
     # class for the nodes of the dependency graph obtained
@@ -55,7 +56,7 @@ class dependency_relative_encoder:
     def encode(self, nodes):
         encoded_labels = []
         for node in nodes:
-            current = encoded_dependency_label(C_RELATIVE_ENCODING, node.head-node.id, node.relation)
+            current = encoded_dependency_label(D_RELATIVE_ENCODING, node.head-node.id, node.relation)
             encoded_labels.append(current)
 
         return encoded_labels
@@ -93,6 +94,154 @@ class dependency_pos_encoder:
         
         return encoded_labels
 
+class dependency_brk_encoder:
+
+    def encode(self, nodes):
+        labels_brk=["" for e in nodes]
+        lbls=[]
+        
+        for node in nodes:
+            if node.head==0:
+                continue
+            # left dependency (arrow comming from right)
+            if node.id<node.head:
+                labels_brk[node.id]+='<'
+                labels_brk[node.head-1]+='\\'
+            # right dependency (arrow comming from left)
+            else:
+                labels_brk[node.head]+='/'
+                labels_brk[node.id-1]+='>'
+        
+        for node in nodes:
+            current = encoded_dependency_label(D_BRACKET_ENCODING, labels_brk[node.id-1], node.relation)
+            lbls.append(current)
+
+        return lbls
+
+class dependency_brk_2p_encoder:
+    def check_cross(self, current_arc, node):
+        head_inside = (node.head < next_arc.head < node.id)
+        id_inside = (node.head < next_arc.id < node.id)
+        # xor: only true when one and only one true
+        return (head_inside ^ id_inside)
+        
+    def propagate(self, nodes, fp1, fp2, current_edge, fpc):
+
+        # assign the current edge to the fpc
+        fpc.append(current_edge)
+
+        # check if the current edge crosses nodes in the dependency graph
+        for node in nodes:
+            if current_edge crosses node:
+                # check if the node that crosses current_edge is in fp1
+                if node not in fp1:
+                    # if it crosses, check all crossings to the node
+                    (fp1, fp2)=propagate(nodes, fp1, fp2, node, fp2)
+                # chec if the node that crosses current_edge is in fp2
+                elif e not in fp2:
+                    # if it crosses, check all crossings to the node
+                    (fp1, fp2)=propagate(nodes, fp1, fp2, node, fp1)
+        
+
+        p1=[]
+        p2=[]
+        fp1=[]
+        fp2=[]
+
+        for r=1 to len(nodes):
+            for l=(r-1) to 0:
+                if exists a = (edge from l to r) or exists a = (edge from r to l):
+                    next_arc=a
+                    if next_arc not in fp1:
+                        p1.append(next_arc)
+                        propagate(nodes, fp1, fp2, next_arc, fp2)
+                    elif next_arc not in fp2:
+                        p2.append(next_arc)
+                        propagate(nodes, fp1, fp2, next_arc, fp1)
+                    else:
+                        do_nothing
+        
+        return p1, p2
+
+    def two_planar_greedy(self,nodes):    
+        plane_1 = []
+        plane_2 = []
+
+        for i in range(0, (len(nodes))):
+            for j in range(i, -1, -1):
+                # if the node in position 'i' has an arc to 'j' 
+                # or node in position 'j' has an arc to 'i'
+                next_arc=None
+
+                if nodes[i].head==j:
+                    next_arc = nodes[i]
+                elif nodes[j].head==i:
+                    next_arc = nodes[j]
+                
+                if next_arc == None:
+                    continue
+
+                else:
+                    cross_plane_1 = False
+                    cross_plane_2 = False
+                    
+                    for node in plane_1:                
+                        head_inside = (node.head < next_arc.head < node.id)
+                        id_inside = (node.head < next_arc.id < node.id)
+                        # xor: only true when one and only one true
+                        if (head_inside ^ id_inside):
+                            cross_plane_1 = True
+                            break
+                    
+                    for node in plane_2:               
+                        head_inside = (node.head < next_arc.head < node.id)
+                        id_inside = (node.head < next_arc.id < node.id)
+                        # xor: only true when one and only one true
+                        if (head_inside ^ id_inside):
+                            cross_plane_2 = True
+                            break
+                    
+                    if not cross_plane_1:
+                        plane_1.append(next_arc)
+                    elif not cross_plane_2:
+                        plane_2.append(next_arc)
+
+        # processs them separately
+        return plane_1,plane_2
+
+    def encode(self, nodes):
+        # split the dependency graph nodes in two planes
+        p1_nodes, p2_nodes = self.two_planar_greedy(nodes)
+        lbl_brk=self.enc_2p(p1_nodes, p2_nodes)
+        
+        lbls=[]
+        for node in nodes:
+            current = encoded_dependency_label(D_BRACKET_ENCODING, lbl_brk[node.id-1], node.relation)
+            lbls.append(current)
+        return lbls
+
+    def enc_2p(self, p1, p2):
+        lbl_brk=["" for e in range(len(p1)+len(p2))]
+        #['>','/','\\','>']
+        lbl_brk=self.enc_p2_step(p1, lbl_brk,['>','/','\\','<'])
+        lbl_brk=self.enc_p2_step(p2, lbl_brk,['>*','/*','\\*','<*'])
+        
+        return lbl_brk
+
+    def enc_p2_step(self, p, lbl_brk, brk_chars):
+        for node in p:
+            if node.head==0:
+                continue
+            # left dependency (arrow comming from right)
+            if node.id<node.head:
+                lbl_brk[node.id]+=brk_chars[3]
+                lbl_brk[node.head-1]+=brk_chars[2]
+            # right dependency (arrow comming from left)
+            else:
+                lbl_brk[node.head]+=brk_chars[1]
+                lbl_brk[node.id-1]+=brk_chars[0]
+        return lbl_brk
+
 ##############################################################################
 ##############################################################################
 ##############################################################################
@@ -111,6 +260,10 @@ class dependency_decoder:
             return dependency_relative_decoder().decode(labels)
         elif (encoding_type==D_POS_ENCODING):
             return dependency_pos_decoder().decode(labels,self.pos_tags)
+        elif (encoding_type==D_BRACKET_ENCODING):
+            return dependency_brk_decoder().decode(labels,self.pos_tags)
+        elif (encoding_type==D_BRACKET_ENCODING_2P):
+            return dependency_brk_2p_decoder().decode(labels,self.pos_tags)
 
 class dependency_absolute_decoder:
     def decode(self, labels):
@@ -176,6 +329,138 @@ class dependency_pos_decoder:
         
         return decoded_nodes
 
+class dependency_brk_decoder:
+    def decode(self, labels, pos_tags):
+        # decoding: each opening bracket closes with the first encountered
+        # can decode non-projective trees where the arcs cross in different directions
+        # cant encode non-projective trees where the arcs cross in the same direction
+        decoded_nodes=[0 for l in labels]
+        # stack formed by tuples ('brk_char', 'id', 'rel')
+        # char : bracket of the label
+        # id : node that put the char
+        l_stack = []
+        r_stack = []
+        
+        current_node = 0
+
+        for label in labels:
+            brks=list(label.xi)
+                        
+            # create a the node
+            decoded_nodes[current_node]=dependency_graph_node(current_node, "", 0, "", label.li)
+        
+            # fill the relation using brks
+            for char in brks:
+                if char == "<":
+                    # word i-1 tiene arco entrante desde la derecha
+                    # esto significa, que la word i-1 depende de la 'i' de la label que popee esto
+                    node_id = current_node-1
+                    node_rel = labels[node_id].li
+                    r_stack.append((node_id,char))
+
+                    decoded_nodes[node_id]=dependency_graph_node(node_id, "", -1, "", node_rel)
+                if char =="/":
+                    # word i-1 tiene arco saliente hacia la izquierda
+                    # esto significa, que la word que cierre esto depende de la 'i' de esta label
+                    node_id = current_node - 1
+                    l_stack.append((node_id,char))
+                if char == "\\":
+                    # if (existe en el stack algun '<' (esto es, hay una apertura), popearlo)
+                    head_id = r_stack.pop()[0]
+                    decoded_nodes[head_id].head=current_node
+                if char == ">":
+                    # word i tiene arco entrante desde la izquierda
+                    # if (existe en el stack algun '/' (esto es, hay una apertura), popearlo)
+                    head_id = l_stack.pop()[0]
+
+                    # adding 1 to node_id because labels start in 1 and not in 0
+                    decoded_nodes[current_node]=dependency_graph_node(current_node, "", head_id, "", label.li)
+            
+            current_node+=1
+
+        return decoded_nodes        
+
+class dependency_brk_2p_decoder:
+    def decode(self, labels, pos_tags):
+        decoded_nodes=[None for l in labels]
+        
+        # create plane stacks
+        l_stack_p1=[]
+        l_stack_p2=[]
+        r_stack_p1=[]
+        r_stack_p2=[]
+        
+        current_node=0
+
+        for label in labels:
+            # join the plane signaler char with the bracket char
+            brks=list(label.xi)
+            for i in range(0, len(brks)):
+                if brks[i]=="*":
+                    brks[i-1]+="*"
+                    del brks[i]
+
+            # create a the node
+            decoded_nodes[current_node]=dependency_graph_node(current_node, "", 0, "", label.li)
+        
+            # fill the relation using brks
+            for char in brks:
+                if char == "<":
+                    # word i-1 tiene arco entrante desde la derecha
+                    # esto significa, que la word i-1 depende de la 'i' de la label que popee esto
+                    node_id = current_node-1
+                    node_rel = labels[node_id].li
+                    r_stack_p1.append((node_id,char))
+
+                    decoded_nodes[node_id]=dependency_graph_node(node_id, "", -1, "", node_rel)
+                if char =="/":
+                    # word i-1 tiene arco saliente hacia la izquierda
+                    # esto significa, que la word que cierre esto depende de la 'i' de esta label
+                    node_id = current_node - 1
+                    l_stack_p1.append((node_id,char))
+                if char == "\\":
+                    # if (existe en el stack algun '<' (esto es, hay una apertura), popearlo)
+                    head_id = r_stack_p1.pop()[0]
+                    decoded_nodes[head_id].head=current_node
+                if char == ">":
+                    # word i tiene arco entrante desde la izquierda
+                    # if (existe en el stack algun '/' (esto es, hay una apertura), popearlo)
+                    head_id = l_stack_p1.pop()[0]
+
+                    # adding 1 to node_id because labels start in 1 and not in 0
+                    decoded_nodes[current_node]=dependency_graph_node(current_node, "", head_id, "", label.li)
+                if char == "<*":
+                    # word i-1 tiene arco entrante desde la derecha
+                    # esto significa, que la word i-1 depende de la 'i' de la label que popee esto
+                    node_id = current_node-1
+                    node_rel = labels[node_id].li
+                    r_stack_p2.append((node_id,char))
+
+                    decoded_nodes[node_id]=dependency_graph_node(node_id, "", -1, "", node_rel)
+                if char =="/*":
+                    # word i-1 tiene arco saliente hacia la izquierda
+                    # esto significa, que la word que cierre esto depende de la 'i' de esta label
+                    node_id = current_node - 1
+                    l_stack_p2.append((node_id,char))
+                if char == "\\*":
+                    # if (existe en el stack algun '<' (esto es, hay una apertura), popearlo)
+                    head_id = r_stack_p2.pop()[0]
+                    decoded_nodes[head_id].head=current_node
+                if char == ">*":
+                    # word i tiene arco entrante desde la izquierda
+                    # if (existe en el stack algun '/' (esto es, hay una apertura), popearlo)
+                    head_id = l_stack_p2.pop()[0]
+
+                    # adding 1 to node_id because labels start in 1 and not in 0
+                    decoded_nodes[current_node]=dependency_graph_node(current_node, "", head_id, "", label.li)
+            
+            current_node+=1
+        
+        return decoded_nodes
+
+##############################################################################
+##############################################################################
+##############################################################################
 
 def parse_conllu(token_tree):
     nodes = []
@@ -203,7 +488,7 @@ def parse_conllu(token_tree):
         rel=line[7]
 
         nodes.append(dependency_graph_node(word_id, text, head, pos, rel))
-        pos_tags.append(pos)
+        pos_tags.append((pos,text))
     return nodes,pos_tags
 
 def test_treebank(filepath, encoder):
@@ -217,9 +502,9 @@ def test_treebank(filepath, encoder):
 
         encoded_labels = encoder.encode(nodes)
         
-        print("[*] Encoded labels:")
-        for label in encoded_labels:
-            print('xi:',label.xi,'li:',label.li)
+        #print("[*] Encoded labels:")
+        #for label in encoded_labels:
+        #    print('xi:',label.xi,'li:',label.li)
 
         decoder = dependency_decoder(pos_tags)
         decoded_nodes = decoder.decode(encoded_labels)
@@ -227,3 +512,41 @@ def test_treebank(filepath, encoder):
         print("[*] Decoded dependency graph:")
         for node in decoded_nodes:
             print(node.id, node.text, node.head, node.relation)
+
+def test_brk(tt):
+    nodes,pos_tags=parse_conllu(tt)
+    
+    print("----------------")
+    for p,n in zip(pos_tags,nodes):
+        print(p, n.id, n.head)
+
+    be=dependency_brk_encoder()
+    lbls=be.encode(nodes)
+    bd=dependency_brk_decoder()
+    dn=bd.decode(lbls,pos_tags)
+    
+    print("----------------")
+    for p,n in zip(pos_tags,dn):
+        print(p,n.id,n.head)
+
+    lbls=be.encode_2p(nodes)
+    bd=dependency_brk_decoder()
+    dn=bd.decode_2p(lbls, pos_tags)
+    
+    print("----------------")
+    for p,n in zip(pos_tags,dn):
+        print(p,n.id,n.head)
+
+if __name__=="__main__":
+    #data_file=open("/home/poli/TFG/test/dependencies/UD_Spanish-GSD/es_gsd-ud-dev.conllu")
+    #data_file=open("/home/poli/TFG/test/dependencies/proj.conllu")
+    #sid=79
+    #sid=0
+    test_treebank("/home/poli/TFG/test/dependencies/UD_Spanish-GSD/es_gsd-ud-dev.conllu", dependency_brk_2p_encoder())
+    #tt=parse_tree_incr(data_file)
+    #tt=next(itertools.islice(tt, sid, None))
+    #test_brk(tt)
+
+
+
+    
