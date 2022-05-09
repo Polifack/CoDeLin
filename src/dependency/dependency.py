@@ -105,33 +105,38 @@ class dependency_brk_encoder:
         lbls=[]
         
         for node in nodes:
-            if node.head==0:
+            # dont encode anything on root or dummy node
+            if node.id==0 or node.head==0:
                 continue
-            # left dependency (arrow comming from right)
-            if node.id<node.head:
-                labels_brk[node.id]+='<'
-                
-                # check if we are encoding with displacement or not
-                if (self.displacement):
-                    brk_pos=node.head-1
+            
+            # arrow incoming from right
+            # head is RIGHT to ID
+            if node.id < node.head:
+                # if i have a incoming arrow from right: 
+                #       < at node.id + (displacement?1:0)
+                #       \ at head
+                if self.displacement:
+                    labels_brk[node.id+1]+='<'
                 else:
-                    brk_pos=node.head
+                    labels_brk[node.id]+='<'
 
-                labels_brk[brk_pos]+='\\'
-            # right dependency (arrow comming from left)
+                labels_brk[node.head]+='\\'
+            
+            # arrow incoming from left
+            # head is LEFT to ID
             else:
-                labels_brk[node.head]+='/'
-
-                # check if we are encoding with displacement or not
-                if (self.displacement):
-                    brk_pos=node.id-1
+                # if i have a incoming arrow from left:
+                #       / at node.id + (displacement?1:0)
+                #       > at head
+                if self.displacement:
+                    labels_brk[node.head+1]+='/'
                 else:
-                    brk_pos=node.id
+                    labels_brk[node.head]+='/'
 
-                labels_brk[brk_pos]+='>'
+                labels_brk[node.id]+='>'
         
         for node in nodes:
-            current = encoded_dependency_label(D_BRACKET_ENCODING, labels_brk[node.id-1], node.relation)
+            current = encoded_dependency_label(D_BRACKET_ENCODING, labels_brk[node.id], node.relation)
             lbls.append(current)
 
         return lbls
@@ -152,12 +157,28 @@ class dependency_brk_2p_encoder:
         #
         # hay que tener en cuenta que si las cabezas coinciden *no* es un cruce
         
-        id_inside = (node.head < next_arc.id < node.id)
-        if node.head == next_arc.head and id_inside:
+                
+        if ((next_arc.head == node.head) or (next_arc.head==node.id)):
              return False
-        else:
-            head_inside = (node.head < next_arc.head < node.id)
-            return head_inside^id_inside
+
+        r_id_inside = (node.head < next_arc.id < node.id)
+        l_id_inside = (node.id < next_arc.id < node.head)
+
+        id_inside = r_id_inside or l_id_inside
+
+        r_head_inside = (node.head < next_arc.head < node.id)
+        l_head_inside = (node.id < next_arc.head < node.head)
+
+        head_inside = r_head_inside or l_head_inside
+
+        return head_inside^id_inside
+
+    def check_cross_propagate(self, next_arc, n):
+        nodes_inside_n = list(range(n.id, n.head+1, 1 if (n.head > n.id) else -1))
+        print(nodes_inside_n)
+        id_inside = next_arc.id in nodes_inside_n
+        head_inside = next_arc.head in nodes_inside_n
+        return head_inside^id_inside
     
     def get_next_edge(self, nodes, idx_l, idx_r):
         next_arc=None
@@ -185,37 +206,48 @@ class dependency_brk_2p_encoder:
                 if next_arc == None:
                     continue
                 else:
+                    print("-->",next_arc.__dict__)
                     # check restrictions
-
                     if next_arc not in fp1:
+                        print("PLANE_1: adding,",next_arc.__dict__)
                         p1.append(next_arc)
                         
                         # recompute restriction set
                         fp1, fp2 = self.propagate(nodes, fp1, fp2, next_arc, 2)
                     
                     elif next_arc not in fp2:
+                        print("PLANE_2: adding,",next_arc.__dict__)
                         p2.append(next_arc)
                         
                         # recompute restriction set
                         fp1, fp2 = self.propagate(nodes, fp1, fp2, next_arc, 1)
+
+                    else:
+                        print("[!!] node",next_arc.__dict__,"not assigned to any plane")
         return p1, p2
 
     def propagate(self, nodes, fp1, fp2, current_edge, i):
         # add the current edge to the forbidden plane opposite to the plane
         # where the node has already been added
+        fpi  = None
+        fp3mi= None
         if i==1:
-            fp1.append(current_edge)
+            fpi  = fp1
+            fp3mi= fp2
         if i==2:
-            fp2.append(current_edge)
+            fpi  = fp2
+            fp3mi= fp1
+
+        fpi.append(current_edge)
         
         # add all nodes from the dependency graph that crosses the current edge
         # to the corresponding forbidden plane
         for node in nodes:
             if self.check_cross(current_edge, node):
-                if i==2 and node not in fp1:
-                    (fp1, fp2)=self.propagate(nodes, fp1, fp2, node, 1)
-                if i==1 and node not in fp2:
-                    (fp1, fp2)=self.propagate(nodes, fp1, fp2, node, 2)
+                print("find cross between next_arc{",current_edge.id, current_edge.head,"} and node{",node.id, node.head,"}")
+                if node not in fp3mi:
+                    (fp1, fp2)=self.propagate(nodes, fp1, fp2, node, 3-i)
+        
         return fp1, fp2
 
     # plane split greed
@@ -234,17 +266,17 @@ class dependency_brk_2p_encoder:
                 else:
                     cross_plane_1 = False
                     cross_plane_2 = False
-                    
                     for node in plane_1:                
-                        cross_plane_1=self.check_cross(next_arc, node)
-                        
-                    for node in plane_2:               
-                        cross_plane_2=self.check_cross(next_arc, node)
+                        cross_plane_1=cross_plane_1 or self.check_cross(next_arc, node)
+                    for node in plane_2:        
+                        cross_plane_2=cross_plane_2 or self.check_cross(next_arc, node)
                     
                     if not cross_plane_1:
                         plane_1.append(next_arc)
                     elif not cross_plane_2:
                         plane_2.append(next_arc)
+                    else:
+                        print("[!!] node",next_arc.__dict__,"not assigned to any plane")
 
         # processs them separately
         return plane_1,plane_2
@@ -257,40 +289,42 @@ class dependency_brk_2p_encoder:
         elif self.plane_algorithm==D_2P_PROP:
             p1_nodes, p2_nodes = self.two_planar_propagate(nodes)
 
-        lbl_brk=["" for e in range(0, len(nodes))]
-        lbl_brk=self.enc_p2_step(p1_nodes, lbl_brk,['>','/','\\','<'])
-        lbl_brk=self.enc_p2_step(p2_nodes, lbl_brk,['>*','/*','\\*','<*'])
+        for node in p1_nodes:
+            print("1",node.__dict__)
+        for node in p2_nodes:
+            print("2",node.__dict__)
+
+        labels_brk=["" for e in nodes]
+        labels_brk=self.enc_p2_step(p1_nodes, labels_brk, ['>','/','\\','<'])
+        labels_brk=self.enc_p2_step(p2_nodes, labels_brk, ['>*','/*','\\*','<*'])
         
         lbls=[]
         for node in nodes:
-            current = encoded_dependency_label(D_BRACKET_ENCODING_2P, lbl_brk[node.id-1], node.relation)
+            current = encoded_dependency_label(D_BRACKET_ENCODING, labels_brk[node.id], node.relation)
             lbls.append(current)
         return lbls
 
     def enc_p2_step(self, p, lbl_brk, brk_chars):
         for node in p:
-            if node.head==0:
+            # dont encode anything on root or dummy node
+            if node.id==0 or node.head==0:
                 continue
             # left dependency (arrow comming from right)
-            if node.id<node.head:
-                lbl_brk[node.id]+=brk_chars[3]
-
-                if (self.displacement):
-                    brk_pos=node.head-1
+            if node.id < node.head:
+                if self.displacement:
+                    lbl_brk[node.id+1]+=brk_chars[3]
                 else:
-                    brk_pos=node.head
-                
-                lbl_brk[brk_pos]+=brk_chars[2]
+                    lbl_brk[node.id]+=brk_chars[3]
+
+                lbl_brk[node.head]+=brk_chars[2]
             # right dependency (arrow comming from left)
             else:
-                lbl_brk[node.head]+=brk_chars[1]
-                
-                if (self.displacement):
-                    brk_pos=node.id-1
+                if self.displacement:
+                    lbl_brk[node.head+1]+=brk_chars[1]
                 else:
-                    brk_pos=node.id
-                
-                lbl_brk[brk_pos]+=brk_chars[0]
+                    lbl_brk[node.head]+=brk_chars[1]
+
+                lbl_brk[node.id]+=brk_chars[0]
         return lbl_brk
 
 ##############################################################################
@@ -383,12 +417,15 @@ class dependency_brk_decoder:
         # stack formed by tuples ('brk_char', 'id', 'rel')
         # char : bracket of the label
         # id : node that put the char
+        # l_stack -> dependencies where head < id (head is more left than id) (arrow go from right towards left)
+        # r_stack -> dependencies here head > id  (head is more right than id) (arrow go from left towards right)
         l_stack = []
         r_stack = []
         
         current_node = 0
 
         for label in labels:
+            #print("Parsing label",current_node,label.__dict__)
             brks=list(label.xi)
                         
             # create a the node
@@ -397,33 +434,35 @@ class dependency_brk_decoder:
             # fill the relation using brks
             for char in brks:
                 if char == "<":
+                    #  current_node-1 has incoming arc from right
                     if self.displacement:
                         node_id = current_node-1
                     else:
-                        node_id=current_node
+                        node_id = current_node
 
-                    node_rel = labels[node_id].li
+                    #print("< found: appending",node_id,"to r_stack")
                     r_stack.append((node_id,char))
-
-                    decoded_nodes[node_id]=dependency_graph_node(node_id, "", -1, "", node_rel)
+                if char == "\\":
+                    # current_node has outgoing arc towards left
+                    head_id = r_stack.pop()[0]
+                    #print("\ found at",current_node,"popping value from r_stack:",head_id)
+                    decoded_nodes[head_id].head=current_node
+                
+                
                 if char =="/":
+                    # current_node-1 has outgoing arc towards right
                     if self.displacement:
                         node_id = current_node-1
                     else:
-                        node_id=current_node
-                    
-                    l_stack.append((node_id,char))
-                if char == "\\":
-                    # if (existe en el stack algun '<' (esto es, hay una apertura), popearlo)
-                    head_id = r_stack.pop()[0]
-                    decoded_nodes[head_id].head=current_node
-                if char == ">":
-                    # word i tiene arco entrante desde la izquierda
-                    # if (existe en el stack algun '/' (esto es, hay una apertura), popearlo)
-                    head_id = l_stack.pop()[0]
+                        node_id = current_node
 
-                    # adding 1 to node_id because labels start in 1 and not in 0
-                    decoded_nodes[current_node]=dependency_graph_node(current_node, "", head_id, "", label.li)
+                    #print("/ found: appending",node_id,"to l_stack")
+                    l_stack.append((node_id,char))
+                if char == ">":
+                    # current_node has incoming arc from left
+                    head_id = l_stack.pop()[0]
+                    #print("> found at",current_node,"popping value from l_stack:",head_id)
+                    decoded_nodes[current_node].head=head_id
             
             current_node+=1
 
@@ -455,70 +494,75 @@ class dependency_brk_2p_decoder:
                     current_char=temp_brks.pop()+brks[i]
                 temp_brks.append(current_char)
                     
-
+            brks=temp_brks
+            
             # create a the node
             decoded_nodes[current_node]=dependency_graph_node(current_node, "", 0, "", label.li)
         
             # fill the relation using brks
             for char in brks:
                 if char == "<":
+                    # current_node-1 has incoming arc from right
                     if self.displacement:
                         node_id = current_node-1
                     else:
                         node_id=current_node
 
-                    node_rel = labels[node_id].li
+                    #print("< found: appending",node_id,"to r_stack_p1")
                     r_stack_p1.append((node_id,char))
-
-                    decoded_nodes[node_id]=dependency_graph_node(node_id, "", -1, "", node_rel)
+                if char == "\\":
+                    # current_node has outgoing arc towards left
+                    head_id = r_stack_p1.pop()[0]
+                    #print("\ found at",current_node,"popping value from r_stack_p1",head_id)
+                    decoded_nodes[head_id].head=current_node
+                
+                
                 if char =="/":
+                    # current_node-1 has outgoing arc towards right
                     if self.displacement:
                         node_id = current_node-1
                     else:
                         node_id=current_node
 
+                    #print("/ found: appending",node_id,"to l_stack_p1")
                     l_stack_p1.append((node_id,char))
-                if char == "\\":
-                    # if (existe en el stack algun '<' (esto es, hay una apertura), popearlo)
-                    head_id = r_stack_p1.pop()[0]
-                    decoded_nodes[head_id].head=current_node
                 if char == ">":
-                    # word i tiene arco entrante desde la izquierda
-                    # if (existe en el stack algun '/' (esto es, hay una apertura), popearlo)
+                    # current_node has incoming arc from left
                     head_id = l_stack_p1.pop()[0]
-
-                    # adding 1 to node_id because labels start in 1 and not in 0
-                    decoded_nodes[current_node]=dependency_graph_node(current_node, "", head_id, "", label.li)
+                    #print("> found at",current_node,"popping value from l_stack_p1:",head_id)
+                    decoded_nodes[current_node].head=head_id
 
                     
                 if char == "<*":
+                    # current_node-1 has incoming arc from right
                     if self.displacement:
                         node_id = current_node-1
                     else:
                         node_id=current_node
 
-                    node_rel = labels[node_id].li
+                    #print("<* found: appending",node_id,"to r_stack_p2")
                     r_stack_p2.append((node_id,char))
-
-                    decoded_nodes[node_id]=dependency_graph_node(node_id, "", -1, "", node_rel)
+                if char == "\\*":
+                    # current_node has outgoing arc towards left
+                    head_id = r_stack_p2.pop()[0]
+                    #print("\* found at",current_node,"popping value from r_stack_p2",head_id)
+                    decoded_nodes[head_id].head=current_node
+                
+                
                 if char =="/*":
+                    # current_node-1 has outgoing arc towards right
                     if self.displacement:
                         node_id = current_node-1
                     else:
                         node_id=current_node
 
+                    #print("/* found: appending",node_id,"to l_stack_p2")
                     l_stack_p2.append((node_id,char))
-                if char == "\\*":
-                    # if (existe en el stack algun '<' (esto es, hay una apertura), popearlo)
-                    head_id = r_stack_p2.pop()[0]
-                    decoded_nodes[head_id].head=current_node
                 if char == ">*":
-                    # word i tiene arco entrante desde la izquierda
-                    # if (existe en el stack algun '/' (esto es, hay una apertura), popearlo)
+                    # current_node has incoming arc from left
                     head_id = l_stack_p2.pop()[0]
-
-                    # adding 1 to node_id because labels start in 1 and not in 0
-                    decoded_nodes[current_node]=dependency_graph_node(current_node, "", head_id, "", label.li)
+                    #print(">* found at",current_node,"popping value from l_stack_p2:",head_id)
+                    decoded_nodes[current_node].head=head_id
             
             current_node+=1
         
@@ -567,44 +611,39 @@ def test_single(tt):
     
     print("[*] Dependency graph:")
     for node in nodes:
-        print(node.id, node.head, node.relation)
+        print('\t',node.id, node.head, node.relation)
     
     displacement=True
     
-    e=dependency_brk_2p_encoder(D_2P_GREED, displacement)
+    e=dependency_brk_2p_encoder(D_2P_PROP, displacement)
+    #e=dependency_brk_2p_encoder(D_2P_GREED, displacement)
     #e=dependency_brk_encoder(displacement)
     encoded_labels=e.encode(nodes)
     
     print("[*] Encoded labels:")
+    i=0
     for label in encoded_labels:
-        print('xi:',label.xi,'li:',label.li)
+        print('\t',i,'xi:',label.xi,'li:',label.li)
+        i+=1
     
     d=dependency_brk_2p_decoder(displacement)
     #d=dependency_brk_decoder(displacement)
     decoded_nodes=d.decode(encoded_labels)
     
-    
-    for node, decoded_node in zip(nodes,decoded_nodes):
-        if not (node.id==decoded_node.id and node.head==decoded_node.head):
-            print("Error at",node.id)
-            break
-
     print("[*] Decoded dependency graph:")
-    for decoded_node in decoded_nodes:
-        print(decoded_node.id, decoded_node.head, decoded_node.relation)
+    check_correct=True
+    for node,decoded_node in zip(nodes,decoded_nodes):
+        is_ok = (node.id == decoded_node.id) and (node.head == decoded_node.head)
+        check_correct=check_correct and is_ok
+        print('\t',decoded_node.id, decoded_node.head, decoded_node.relation, is_ok)
 
+    print("[*] Is correct?",check_correct)
+    if not check_correct:
+        print(pos_tags)
 
 if __name__=="__main__":
-    #data_file=open("/home/poli/TFG/test/dependencies/UD_Spanish-GSD/es_gsd-ud-dev.conllu")
-    #data_file=open("/home/poli/TFG/test/dependencies/proj.conllu")
-    data_file=open("/home/poli/TFG/test/dependencies/temp.conllu")
-    #sid=79
-    sid=0
     #test_treebank("/home/poli/TFG/test/dependencies/UD_Spanish-GSD/es_gsd-ud-dev.conllu")
-    
-    tt=parse_tree_incr(data_file)
-    tt=next(itertools.islice(tt, sid, None))
-    test_single(tt)
+    test_single(next(itertools.islice(parse_tree_incr(open("/home/poli/TFG/test/dependencies/temp.conllu")), 0, None)))
 
 
 

@@ -1,0 +1,29 @@
+# sent_id = es-dev-002-s337
+# text = Con la llegada de la democracia, en 1977 volvió a ser sede del Parlamento, fecha en la que el edificio fue rehabilitado.
+1	Con	con	ADP	_	_	3	case	_	_
+2	la	el	DET	_	Definite=Def|Gender=Fem|Number=Sing|PronType=Art	3	det	_	_
+3	llegada	llegada	NOUN	_	Gender=Fem|Number=Sing	13	nmod	_	_
+4	de	de	ADP	_	_	6	case	_	_
+5	la	el	DET	_	Definite=Def|Gender=Fem|Number=Sing|PronType=Art	6	det	_	_
+6	democracia	democracia	NOUN	_	Gender=Fem|Number=Sing	3	nmod	_	SpaceAfter=No
+7	,	,	PUNCT	_	_	3	punct	_	_
+8	en	en	ADP	_	_	9	case	_	_
+9	1977	1977	NUM	_	NumType=Card	13	nmod	_	_
+10	volvió	volver	VERB	_	Mood=Ind|Number=Sing|Person=3|Tense=Past|VerbForm=Fin	0	root	_	_
+11	a	a	ADP	_	_	12	mark	_	_
+12	ser	ser	AUX	_	VerbForm=Inf	13	cop	_	_
+13	sede	sede	NOUN	_	Gender=Fem|Number=Sing	10	xcomp	_	_
+14-15	del	_	_	_	_	_	_	_	_
+14	de	de	ADP	_	_	16	case	_	_
+15	el	el	DET	_	Definite=Def|Gender=Masc|Number=Sing|PronType=Art	16	det	_	_
+16	Parlamento	parlamento	NOUN	_	_	13	nmod	_	SpaceAfter=No
+17	,	,	PUNCT	_	_	18	punct	_	_
+18	fecha	fecha	NOUN	_	Gender=Fem|Number=Sing	9	appos	_	_
+19	en	en	ADP	_	_	21	case	_	_
+20	la	el	DET	_	Definite=Def|Gender=Fem|Number=Sing|PronType=Art	21	det	_	_
+21	que	que	PRON	_	PronType=Int,Rel	25	obl	_	_
+22	el	el	DET	_	Definite=Def|Gender=Masc|Number=Sing|PronType=Art	23	det	_	_
+23	edificio	edificio	NOUN	_	Gender=Masc|Number=Sing	25	nsubj:pass	_	_
+24	fue	ser	AUX	_	Mood=Ind|Number=Sing|Person=3|Tense=Past|VerbForm=Fin	25	aux:pass	_	_
+25	rehabilitado	rehabilitar	VERB	_	Gender=Masc|Number=Sing|Tense=Past|VerbForm=Part	18	acl:relcl	_	SpaceAfter=No
+26	.	.	PUNCT	_	_	10	punct	_	_

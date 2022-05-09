@@ -1,8 +1,0 @@
-# sent_id = non_projective
-# text = w1 w2 w3 w4 w5 w6
-1	w1	 w1	W1  _	_	0	root    _	_
-2	w2	 w2	W2	_	_	1	r12 	_	_
-3	w3	 w3	W3  _	_	1	r13	    _	_
-4	w4	 w4	W4	_	_	2	r24 	_	_
-5	w5	 w5	W5	_	_	1	r15 	_	_
-6	w6	 w6	W6	_	_	3	r36 	_	_

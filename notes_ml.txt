@@ -3,7 +3,7 @@ librerias consideradas:
 
 -> keras
 high level:
--> ncrf++ (hacer los modelos enchufables a cualquier modelo) https://github.com/jiesutd/NCRFpp
+-> ncrf++ (hacer los modelos enchufables a cualquier modelo) https://github.com/jipipesutd/NCRFpp
 -> stanza
 -> bert | roberta
 -> https://github.com/machamp-nlp/machamp (nueva; deja hacer multitask)
@@ -23,3 +23,19 @@ estadisticas a medir:
         https://universaldependencies.org/conll18/evaluation.html [mas nuevo]
 
     Constituyentes: el script de gold que tenias antes, ejecutar con el fichero collins
+
+----------------
+Constituyentes
+----------------
+Baseline techniques:
+    Conditional Random Fields
+    MultiLayer Perceptron
+
+Dada una frase [w1, w2, ... , wn] la entrada a la bilstm es [v1, v2, ... , vn]
+donde el vector vi esta formado por
+
+        -> palabra wi
+        -> postag pi
+        -> word embedding ch
+
+El word embeding ch se obtiene de una character embeding layer (tambien basada en lstm)

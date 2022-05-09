@@ -61,15 +61,27 @@ brack: the value of xi is a string following the regexp: (<)?((\)*|(/)*)(>)?
        
        characters meaning:
 
-            < : previous word (word w-1) has an incoming arc from the right
-            \ : the number of this character apperances indicates the outgoing arcs towards the left from word wi 
-            / : the number of this character apperances indicates the outgoing arcs towards the right from word wi-1
-            > : word w has an incoming arc from the left
+            < : previous word (word w-1) has an incoming arrow FROM the right
+            \ : the number of this character apperances indicates the outgoing arrow TOWARDS the left from word wi 
+            / : the number of this character apperances indicates the outgoing arrow TOWARDS the right from word wi-1
+            > : word w has an incoming arrow FROM the left
 
         therefore:
+            
+            right dependency from word i to j: /> in label of word xi+1 and xj:
+            right dependency (arrow FROM left TOWARDS right):    
+                / at word word.id+1
+                > at word word.head
 
-            right dependency from word i to j: /> in label of word xi+1 and xj
             left dependency from word j to i: <\ in label of word xi+1 and xj
+            left dependency (arrow FROMright towards left):
+                < at word word.id
+                \ at word word.head+1
+
+DISPLACEMENT CHARACTERS:
+
+        < and / are encoded in the previous word
+        > and \ are encoded in the current word
 
 NOTE:   the bracketing encoding only support projective trees, this means, the tree has no
         crossing dependencies (https://www.cs.upc.edu/~horacio/snlp/depparsing-snlp.pdf : 9)
@@ -229,7 +241,7 @@ Label encoding algorithm
 Label decoding:
 
     < -> la palabra anterior tiene una dependencia entrante por la derecha
-    \ -> la palabra currente tiene una dependencia saliente hacia la derecha
+    \ -> la palabra currente tiene n dependencias salientes hacia la izquierda
 
     -- 
     
@@ -239,7 +251,7 @@ Label decoding:
     --
 
     > -> la palabra currente tiene una dependencia entrante por la izquierda
-    / -> la palabra anterior tiene una dependencia saliente hacia la izquierda
+    / -> la palabra anterior tiene n dependencias salientes hacia la derecha
 
     --
 
@@ -422,3 +434,5 @@ posibles errores
 nodo identifica padre como algo que no exitste (ej primera palabra -4)
 aparecen ciclos en el arbol (1->2->3->2->1) : romper un enlace del ciclo
 estructura con varias raices : pillar primera OR pillar ultima y colgar todas las otras de ella
+
+pregunta: en bracket 2-planar que hacer cuando no se puede asignar a un plano? colgar de dummy raiz?
