@@ -173,13 +173,6 @@ class dependency_brk_2p_encoder:
 
         return head_inside^id_inside
 
-    def check_cross_propagate(self, next_arc, n):
-        nodes_inside_n = list(range(n.id, n.head+1, 1 if (n.head > n.id) else -1))
-        print(nodes_inside_n)
-        id_inside = next_arc.id in nodes_inside_n
-        head_inside = next_arc.head in nodes_inside_n
-        return head_inside^id_inside
-    
     def get_next_edge(self, nodes, idx_l, idx_r):
         next_arc=None
 
@@ -206,24 +199,14 @@ class dependency_brk_2p_encoder:
                 if next_arc == None:
                     continue
                 else:
-                    print("-->",next_arc.__dict__)
                     # check restrictions
                     if next_arc not in fp1:
-                        print("PLANE_1: adding,",next_arc.__dict__)
                         p1.append(next_arc)
-                        
-                        # recompute restriction set
                         fp1, fp2 = self.propagate(nodes, fp1, fp2, next_arc, 2)
                     
                     elif next_arc not in fp2:
-                        print("PLANE_2: adding,",next_arc.__dict__)
                         p2.append(next_arc)
-                        
-                        # recompute restriction set
                         fp1, fp2 = self.propagate(nodes, fp1, fp2, next_arc, 1)
-
-                    else:
-                        print("[!!] node",next_arc.__dict__,"not assigned to any plane")
         return p1, p2
 
     def propagate(self, nodes, fp1, fp2, current_edge, i):
@@ -244,7 +227,6 @@ class dependency_brk_2p_encoder:
         # to the corresponding forbidden plane
         for node in nodes:
             if self.check_cross(current_edge, node):
-                print("find cross between next_arc{",current_edge.id, current_edge.head,"} and node{",node.id, node.head,"}")
                 if node not in fp3mi:
                     (fp1, fp2)=self.propagate(nodes, fp1, fp2, node, 3-i)
         
@@ -275,8 +257,6 @@ class dependency_brk_2p_encoder:
                         plane_1.append(next_arc)
                     elif not cross_plane_2:
                         plane_2.append(next_arc)
-                    else:
-                        print("[!!] node",next_arc.__dict__,"not assigned to any plane")
 
         # processs them separately
         return plane_1,plane_2
@@ -288,11 +268,6 @@ class dependency_brk_2p_encoder:
             p1_nodes, p2_nodes = self.two_planar_greedy(nodes)
         elif self.plane_algorithm==D_2P_PROP:
             p1_nodes, p2_nodes = self.two_planar_propagate(nodes)
-
-        for node in p1_nodes:
-            print("1",node.__dict__)
-        for node in p2_nodes:
-            print("2",node.__dict__)
 
         labels_brk=["" for e in nodes]
         labels_brk=self.enc_p2_step(p1_nodes, labels_brk, ['>','/','\\','<'])
@@ -425,7 +400,6 @@ class dependency_brk_decoder:
         current_node = 0
 
         for label in labels:
-            #print("Parsing label",current_node,label.__dict__)
             brks=list(label.xi)
                         
             # create a the node
@@ -439,29 +413,20 @@ class dependency_brk_decoder:
                         node_id = current_node-1
                     else:
                         node_id = current_node
-
-                    #print("< found: appending",node_id,"to r_stack")
                     r_stack.append((node_id,char))
                 if char == "\\":
-                    # current_node has outgoing arc towards left
                     head_id = r_stack.pop()[0]
-                    #print("\ found at",current_node,"popping value from r_stack:",head_id)
                     decoded_nodes[head_id].head=current_node
                 
                 
                 if char =="/":
-                    # current_node-1 has outgoing arc towards right
                     if self.displacement:
                         node_id = current_node-1
                     else:
                         node_id = current_node
-
-                    #print("/ found: appending",node_id,"to l_stack")
                     l_stack.append((node_id,char))
                 if char == ">":
-                    # current_node has incoming arc from left
                     head_id = l_stack.pop()[0]
-                    #print("> found at",current_node,"popping value from l_stack:",head_id)
                     decoded_nodes[current_node].head=head_id
             
             current_node+=1
@@ -507,13 +472,10 @@ class dependency_brk_2p_decoder:
                         node_id = current_node-1
                     else:
                         node_id=current_node
-
-                    #print("< found: appending",node_id,"to r_stack_p1")
                     r_stack_p1.append((node_id,char))
                 if char == "\\":
                     # current_node has outgoing arc towards left
                     head_id = r_stack_p1.pop()[0]
-                    #print("\ found at",current_node,"popping value from r_stack_p1",head_id)
                     decoded_nodes[head_id].head=current_node
                 
                 
@@ -523,13 +485,10 @@ class dependency_brk_2p_decoder:
                         node_id = current_node-1
                     else:
                         node_id=current_node
-
-                    #print("/ found: appending",node_id,"to l_stack_p1")
                     l_stack_p1.append((node_id,char))
                 if char == ">":
                     # current_node has incoming arc from left
                     head_id = l_stack_p1.pop()[0]
-                    #print("> found at",current_node,"popping value from l_stack_p1:",head_id)
                     decoded_nodes[current_node].head=head_id
 
                     
@@ -539,13 +498,10 @@ class dependency_brk_2p_decoder:
                         node_id = current_node-1
                     else:
                         node_id=current_node
-
-                    #print("<* found: appending",node_id,"to r_stack_p2")
                     r_stack_p2.append((node_id,char))
                 if char == "\\*":
                     # current_node has outgoing arc towards left
                     head_id = r_stack_p2.pop()[0]
-                    #print("\* found at",current_node,"popping value from r_stack_p2",head_id)
                     decoded_nodes[head_id].head=current_node
                 
                 
@@ -555,13 +511,10 @@ class dependency_brk_2p_decoder:
                         node_id = current_node-1
                     else:
                         node_id=current_node
-
-                    #print("/* found: appending",node_id,"to l_stack_p2")
                     l_stack_p2.append((node_id,char))
                 if char == ">*":
                     # current_node has incoming arc from left
                     head_id = l_stack_p2.pop()[0]
-                    #print(">* found at",current_node,"popping value from l_stack_p2:",head_id)
                     decoded_nodes[current_node].head=head_id
             
             current_node+=1
@@ -601,49 +554,21 @@ def parse_conllu(token_tree):
         pos_tags.append((pos,text))
     return nodes,pos_tags
 
-def test_treebank(filepath):
+def test_treebank(filepath,e,d):
     data_file = open(filepath, "r", encoding="utf-8")
     for token_tree in parse_tree_incr(data_file):
-        test_single(token_tree)
+        test_single(token_tree,e,d)
 
-def test_single(tt):
+def test_single(tt,e,d):
     nodes,pos_tags=parse_conllu(tt)
-    
-    print("[*] Dependency graph:")
-    for node in nodes:
-        print('\t',node.id, node.head, node.relation)
-    
-    displacement=True
-    
-    e=dependency_brk_2p_encoder(D_2P_PROP, displacement)
-    #e=dependency_brk_2p_encoder(D_2P_GREED, displacement)
-    #e=dependency_brk_encoder(displacement)
     encoded_labels=e.encode(nodes)
-    
-    print("[*] Encoded labels:")
-    i=0
-    for label in encoded_labels:
-        print('\t',i,'xi:',label.xi,'li:',label.li)
-        i+=1
-    
-    d=dependency_brk_2p_decoder(displacement)
-    #d=dependency_brk_decoder(displacement)
     decoded_nodes=d.decode(encoded_labels)
-    
-    print("[*] Decoded dependency graph:")
-    check_correct=True
-    for node,decoded_node in zip(nodes,decoded_nodes):
-        is_ok = (node.id == decoded_node.id) and (node.head == decoded_node.head)
-        check_correct=check_correct and is_ok
-        print('\t',decoded_node.id, decoded_node.head, decoded_node.relation, is_ok)
-
-    print("[*] Is correct?",check_correct)
-    if not check_correct:
-        print(pos_tags)
 
 if __name__=="__main__":
-    #test_treebank("/home/poli/TFG/test/dependencies/UD_Spanish-GSD/es_gsd-ud-dev.conllu")
-    test_single(next(itertools.islice(parse_tree_incr(open("/home/poli/TFG/test/dependencies/temp.conllu")), 0, None)))
+    displacement=True
+    e=dependency_brk_2p_encoder(D_2P_PROP, displacement)
+    d=dependency_brk_2p_decoder(displacement)
+    test_treebank("/home/poli/TFG/test/dependencies/UD_Spanish-GSD/es_gsd-ud-dev.conllu",e,d)
 
 
 
