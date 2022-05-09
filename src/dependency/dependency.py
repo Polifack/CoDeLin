@@ -3,10 +3,13 @@ import itertools
 
 # encoding type constants
 D_ABSOLUTE_ENCODING = 'ABS'
-C_RELATIVE_ENCODING = 'REL'
+D_RELATIVE_ENCODING = 'REL'
 D_POS_ENCODING = 'POS'
 D_BRACKET_ENCODING = 'BRK'
 D_BRACKET_ENCODING_2P = 'BRK_2P'
+D_2P_GREED = '2P_GRD'
+D_2P_PROP = '2P_PRP'
+
 
 class dependency_graph_node:
     # class for the nodes of the dependency graph obtained
@@ -40,8 +43,7 @@ class dependency_encoder:
         self.encoder = encoding_type
     
     def encode(self, nodes):
-        # return the encoded labels without the dummy root label
-        return self.encoder.encode(nodes)[1:]
+        return self.encoder.encode(nodes)
 
 class dependency_absolute_encoder:
     def encode(self, nodes):
@@ -95,7 +97,9 @@ class dependency_pos_encoder:
         return encoded_labels
 
 class dependency_brk_encoder:
-
+    def __init__(self, displacement):
+        self.displacement = displacement
+    
     def encode(self, nodes):
         labels_brk=["" for e in nodes]
         lbls=[]
@@ -106,11 +110,25 @@ class dependency_brk_encoder:
             # left dependency (arrow comming from right)
             if node.id<node.head:
                 labels_brk[node.id]+='<'
-                labels_brk[node.head-1]+='\\'
+                
+                # check if we are encoding with displacement or not
+                if (self.displacement):
+                    brk_pos=node.head-1
+                else:
+                    brk_pos=node.head
+
+                labels_brk[brk_pos]+='\\'
             # right dependency (arrow comming from left)
             else:
                 labels_brk[node.head]+='/'
-                labels_brk[node.id-1]+='>'
+
+                # check if we are encoding with displacement or not
+                if (self.displacement):
+                    brk_pos=node.id-1
+                else:
+                    brk_pos=node.id
+
+                labels_brk[brk_pos]+='>'
         
         for node in nodes:
             current = encoded_dependency_label(D_BRACKET_ENCODING, labels_brk[node.id-1], node.relation)
@@ -119,8 +137,9 @@ class dependency_brk_encoder:
         return lbls
 
 class dependency_brk_2p_encoder:
-    def __init__(self, encoding_type):
-        self.encoder = encoding_type
+    def __init__(self, plane_algorithm, displacement):
+        self.plane_algorithm = plane_algorithm
+        self.displacement = displacement
 
     # auxiliar functions
     def check_cross(self, next_arc, node):
@@ -233,17 +252,10 @@ class dependency_brk_2p_encoder:
     # encoding
     def encode(self, nodes):
         # split the dependency graph nodes in two planes
-        if self.encoder=="grd":
+        if self.plane_algorithm==D_2P_GREED:
             p1_nodes, p2_nodes = self.two_planar_greedy(nodes)
-        elif self.encoder=="prp":
+        elif self.plane_algorithm==D_2P_PROP:
             p1_nodes, p2_nodes = self.two_planar_propagate(nodes)
-        
-        #print("[*] Plane 1:")
-        #for n in p1_nodes:
-        #    print(n.__dict__)
-        #print("[*] Plane 2:")
-        #for n in p2_nodes:
-        #    print(n.__dict__)
 
         lbl_brk=["" for e in range(0, len(nodes))]
         lbl_brk=self.enc_p2_step(p1_nodes, lbl_brk,['>','/','\\','<'])
@@ -262,11 +274,23 @@ class dependency_brk_2p_encoder:
             # left dependency (arrow comming from right)
             if node.id<node.head:
                 lbl_brk[node.id]+=brk_chars[3]
-                lbl_brk[node.head-1]+=brk_chars[2]
+
+                if (self.displacement):
+                    brk_pos=node.head-1
+                else:
+                    brk_pos=node.head
+                
+                lbl_brk[brk_pos]+=brk_chars[2]
             # right dependency (arrow comming from left)
             else:
                 lbl_brk[node.head]+=brk_chars[1]
-                lbl_brk[node.id-1]+=brk_chars[0]
+                
+                if (self.displacement):
+                    brk_pos=node.id-1
+                else:
+                    brk_pos=node.id
+                
+                lbl_brk[brk_pos]+=brk_chars[0]
         return lbl_brk
 
 ##############################################################################
@@ -274,23 +298,11 @@ class dependency_brk_2p_encoder:
 ##############################################################################
 
 class dependency_decoder:
-    def __init__(self, pos_tags):
-        # store the pos_tags in case of needed
-        self.pos_tags = pos_tags
+    def __init__(self, decoder):
+        self.decoder = decoder
 
     def decode(self, labels):
-        encoding_type = labels[0].encoding_type
-        
-        if (encoding_type==D_ABSOLUTE_ENCODING): 
-            return dependency_absolute_decoder().decode(labels)
-        elif (encoding_type==C_RELATIVE_ENCODING):
-            return dependency_relative_decoder().decode(labels)
-        elif (encoding_type==D_POS_ENCODING):
-            return dependency_pos_decoder().decode(labels,self.pos_tags)
-        elif (encoding_type==D_BRACKET_ENCODING):
-            return dependency_brk_decoder().decode(labels,self.pos_tags)
-        elif (encoding_type==D_BRACKET_ENCODING_2P):
-            return dependency_brk_2p_decoder().decode(labels,self.pos_tags)
+        return self.decoder.decode(labels)
 
 class dependency_absolute_decoder:
     def decode(self, labels):
@@ -313,7 +325,10 @@ class dependency_relative_decoder:
         return decoded_nodes
 
 class dependency_pos_decoder:
-    def decode(self, labels, pos_tags):
+    def __init__(self, pos_tags):
+        self.pos_tags=pos_tags
+
+    def decode(self, labels):
         decoded_nodes = []
         i=0
         for label in labels:
@@ -332,7 +347,7 @@ class dependency_pos_decoder:
 
             # create the step and the stop point 
             step = 1
-            stop_point = len(pos_tags)-i
+            stop_point = len(self.pos_tags)-i
             
             if (pi<0):
                 step = -1
@@ -345,7 +360,7 @@ class dependency_pos_decoder:
             # of the head
 
             for j in range (i, stop_point, step):                  
-                if (oi==pos_tags[j]):
+                if (oi==self.pos_tags[j]):
                     target_pi-=step
                 if (target_pi==0):
                     break       
@@ -357,7 +372,10 @@ class dependency_pos_decoder:
         return decoded_nodes
 
 class dependency_brk_decoder:
-    def decode(self, labels, pos_tags):
+    def __init__(self, displacement):
+        self.displacement=displacement
+
+    def decode(self, labels):
         # decoding: each opening bracket closes with the first encountered
         # can decode non-projective trees where the arcs cross in different directions
         # cant encode non-projective trees where the arcs cross in the same direction
@@ -379,17 +397,21 @@ class dependency_brk_decoder:
             # fill the relation using brks
             for char in brks:
                 if char == "<":
-                    # word i-1 tiene arco entrante desde la derecha
-                    # esto significa, que la word i-1 depende de la 'i' de la label que popee esto
-                    node_id = current_node-1
+                    if self.displacement:
+                        node_id = current_node-1
+                    else:
+                        node_id=current_node
+
                     node_rel = labels[node_id].li
                     r_stack.append((node_id,char))
 
                     decoded_nodes[node_id]=dependency_graph_node(node_id, "", -1, "", node_rel)
                 if char =="/":
-                    # word i-1 tiene arco saliente hacia la izquierda
-                    # esto significa, que la word que cierre esto depende de la 'i' de esta label
-                    node_id = current_node - 1
+                    if self.displacement:
+                        node_id = current_node-1
+                    else:
+                        node_id=current_node
+                    
                     l_stack.append((node_id,char))
                 if char == "\\":
                     # if (existe en el stack algun '<' (esto es, hay una apertura), popearlo)
@@ -408,7 +430,10 @@ class dependency_brk_decoder:
         return decoded_nodes        
 
 class dependency_brk_2p_decoder:
-    def decode(self, labels, pos_tags):
+    def __init__(self, displacement):
+        self.displacement=displacement
+    
+    def decode(self, labels):
         decoded_nodes=[None for l in labels]
         
         # create plane stacks
@@ -437,17 +462,21 @@ class dependency_brk_2p_decoder:
             # fill the relation using brks
             for char in brks:
                 if char == "<":
-                    # word i-1 tiene arco entrante desde la derecha
-                    # esto significa, que la word i-1 depende de la 'i' de la label que popee esto
-                    node_id = current_node-1
+                    if self.displacement:
+                        node_id = current_node-1
+                    else:
+                        node_id=current_node
+
                     node_rel = labels[node_id].li
                     r_stack_p1.append((node_id,char))
 
                     decoded_nodes[node_id]=dependency_graph_node(node_id, "", -1, "", node_rel)
                 if char =="/":
-                    # word i-1 tiene arco saliente hacia la izquierda
-                    # esto significa, que la word que cierre esto depende de la 'i' de esta label
-                    node_id = current_node - 1
+                    if self.displacement:
+                        node_id = current_node-1
+                    else:
+                        node_id=current_node
+
                     l_stack_p1.append((node_id,char))
                 if char == "\\":
                     # if (existe en el stack algun '<' (esto es, hay una apertura), popearlo)
@@ -463,17 +492,21 @@ class dependency_brk_2p_decoder:
 
                     
                 if char == "<*":
-                    # word i-1 tiene arco entrante desde la derecha
-                    # esto significa, que la word i-1 depende de la 'i' de la label que popee esto
-                    node_id = current_node-1
+                    if self.displacement:
+                        node_id = current_node-1
+                    else:
+                        node_id=current_node
+
                     node_rel = labels[node_id].li
                     r_stack_p2.append((node_id,char))
 
                     decoded_nodes[node_id]=dependency_graph_node(node_id, "", -1, "", node_rel)
                 if char =="/*":
-                    # word i-1 tiene arco saliente hacia la izquierda
-                    # esto significa, que la word que cierre esto depende de la 'i' de esta label
-                    node_id = current_node - 1
+                    if self.displacement:
+                        node_id = current_node-1
+                    else:
+                        node_id=current_node
+
                     l_stack_p2.append((node_id,char))
                 if char == "\\*":
                     # if (existe en el stack algun '<' (esto es, hay una apertura), popearlo)
@@ -524,7 +557,7 @@ def parse_conllu(token_tree):
         pos_tags.append((pos,text))
     return nodes,pos_tags
 
-def test_treebank(filepath, encoder):
+def test_treebank(filepath):
     data_file = open(filepath, "r", encoding="utf-8")
     for token_tree in parse_tree_incr(data_file):
         test_single(token_tree)
@@ -532,35 +565,46 @@ def test_treebank(filepath, encoder):
 def test_single(tt):
     nodes,pos_tags=parse_conllu(tt)
     
-#    print("[*] Dependency graph:")
-#    for node in nodes:
-#        print(node.id, node.head, node.relation)
-
-    be=dependency_brk_2p_encoder("prp")
-    encoded_labels=be.encode(nodes)
+    print("[*] Dependency graph:")
+    for node in nodes:
+        print(node.id, node.head, node.relation)
     
-#    print("[*] Encoded labels:")
-#    for label in encoded_labels:
-#        print('xi:',label.xi,'li:',label.li)
+    displacement=True
     
-    decoder=dependency_decoder(pos_tags)
-    decoded_nodes=decoder.decode(encoded_labels)
+    e=dependency_brk_2p_encoder(D_2P_GREED, displacement)
+    #e=dependency_brk_encoder(displacement)
+    encoded_labels=e.encode(nodes)
     
-    print("[*] Decoded dependency graph:")
+    print("[*] Encoded labels:")
+    for label in encoded_labels:
+        print('xi:',label.xi,'li:',label.li)
+    
+    d=dependency_brk_2p_decoder(displacement)
+    #d=dependency_brk_decoder(displacement)
+    decoded_nodes=d.decode(encoded_labels)
+    
+    
     for node, decoded_node in zip(nodes,decoded_nodes):
-        print(node.id==decoded_node.id, node.head==decoded_node.head, node.relation==decoded_node.relation)
+        if not (node.id==decoded_node.id and node.head==decoded_node.head):
+            print("Error at",node.id)
+            break
+
+    print("[*] Decoded dependency graph:")
+    for decoded_node in decoded_nodes:
+        print(decoded_node.id, decoded_node.head, decoded_node.relation)
 
 
 if __name__=="__main__":
     #data_file=open("/home/poli/TFG/test/dependencies/UD_Spanish-GSD/es_gsd-ud-dev.conllu")
     #data_file=open("/home/poli/TFG/test/dependencies/proj.conllu")
+    data_file=open("/home/poli/TFG/test/dependencies/temp.conllu")
     #sid=79
-    #sid=0
-    test_treebank("/home/poli/TFG/test/dependencies/UD_Spanish-GSD/es_gsd-ud-dev.conllu", dependency_brk_2p_encoder("grd"))
+    sid=0
+    #test_treebank("/home/poli/TFG/test/dependencies/UD_Spanish-GSD/es_gsd-ud-dev.conllu")
     
-    #tt=parse_tree_incr(data_file)
-    #tt=next(itertools.islice(tt, sid, None))
-    #test_single(tt)
+    tt=parse_tree_incr(data_file)
+    tt=next(itertools.islice(tt, sid, None))
+    test_single(tt)
 
 
 
