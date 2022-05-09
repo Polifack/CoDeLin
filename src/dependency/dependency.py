@@ -25,7 +25,6 @@ class dependency_graph_node:
         self.head = int(head)
         self.pos = pos
         self.relation = relation
-
 class encoded_dependency_label:
     # class for the encoded dependency label
     # stores the value of xi, li and the encoding type used
@@ -34,9 +33,7 @@ class encoded_dependency_label:
         self.xi = xi
         self.li = li
 
-##############################################################################
-##############################################################################
-##############################################################################
+##############################
 
 class dependency_encoder:
     def __init__(self, encoding_type):
@@ -45,7 +42,7 @@ class dependency_encoder:
     def encode(self, nodes):
         return self.encoder.encode(nodes)
 
-class dependency_absolute_encoder:
+class d_absolute_encoder:
     def encode(self, nodes):
         encoded_labels = []
         for node in nodes:
@@ -53,8 +50,7 @@ class dependency_absolute_encoder:
             encoded_labels.append(current)
 
         return encoded_labels
-
-class dependency_relative_encoder:
+class d_relative_encoder:
     def encode(self, nodes):
         encoded_labels = []
         for node in nodes:
@@ -62,8 +58,7 @@ class dependency_relative_encoder:
             encoded_labels.append(current)
 
         return encoded_labels
-
-class dependency_pos_encoder:
+class d_pos_encoder:
     def encode(self, nodes):
         encoded_labels = []
         for node in nodes:
@@ -95,8 +90,7 @@ class dependency_pos_encoder:
             encoded_labels.append(current)
         
         return encoded_labels
-
-class dependency_brk_encoder:
+class d_brk_encoder:
     def __init__(self, displacement):
         self.displacement = displacement
     
@@ -140,8 +134,7 @@ class dependency_brk_encoder:
             lbls.append(current)
 
         return lbls
-
-class dependency_brk_2p_encoder:
+class d_brk_2p_encoder:
     def __init__(self, plane_algorithm, displacement):
         self.plane_algorithm = plane_algorithm
         self.displacement = displacement
@@ -302,9 +295,7 @@ class dependency_brk_2p_encoder:
                 lbl_brk[node.id]+=brk_chars[0]
         return lbl_brk
 
-##############################################################################
-##############################################################################
-##############################################################################
+##############################
 
 class dependency_decoder:
     def __init__(self, decoder):
@@ -313,7 +304,7 @@ class dependency_decoder:
     def decode(self, labels):
         return self.decoder.decode(labels)
 
-class dependency_absolute_decoder:
+class d_absolute_decoder:
     def decode(self, labels):
         decoded_nodes = []
         i = 1
@@ -322,8 +313,7 @@ class dependency_absolute_decoder:
             i+=1
 
         return decoded_nodes
-
-class dependency_relative_decoder:
+class d_relative_decoder:
     def decode(self, labels):
         decoded_nodes = []
         i = 1
@@ -332,8 +322,7 @@ class dependency_relative_decoder:
             i+=1
         
         return decoded_nodes
-
-class dependency_pos_decoder:
+class d_pos_decoder:
     def __init__(self, pos_tags):
         self.pos_tags=pos_tags
 
@@ -379,8 +368,7 @@ class dependency_pos_decoder:
             i+=1
         
         return decoded_nodes
-
-class dependency_brk_decoder:
+class d_brk_decoder:
     def __init__(self, displacement):
         self.displacement=displacement
 
@@ -432,8 +420,7 @@ class dependency_brk_decoder:
             current_node+=1
 
         return decoded_nodes        
-
-class dependency_brk_2p_decoder:
+class d_brk_2p_decoder:
     def __init__(self, displacement):
         self.displacement=displacement
     
@@ -521,9 +508,7 @@ class dependency_brk_2p_decoder:
         
         return decoded_nodes
 
-##############################################################################
-##############################################################################
-##############################################################################
+##############################
 
 def parse_conllu(token_tree):
     nodes = []
@@ -553,12 +538,10 @@ def parse_conllu(token_tree):
         nodes.append(dependency_graph_node(word_id, text, head, pos, rel))
         pos_tags.append((pos,text))
     return nodes,pos_tags
-
 def test_treebank(filepath,e,d):
     data_file = open(filepath, "r", encoding="utf-8")
     for token_tree in parse_tree_incr(data_file):
         test_single(token_tree,e,d)
-
 def test_single(tt,e,d):
     nodes,pos_tags=parse_conllu(tt)
     encoded_labels=e.encode(nodes)
