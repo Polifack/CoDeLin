@@ -1,8 +1,7 @@
 from stanza.models.constituency.parse_tree import Tree as stanzatree
 from stanza.models.constituency.tree_reader import read_trees
-
 import copy
-import rey
+import re
 
 C_ABSOLUTE_ENCODING = 'ABS'
 C_RELATIVE_ENCODING = 'REL'
@@ -33,16 +32,16 @@ class constituent_encoder:
         pos_tags = self.get_pos_tags(tree)
         path_to_leaves = self.path_to_leaves(tree)
 
-        labels = self.encode(tree,path_to_leaves)
+        labels = self.encoder.encode(tree, path_to_leaves)
         return labels, pos_tags
 
     def preprocess_tree(self, tree):
         tree.children=(*tree.children,stanzatree("FINISH",[]))
-        collapse_unary(tree)
+        self.collapse_unary(tree)
 
     def collapse_unary(self, tree):
         for child in tree.children:
-            collapse_unary(child)
+            self.collapse_unary(child)
         if len(tree.children)==1 and not tree.is_preterminal():
                 tree.label+="+"+tree.children[0].label
                 tree.children=tree.children[0].children
@@ -73,8 +72,8 @@ class constituent_encoder:
                 idx+=1
         return paths
 
-class c_aboslute_encoder:
-    def encode(tree, ptl):
+class c_relative_encoder:
+    def encode(self, tree, ptl):
         labels=[]
         last_n_common=0
         for i in range(0, len(ptl)-1):
@@ -96,8 +95,8 @@ class c_aboslute_encoder:
                 n_commons+=1+(len(a.split("+"))-1)            
                 last_common = a
         return labels
-class c_relative_encoder:
-    def encode(tree, ptl):
+class c_absolute_encoder:
+    def encode(self, tree, ptl):
         labels=[]
         for i in range(0, len(ptl)-1):
             path_n_0=ptl[i]
@@ -118,14 +117,17 @@ class c_relative_encoder:
                 last_common = a
         return labels
 class c_dynamic_encoder:
-    def encode(tree, ptl):
+    def encode(self, tree, path_to_leaves):
         labels=[]
-        for i in range(0, len(ptl)-1):
-            path_n_0=ptl[i]
-            path_n_1=ptl[i+1]
+        last_n_common=0
+        
+        # encoding as labels (most_deep_common_ancestor, n_common_ancestors)
+        for i in range(0, len(path_to_leaves)-1):
+            path_n_0=path_to_leaves[i]
+            path_n_1=path_to_leaves[i+1]
             
             last_common=""
-            n_commons=0
+            n_commons=0            
             for a,b in zip(path_n_0, path_n_1):
                 # if we have an ancestor that is not common break
                 if (a!=b):
@@ -145,8 +147,11 @@ class c_dynamic_encoder:
                     break
                 
                 # increase
-                n_commons+=1+(len(a.split("+"))-1)            
+                n_commons+=(len(a.split("+"))-1)
+                n_commons+=1
+                
                 last_common = a
+        
         return labels
 
 ##############################
@@ -179,7 +184,7 @@ class constituent_decoder:
         current_level.children=(*current_level.children,pos_tree)
 
     def decode(self, labels, pos_tags):
-        self.decoder.decode(labels, pos_tags, self.preprocess_label, self.fill_pos_nodes)
+        return self.decoder.decode(labels, pos_tags, self.preprocess_label, self.fill_pos_nodes)
 
 class c_absolute_decoder:
     def decode(self, labels, pos_tags, preprocess_label, fill_pos_nodes):
@@ -243,7 +248,7 @@ class c_absolute_decoder:
         tree=tree.children[0]
         return tree
 class c_relative_decoder:
-    def decode(labels, pos_tags, preprocess_label, fill_pos_nodes):
+    def decode(self, labels, pos_tags, preprocess_label, fill_pos_nodes):
         tree = stanzatree('ROOT',[])
         current_level = tree
 
@@ -307,7 +312,7 @@ class c_relative_decoder:
         tree=tree.children[0]
         return tree
 class c_dynamic_decoder:
-    def decode(labels, pos_tags, preprocess_label, fill_pos_nodes):
+    def decode(self, labels, pos_tags, preprocess_label, fill_pos_nodes):
         tree = stanzatree('ROOT',[])
         current_level = tree
 
@@ -372,17 +377,23 @@ class c_dynamic_decoder:
         return tree
 
 
-def test_single(txt,e,d):        
+def test_single(txt,e,d):
     tree=read_trees(txt)[0]
+    
+    original_tree = copy.deepcopy(tree)
+    
     labels, pos_tags = e.encode(tree)
     decoded_tree=d.decode(labels,pos_tags)
+    
+    return (decoded_tree==original_tree)
+
 def test_file(filepath,e,d):
     f=open(filepath)
-    i=1
+    i=0
     for line in f:
         r=test_single(line,e,d)
+        print(r)
         i+=1
-    return i
 
 if __name__=="__main__":
     e = constituent_encoder(c_absolute_encoder())

@@ -436,3 +436,6 @@ aparecen ciclos en el arbol (1->2->3->2->1) : romper un enlace del ciclo
 estructura con varias raices : pillar primera OR pillar ultima y colgar todas las otras de ella
 
 pregunta: en bracket 2-planar que hacer cuando no se puede asignar a un plano? colgar de dummy raiz?
+codificar 3planar:
+    si no esta en ningun plano se pone 3p y luego al decode se cuelga de la raiz
+    o no codificar

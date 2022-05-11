@@ -8,6 +8,8 @@ high level:
 -> bert | roberta
 -> https://github.com/machamp-nlp/machamp (nueva; deja hacer multitask)
 
+hugginface? contextualizar palabras?
+
 ------------------------
 
 multitask learnign (+1 lbl a cada palabra)
@@ -23,6 +25,31 @@ estadisticas a medir:
         https://universaldependencies.org/conll18/evaluation.html [mas nuevo]
 
     Constituyentes: el script de gold que tenias antes, ejecutar con el fichero collins
+
+----------------
+
+A la hora de entrenamiento calcular datos de precision y velocidad 
+
+----------------
+Dependencias
+----------------
+
+Encoder:
+--------
+Unless otherwise specified, the input token at a given time step is the concatenation of
+a word, PoS tag, and another word embedding learned through a character LSTM.
+We consider stacked BiLSTMs, where the output hmi of the m BiLSTM layer is fed as input to the m+1 layer
+
+Decoder:
+--------
+We use a feed-forward network, which is fed the output of the last BiLSTM. The output
+is computed as P (yi|hi) = softmax(W · hi + b).
+
+
+
+
+
+
 
 ----------------
 Constituyentes
