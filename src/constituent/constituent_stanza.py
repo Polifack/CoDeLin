@@ -377,25 +377,42 @@ class c_dynamic_decoder:
         return tree
 
 
+# given a tree encodes it and decodes and checks if it is the same
 def test_single(txt,e,d):
     tree=read_trees(txt)[0]
-    
     original_tree = copy.deepcopy(tree)
-    
     labels, pos_tags = e.encode(tree)
     decoded_tree=d.decode(labels,pos_tags)
-    
-    return (decoded_tree==original_tree)
-
+    return original_tree == decoded_tree
 def test_file(filepath,e,d):
     f=open(filepath)
     i=0
     for line in f:
         r=test_single(line,e,d)
-        print(r)
+        if not r:
+            print("[*] Errot at",i)
+            break
         i+=1
 
-if __name__=="__main__":
-    e = constituent_encoder(c_absolute_encoder())
-    d = constituent_decoder(c_absolute_decoder())
-    test_file("./test/constituency/train.trees",e,d)
+# given a tree encodes it and writes the label to a file
+def linearize_single(txt, e):
+    tree=read_trees(txt)[0]
+    original_tree = copy.deepcopy(tree)
+    labels, pos_tags = e.encode(tree)
+
+    # linearized tree will be shaped like
+    # (WORD  POSTAG  LABEL)
+    lt=[]
+    lt.append(('-BOS-','-BOS-','-BOS-'))
+    for l, p in zip(labels, pos_tags):
+        lt.append((str(l.n_commons)+"_"+str(l.last_common), p[1], p[0]))
+    lt.append(('-EOS-','-EOS-','-EOS-'))
+    return lt
+def linearize_constituent(in_path, out_path, encoder):
+    f_in=open(in_path)
+    f_out=open(out_path,"w+")
+    for line in f_in:
+        linearized_tree = linearize_single(line, encoder)
+        for label in linearized_tree:
+            f_out.write(u"\t".join([label[2],label[1],label[0]])+u"\n")
+        f_out.write("\n")

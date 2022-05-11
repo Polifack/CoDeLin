@@ -510,6 +510,7 @@ class d_brk_2p_decoder:
 
 ##############################
 
+# parses a conllu file and returns dependency_graph_node
 def parse_conllu(token_tree):
     nodes = []
     pos_tags = []
@@ -538,21 +539,46 @@ def parse_conllu(token_tree):
         nodes.append(dependency_graph_node(word_id, text, head, pos, rel))
         pos_tags.append((pos,text))
     return nodes,pos_tags
-def test_treebank(filepath,e,d):
+
+# given a tree encodes it and decodes and checks if it is the same
+def test_file(filepath,e,d):
     data_file = open(filepath, "r", encoding="utf-8")
+    
+    i=0
     for token_tree in parse_tree_incr(data_file):
-        test_single(token_tree,e,d)
+        r = test_single(token_tree,e,d)
+        if not r:
+            print("[*] Error at",i)
+            break
+        i+=1
 def test_single(tt,e,d):
     nodes,pos_tags=parse_conllu(tt)
     encoded_labels=e.encode(nodes)
     decoded_nodes=d.decode(encoded_labels)
 
-if __name__=="__main__":
-    displacement=True
-    e=dependency_brk_2p_encoder(D_2P_PROP, displacement)
-    d=dependency_brk_2p_decoder(displacement)
-    test_treebank("/home/poli/TFG/test/dependencies/UD_Spanish-GSD/es_gsd-ud-dev.conllu",e,d)
+    return nodes == decoded_nodes
 
+def linearize_single(tt, e):
+    nodes,pos_tags = parse_conllu(tt)
+    encoded_labels = e.encode(nodes)
+
+    # linearized tree will be shaped like
+    # (WORD  POSTAG  LABEL)
+    lt=[]
+    lt.append(('-BOS-','-BOS-','-BOS-'))
+    for l, p in zip(encoded_labels, pos_tags):
+        lt.append((str(l.li)+"_"+str(l.xi), p[1], p[0]))
+    lt.append(('-EOS-','-EOS-','-EOS-'))
+    return lt
+def linearize_dependencies(in_path, out_path, encoder):
+    f_in=open(in_path)
+    f_out=open(out_path,"w+")
+    
+    for d_tree in parse_tree_incr(f_in):
+        linearized_tree = linearize_single(d_tree, encoder)
+        for label in linearized_tree:
+            f_out.write(u"\t".join([label[2],label[1],label[0]])+u"\n")
+        f_out.write("\n")
 
 
     
