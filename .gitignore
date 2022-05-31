@@ -1,0 +1,24 @@
+# treebanks, models, config and labels
+/treebanks/constituent/
+/treebanks/dependencies/
+/models/constituent/
+/models/dependencies/
+/labels/constituent/
+/labels/dependencies/
+/ncrf_configs/
+
+# stanza resources, ncrfpp and eval scripts
+/stanza_resources
+/NCRFpp
+/evalb
+/evalud
+
+# project related stuff
+/notes
+/deprecated
+generate_train_all.sh
+
+
+.vscode
+/src/constituent/_pycache_
+/src/dependency/_pycache_

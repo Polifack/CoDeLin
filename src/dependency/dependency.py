@@ -1,5 +1,6 @@
 from conllu import parse_tree_incr
 import itertools
+import stanza
 
 # encoding type constants
 D_ABSOLUTE_ENCODING = 'ABS'
@@ -511,7 +512,7 @@ class d_brk_2p_decoder:
 ##############################
 
 # parses a conllu file and returns dependency_graph_node
-def parse_conllu(token_tree):
+def parse_conllu(token_tree, nlp=None):
     nodes = []
     pos_tags = []
     # add dummy root
@@ -519,31 +520,71 @@ def parse_conllu(token_tree):
 
     # serialize the data from the collu file
     data = token_tree.serialize().split('\n')
-    # remove the metadata lines
-    data = data[2:]
+
+    # get the sentence, dependency data and 
+    # if desired predict the postags
+
+    dependency_start_idx=0
     for line in data:
-        # split the line in tabs
-        line = line.split('\t')
+        if line[0]!="#":
+            break
+        if "# text" in line:
+            sentence=line.split("# text = ")[1]
+        dependency_start_idx+=1
+    
+    data = data[dependency_start_idx:]
 
-        # check if empty line
-        if (len(line)<=1):
-            continue
+    if nlp is not None:
+        
+        predicted_postags=[]
+        doc = nlp(sentence)
+        for element in doc.sentences:
+            for word in element.words:
+                predicted_postags.append(word.upos)
 
-        # extract the useful data
-        word_id=line[0]
-        text=line[1]
-        head=line[6]
-        pos=line[3]
-        rel=line[7]
+        for line in data:
+            # split the line in tabs
+            line = line.split('\t')
 
-        nodes.append(dependency_graph_node(word_id, text, head, pos, rel))
-        pos_tags.append((pos,text))
+            # check if empty line
+            if (len(line)<=1):
+                continue
+
+            # extract the useful data
+            word_id=line[0]
+            text=line[1]
+            head=line[6]
+            pos=line[3]
+            rel=line[7]
+
+            nodes.append(dependency_graph_node(word_id, text, head, pos, rel))
+            pos_tags.append((pos,text))
+
+    else:
+        for line in data:
+            # split the line in tabs
+            line = line.split('\t')
+
+            # check if empty line
+            if (len(line)<=1):
+                continue
+
+            # extract the useful data
+            word_id=line[0]
+            text=line[1]
+            head=line[6]
+            pos=line[3]
+            rel=line[7]
+
+            nodes.append(dependency_graph_node(word_id, text, head, pos, rel))
+            pos_tags.append((pos,text))
+    
     return nodes,pos_tags
 
 # given a tree encodes it and decodes and checks if it is the same
-def test_file(filepath,e,d):
+def test_file(filepath, e, d):
     data_file = open(filepath, "r", encoding="utf-8")
-    
+
     i=0
     for token_tree in parse_tree_incr(data_file):
         r = test_single(token_tree,e,d)
@@ -558,8 +599,9 @@ def test_single(tt,e,d):
 
     return nodes == decoded_nodes
 
-def linearize_single(tt, e):
-    nodes,pos_tags = parse_conllu(tt)
+# given a tree encodes it and writes the label to a file
+def linearize_single(tt, e, nlp=None):
+    nodes,pos_tags = parse_conllu(tt,nlp)
     encoded_labels = e.encode(nodes)
 
     # linearized tree will be shaped like
@@ -570,15 +612,25 @@ def linearize_single(tt, e):
         lt.append((str(l.li)+"_"+str(l.xi), p[1], p[0]))
     lt.append(('-EOS-','-EOS-','-EOS-'))
     return lt
-def linearize_dependencies(in_path, out_path, encoder):
+    
+def linearize_dependencies(in_path, out_path, encoder, use_gold=True, lang=None):
     f_in=open(in_path)
     f_out=open(out_path,"w+")
+
+    # optional part to linearize tree using predicted pos_tags
+    nlp=None
+    if not use_gold:
+        stanza.download(lang=lang, model_dir="./stanza_resources")
+        nlp = stanza.Pipeline(lang=lang, processors='tokenize,pos', model_dir="./stanza_resources")
     
+    tree_counter = 0
     for d_tree in parse_tree_incr(f_in):
-        linearized_tree = linearize_single(d_tree, encoder)
+        linearized_tree = linearize_single(d_tree, encoder, nlp)
         for label in linearized_tree:
-            f_out.write(u"\t".join([label[2],label[1],label[0]])+u"\n")
+            f_out.write(u"\t".join([label[1],label[2],label[0]])+u"\n")
         f_out.write("\n")
+        tree_counter+=1
+    return tree_counter
 
 
     
