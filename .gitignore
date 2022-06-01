@@ -17,8 +17,8 @@
 /notes
 /deprecated
 generate_train_all.sh
-
+to_do_list
 
 .vscode
-/src/constituent/_pycache_
-/src/dependency/_pycache_
+/src/constituent/__pycache__
+/src/dependency/__pycache__

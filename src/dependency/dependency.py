@@ -1,4 +1,5 @@
 from conllu import parse_tree_incr
+from conllu.models import TokenList
 import itertools
 import stanza
 
@@ -41,7 +42,7 @@ class dependency_encoder:
         self.encoder = encoding_type
     
     def encode(self, nodes):
-        return self.encoder.encode(nodes)
+        return self.encoder.encode(nodes)[1:]
 
 class d_absolute_encoder:
     def encode(self, nodes):
@@ -313,7 +314,48 @@ class d_absolute_decoder:
             decoded_nodes.append(dependency_graph_node(i, "", label.xi, "", label.li))
             i+=1
 
+        self.check_loops(decoded_nodes)
+        self.check_roots(decoded_nodes)
         return decoded_nodes
+    
+    def check_roots(self, nodes):
+        has_root=False
+        current_root=0
+        for node in nodes:
+            if node.head==0:
+                if not has_root:
+                    has_root=True
+                    current_root=node.id
+                else:
+                    # if we have more than one root we hang all the other roots from the 
+                    # first discovered one
+                    node.head=current_root
+    
+    def check_loops_rec(self, nodes, check_id, current_head):
+        if check_id==current_head:
+            return True
+        elif current_head == 0:
+            return False
+        else:
+            new_head = nodes[current_head-1].head
+            return self.check_loops_rec(nodes, check_id, new_head)
+
+
+    def check_loops(self, nodes):
+        for node in nodes:
+            has_loop = self.check_loops_rec(nodes, node.id, node.head)  
+            if has_loop:
+                # if we have a loop we break the loop haning the node from the root
+                node.head = 0
+
+    def check_valid_nodes(self, nodes):
+        for node in nodes:
+            # if a node has head outside range of nodes
+            # set head at root
+            if node.head > len(nodes) or node.head < 0:
+                node.head = 0
+            
+
 class d_relative_decoder:
     def decode(self, labels):
         decoded_nodes = []
@@ -609,10 +651,9 @@ def linearize_single(tt, e, nlp=None):
     lt=[]
     lt.append(('-BOS-','-BOS-','-BOS-'))
     for l, p in zip(encoded_labels, pos_tags):
-        lt.append((str(l.li)+"_"+str(l.xi), p[1], p[0]))
+        lt.append((str(l.li)+"_"+str(l.xi)+"_"+(l.encoding_type), p[1], p[0]))
     lt.append(('-EOS-','-EOS-','-EOS-'))
     return lt
-    
 def linearize_dependencies(in_path, out_path, encoder, use_gold=True, lang=None):
     f_in=open(in_path)
     f_out=open(out_path,"w+")
@@ -632,5 +673,54 @@ def linearize_dependencies(in_path, out_path, encoder, use_gold=True, lang=None)
         tree_counter+=1
     return tree_counter
 
+def delinearize_single(lbls, d):
+    labels = []
+    postags = []
+    words = []
+    for lbl in lbls:
+        word, postag, label = lbl.split("\t")
+        label = label.split("_")
+        labels.append(encoded_dependency_label(label[2], int(label[1]), label[0]))
+        postags.append(postag)
+        words.append(word)
 
     
+    decoded_nodes=d.decode(labels)
+    decoded_tokens=[]
+    
+    for w,p,n in zip(words, postags, decoded_nodes):
+        decoded_tokens.append({"id":n.id,"form":w,
+        "lemma":"_","upos":p,"xpos":"_","feats":"_",
+        "head":n.head,"deprel":n.relation,"deps":"_","misc":"_"})
+    
+    decoded_token_list=TokenList(decoded_tokens)
+    return decoded_token_list.serialize()
+    
+def decode_dependencies(in_path, out_path, decoder):
+    f_in=open(in_path)
+    f_out=open(out_path,"w+")
+
+    tree_counter=0
+    decoded_trees = []
+
+    current_tree = []
+    is_appending = False
+    for line in f_in:
+        if "-EOS-" in line:
+            decoded_token_list=delinearize_single(current_tree,decoder)
+            f_out.write(str(decoded_token_list))
+            f_out.write("\n")
+            tree_counter+=1
+            is_appending=False
+        
+        if is_appending:
+            current_tree.append(line.replace('\n',''))
+
+        if "-BOS-" in line:
+            current_tree=[]
+            is_appending=True
+
+    return tree_counter
+
+linearize_dependencies("./test.gold", "./test_abs.labels", dependency_encoder(d_absolute_encoder()))
+decode_dependencies("./test_abs.labels", "./test_abs.decoded",dependency_decoder(d_absolute_decoder()))
