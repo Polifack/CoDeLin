@@ -157,8 +157,9 @@ class c_dynamic_encoder:
 ##############################
 
 class constituent_decoder:
-    def __init__(self, decoder):
+    def __init__(self, decoder, conflict_strat=C_STRAT_MAX):
         self.decoder = decoder
+        self.conflict_strat=conflict_strat
 
     def preprocess_label(self, label):
         #  split the unary chains
@@ -183,8 +184,54 @@ class constituent_decoder:
 
         current_level.children=(*current_level.children,pos_tree)
 
+    def clean_nulls(self, tree, tree_children):
+        # if during decode we find -NONE- nodes 
+        # we append each of the child of those nodes to the
+        # parent node
+
+        for c in tree_children:
+            if c.label == '-NONE-':
+                # python tuples are immutable, so to remove them we have to create a new
+                new_children = []
+                none_child_idx = tree_children.index(c)
+                
+                # append children to the "left"
+                for i in range(0, none_child_idx):
+                    new_children.append(tree_children[i])
+
+                # foreach of the children of the node that has a null label
+                # append them to the parent
+                for nc in c.children:
+                    new_children.append(stanzatree(nc.label, nc.children))
+
+                # append children to the "right"
+                for i in range(none_child_idx, len(tree_children)-1):
+                    new_children.append(tree_children[i])
+
+                tree.children=tuple(new_children)
+            # recursive step
+            if type(c) is stanzatree:
+                self.clean_nulls(c, c.children)
+
+    def clean_conflicts(self, tree):
+        for c in tree.children:
+            if "|" in  c.label:
+                labels=c.label.split("|")
+                if self.conflict_strat == C_STRAT_MAX:
+                    c.label=max(set(labels), key=labels.count)
+                if self.conflict_strat == C_STRAT_FIRST:
+                    c.label=labels[0]
+                if self.conflict_strat == C_STRAT_LAST:
+                    c.label=labels[len(labels)-1]
+                
+            if type(c) is stanzatree:
+                self.clean_conflicts(c)
+
     def decode(self, labels, pos_tags):
-        return self.decoder.decode(labels, pos_tags, self.preprocess_label, self.fill_pos_nodes)
+        decoded_tree = self.decoder.decode(labels, pos_tags, self.preprocess_label, self.fill_pos_nodes)
+        self.clean_nulls(decoded_tree, decoded_tree.children)
+        self.clean_conflicts(decoded_tree)
+        return decoded_tree
 
 class c_absolute_decoder:
     def decode(self, labels, pos_tags, preprocess_label, fill_pos_nodes):
@@ -205,30 +252,32 @@ class c_absolute_decoder:
                 # descend and create
                 for level_index in range(label.n_commons):
                     if (len(current_level.children)==0) or (level_index >= old_n_commons):
-                        current_level.children = (*current_level.children, stanzatree('NULL',[]))
+                        current_level.children = (*current_level.children, stanzatree('-NONE-',[]))
                     current_level = current_level.children[len(current_level.children)-1]
                 
                 # fill intermediate nodes
-                if (current_level.label=='NULL'):
+                if (current_level.label=='-NONE-'):
                     current_level.label=label.last_common[0]
             
             else:
                 # descend and create
                 for level_index in range(label.n_commons): 
                     if (len(current_level.children)==0) or (level_index >= old_n_commons):
-                        current_level.children = (*current_level.children, stanzatree('NULL',[]))  
+                        current_level.children = (*current_level.children, stanzatree('-NONE-',[]))  
                     current_level = current_level.children[len(current_level.children)-1]
                 
                 # descend to the beginning of the chain
                 descend_levels = label.n_commons-(len(label.last_common))+1
                 current_level = tree
-                for level_index in range(descend_levels): 
+                for level_index in range(descend_levels):
                     current_level = current_level.children[len(current_level.children)-1]
                 
                 # fill intermediate nodes
                 for i in range(len(label.last_common)-1):
-                    if (current_level.label=='NULL'):
+                    if (current_level.label=='-NONE-'):
                         current_level.label=label.last_common[i]
+                    else:
+                        current_level.label=current_level.label+"|"+label.last_common[i]
                     current_level=current_level.children[len(current_level.children)-1]
 
                 # set last label
@@ -268,18 +317,18 @@ class c_relative_decoder:
                 # descend and create
                 for level_index in range(label.n_commons):
                     if (len(current_level.children)==0) or (level_index >= old_n_commons):
-                        current_level.children = (*current_level.children, stanzatree('NULL',[]))
+                        current_level.children = (*current_level.children, stanzatree('-NONE-',[]))
                     current_level = current_level.children[len(current_level.children)-1]
                 
                 # fill intermediate nodes
-                if (current_level.label=='NULL'):
+                if (current_level.label=='-NONE-'):
                     current_level.label=label.last_common[0]
             
             else:
                 # descend and create
                 for level_index in range(label.n_commons): 
                     if (len(current_level.children)==0) or (level_index >= old_n_commons):
-                        current_level.children = (*current_level.children, stanzatree('NULL',[]))  
+                        current_level.children = (*current_level.children, stanzatree('-NONE-',[]))  
                     current_level = current_level.children[len(current_level.children)-1]
                 
                 # descend to the beginning of the chain
@@ -290,7 +339,7 @@ class c_relative_decoder:
                 
                 # fill intermediate nodes
                 for i in range(len(label.last_common)-1):
-                    if (current_level.label=='NULL'):
+                    if (current_level.label=='-NONE-'):
                         current_level.label=label.last_common[i]
                     current_level=current_level.children[len(current_level.children)-1]
 
@@ -332,18 +381,18 @@ class c_dynamic_decoder:
                 # descend and create
                 for level_index in range(label.n_commons):
                     if (len(current_level.children)==0) or (level_index >= old_n_commons):
-                        current_level.children = (*current_level.children, stanzatree('NULL',[]))
+                        current_level.children = (*current_level.children, stanzatree('-NONE-',[]))
                     current_level = current_level.children[len(current_level.children)-1]
                 
                 # fill intermediate nodes
-                if (current_level.label=='NULL'):
+                if (current_level.label=='-NONE-'):
                     current_level.label=label.last_common[0]
             
             else:
                 # descend and create
                 for level_index in range(label.n_commons): 
                     if (len(current_level.children)==0) or (level_index >= old_n_commons):
-                        current_level.children = (*current_level.children, stanzatree('NULL',[]))  
+                        current_level.children = (*current_level.children, stanzatree('-NONE-',[]))  
                     current_level = current_level.children[len(current_level.children)-1]
                 
                 # descend to the beginning of the chain
@@ -354,7 +403,7 @@ class c_dynamic_decoder:
                 
                 # fill intermediate nodes
                 for i in range(len(label.last_common)-1):
-                    if (current_level.label=='NULL'):
+                    if (current_level.label=='-NONE-'):
                         current_level.label=label.last_common[i]
                     current_level=current_level.children[len(current_level.children)-1]
 
@@ -375,7 +424,6 @@ class c_dynamic_decoder:
         # remove dummy root node
         tree=tree.children[0]
         return tree
-
 
 # given a tree encodes it and decodes and checks if it is the same
 def test_single(txt,e,d):
@@ -405,7 +453,7 @@ def linearize_single(txt, e):
     lt=[]
     lt.append(('-BOS-','-BOS-','-BOS-'))
     for l, p in zip(labels, pos_tags):
-        lt.append((str(l.n_commons)+"_"+str(l.last_common), p[1], p[0]))
+        lt.append((str(l.n_commons)+"_"+str(l.last_common)+"_"+str(l.encoding_type), p[1], p[0]))
     lt.append(('-EOS-','-EOS-','-EOS-'))
     return lt
 def linearize_constituent(in_path, out_path, encoder):
@@ -420,3 +468,44 @@ def linearize_constituent(in_path, out_path, encoder):
         f_out.write("\n")
         tree_counter+=1
     return tree_counter
+
+# given a label file decodes it and writes the decoded to a file
+def delinearize_single(lbls,d):
+    labels = []
+    postags = []
+    for lbl in lbls:
+        word, postag, label = lbl.split("\t")
+        label = label.split("_")
+        labels.append(encoded_constituent_label(label[2], int(label[0]), label[1]))
+        postags.append([word, postag])
+    
+    return d.decode(labels,postags)
+def decode_constituent(in_path, out_path, decoder):
+    f_in=open(in_path)
+    f_out=open(out_path,"w+")
+
+    tree_counter=0
+    decoded_trees = []
+
+    current_tree = []
+    is_appending = False
+    for line in f_in:
+        if "-EOS-" in line:
+            decoded_tree=delinearize_single(current_tree,decoder)
+            f_out.write(str(decoded_tree))
+            f_out.write("\n")
+            tree_counter+=1
+            is_appending=False
+        
+        if is_appending:
+            current_tree.append(line.replace('\n',''))
+
+        if "-BOS-" in line:
+            current_tree=[]
+            is_appending=True
+
+
+    return tree_counter
+
+linearize_constituent("./test.gold", "./test_abs.labels", constituent_encoder(c_dynamic_encoder()))
+decode_constituent("./test_abs.labels", "./test_abs.decoded", constituent_decoder(c_dynamic_decoder()))
