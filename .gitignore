@@ -1,8 +1,7 @@
 # treebanks, models, config and labels
 /treebanks/constituent/
 /treebanks/dependencies/
-/models/constituent/
-/models/dependencies/
+/models/
 /labels/constituent/
 /labels/dependencies/
 /ncrf_configs/

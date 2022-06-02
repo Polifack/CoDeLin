@@ -35,19 +35,19 @@ def run_encoding_script(form, enc, files_to_encode, outlbl, outmodel, outdec, de
     for line in f_in:
         f_out.write(line)
     
-    f_out.write("train_dir="+out_lbl_train+'/n')
-    f_out.write("dev_dir="+out_lbl_dev+'/n')
-    f_out.write("test_dir="+out_lbl_test+'/n')
-    f_out.write("model_dir="+outmodel+"_"+filename_encoding+'/n')
+    f_out.write("\ntrain_dir="+out_lbl_train+'\n')
+    f_out.write("dev_dir="+out_lbl_dev+'\n')
+    f_out.write("test_dir="+out_lbl_test+'\n')
+    f_out.write("model_dir="+outmodel+"_"+filename_encoding+'\n')
 
     f_in = open(default_cfg_d)
     f_out = open(output_cfg_d,"w+")
     for line in f_in:
         f_out.write(line)
-    f_out.write("raw_dir="+out_lbl_test+'/n')
-    f_out.write("decode_dir="+outdec+'/n')
-    f_out.write("dset_dir="+outmodel+"_"+filename_encoding+".dset/n")
-    f_out.write("load_model_dir="+outmodel+"_"+filename_encoding+".model/n")
+    f_out.write("raw_dir="+out_lbl_test+'\n')
+    f_out.write("decode_dir="+outdec+'\n')
+    f_out.write("dset_dir="+outmodel+"_"+filename_encoding+".dset\n")
+    f_out.write("load_model_dir="+outmodel+"_"+filename_encoding+".model\n")
 
     
 
