@@ -20,9 +20,15 @@ Also, for bracket encoding in dependency trees can split the tree in two planes 
 
 Can be used to encode single files with main.py or to encode a whole training set formed by train/dev/test files and generate the corresponding ncrfpp configuration
 
-Example command to linearize single file:
+Example command to encode single file:
 ```
-python3.8 main.py --form deps --enc pos --input ./treebanks/dependencies/UD_Spanish-GSD/es_gsd-ud-dev.conllu --output ./labels/dependencies/es_gsd-ud-dev.labels
+$ python3.8 encode.py --time --form CONST --enc ABS --input test.gold --output test.labels
+$ python3.8 encode.py --time --form DEPS --enc BRK_2P --planar GREED --disp --nogold --lang en --input test.gold --output test.labels
+```
+Example command to decode single file
+```
+$ python3.8 encode.py --time --form CONST --enc REL --input test.labels --output test.decoded
+$ python3.8 decode.py --time --form DEPS --enc ABS --input test.labels --output test.decoded
 ```
 Example command to generate train:
 ```

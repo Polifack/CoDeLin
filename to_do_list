@@ -3,3 +3,4 @@ Multitask Learning (machamp)
 Volver a tomar tiempos usando taskset --cpu-list 1
 Mirar hugginface
 Hacer testeo de ./decode
+PoS pide los postags? metodo set_postags()?

@@ -20,7 +20,18 @@ def run_encoding_script(form, enc, files_to_encode, outlbl, outmodel, default_cf
     output_cfg =  args.outcfg+"/"+enc+"_train.config"
 
     for file_in, file_out in zip(files_to_encode,output_labels):
-        os.system("python3.8 main.py --form "+form+" --enc "+enc+" --input "+file_in+" --output "+file_out)
+        # for bracketing encoding use displacement/not use it
+        if enc == "BRK":
+            os.system("python3.8 main.py --time --form "+form+" --enc "+enc+" --input "+file_in+" --output "+file_out)
+            os.system("python3.8 main.py --time --form "+form+" --enc "+enc+" --disp --input "+file_in+" --output "+file_out)
+        # for bracketing 2-planar encoding use both algorithms with and without displacement
+        if enc == "BRK_2P":        
+            os.system("python3.8 main.py --time --form "+form+" --enc "+enc+" --planar GREED --input "+file_in+" --output "+file_out)
+            os.system("python3.8 main.py --time --form "+form+" --enc "+enc+" --planar GREED --disp --input "+file_in+" --output "+file_out)
+            os.system("python3.8 main.py --time --form "+form+" --enc "+enc+" --planar PROPAGATE --input "+file_in+" --output "+file_out)
+            os.system("python3.8 main.py --time --form "+form+" --enc "+enc+" --planar PROPAGATE --disp --input "+file_in+" --output "+file_out)
+        else:
+            os.system("python3.8 main.py --time --form "+form+" --enc "+enc+" --input "+file_in+" --output "+file_out)
 
     f_in = open(default_cfg)
     f_out = open(output_cfg,"w+")
@@ -78,16 +89,12 @@ if __name__=="__main__":
 
     # get set of encodings
 
-    if args.form=="const":
-        encodings = ["rel","abs","dyn"]
+    if args.form=="CONST":
+        encodings = ["REL","ABS","DYN"]
     
-    elif args.form=="deps":
-        encodings = ["abs","rel","pos","brk","brk2pg","brk2pp","brkd","brk2pgd","brk2ppd"]
+    elif args.form=="DEPS":
+        encodings = ["ABS","REL","POS","BRK","BRK_2P"]
 
     # encode
     for encoding in encodings:
         run_encoding_script(args.form, encoding, files_to_encode, args.outlbl, args.outmodel, args.config)
-
-
-
-# python3.8 generate_train.py --form deps --indir ./treebanks/dependencies/UD_Spanish-GSD --outlbl ./labels/dependencies/UD_Spanish-GSD --outcfg ./ncrf_configs/UD_Spanish-GSD --outmodel ./models/UD_Spanish-GSD --config ./default.config

@@ -24,8 +24,8 @@ class encoded_constituent_label:
 ##############################
 
 class constituent_encoder:
-    def __init__(self, encoder):
-        self.encoder = encoder
+    def __init__(self, encoding):
+        self.encoder = ENCODINGS_MAP[encoding]['encoder']()
 
     def encode(self, tree):
         self.preprocess_tree(tree)
@@ -157,8 +157,8 @@ class c_dynamic_encoder:
 ##############################
 
 class constituent_decoder:
-    def __init__(self, decoder, conflict_strat=C_STRAT_MAX):
-        self.decoder = decoder
+    def __init__(self, encoding, conflict_strat=C_STRAT_MAX):
+        self.decoder = ENCODINGS_MAP[encoding]['decoder']()
         self.conflict_strat=conflict_strat
 
     def preprocess_label(self, label):
@@ -425,25 +425,14 @@ class c_dynamic_decoder:
         tree=tree.children[0]
         return tree
 
-# given a tree encodes it and decodes and checks if it is the same
-def test_single(txt,e,d):
-    tree=read_trees(txt)[0]
-    original_tree = copy.deepcopy(tree)
-    labels, pos_tags = e.encode(tree)
-    decoded_tree=d.decode(labels,pos_tags)
-    return original_tree == decoded_tree
-def test_file(filepath,e,d):
-    f=open(filepath)
-    i=0
-    for line in f:
-        r=test_single(line,e,d)
-        if not r:
-            print("[*] Errot at",i)
-            break
-        i+=1
+ENCODINGS_MAP = {
+    C_ABSOLUTE_ENCODING:{'encoder':c_absolute_encoder,'decoder':c_absolute_decoder},
+    C_RELATIVE_ENCODING:{'encoder':c_relative_encoder,'decoder':c_relative_decoder},
+    C_DYNAMIC_ENCODING:{'encoder':c_dynamic_encoder,'decoder':c_dynamic_decoder},
+}
 
 # given a tree encodes it and writes the label to a file
-def linearize_single(txt, e):
+def encode_single(txt, e):
     tree=read_trees(txt)[0]
     original_tree = copy.deepcopy(tree)
     labels, pos_tags = e.encode(tree)
@@ -456,13 +445,15 @@ def linearize_single(txt, e):
         lt.append((str(l.n_commons)+"_"+str(l.last_common)+"_"+str(l.encoding_type), p[1], p[0]))
     lt.append(('-EOS-','-EOS-','-EOS-'))
     return lt
-def linearize_constituent(in_path, out_path, encoder):
+def encode_constituent(in_path, out_path, encoding_type):
     f_in=open(in_path)
     f_out=open(out_path,"w+")
 
+    e=constituent_encoder(encoding_type)
+
     tree_counter=0
     for line in f_in:
-        linearized_tree = linearize_single(line, encoder)
+        linearized_tree = encode_single(line, e)
         for label in linearized_tree:
             f_out.write(u"\t".join([label[2],label[1],label[0]])+u"\n")
         f_out.write("\n")
@@ -470,7 +461,7 @@ def linearize_constituent(in_path, out_path, encoder):
     return tree_counter
 
 # given a label file decodes it and writes the decoded to a file
-def delinearize_single(lbls,d):
+def decode_single(lbls,d):
     labels = []
     postags = []
     for lbl in lbls:
@@ -480,9 +471,11 @@ def delinearize_single(lbls,d):
         postags.append([word, postag])
     
     return d.decode(labels,postags)
-def decode_constituent(in_path, out_path, decoder):
+def decode_constituent(in_path, out_path, encoding_type):
     f_in=open(in_path)
     f_out=open(out_path,"w+")
+
+    d=constituent_decoder(encoding_type)
 
     tree_counter=0
     decoded_trees = []
@@ -491,7 +484,7 @@ def decode_constituent(in_path, out_path, decoder):
     is_appending = False
     for line in f_in:
         if "-EOS-" in line:
-            decoded_tree=delinearize_single(current_tree,decoder)
+            decoded_tree=decode_single(current_tree,d)
             f_out.write(str(decoded_tree))
             f_out.write("\n")
             tree_counter+=1
@@ -506,6 +499,3 @@ def decode_constituent(in_path, out_path, decoder):
 
 
     return tree_counter
-
-linearize_constituent("./test.gold", "./test_abs.labels", constituent_encoder(c_dynamic_encoder()))
-decode_constituent("./test_abs.labels", "./test_abs.decoded", constituent_decoder(c_dynamic_decoder()))

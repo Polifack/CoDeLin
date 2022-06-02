@@ -9,9 +9,8 @@ D_RELATIVE_ENCODING = 'REL'
 D_POS_ENCODING = 'POS'
 D_BRACKET_ENCODING = 'BRK'
 D_BRACKET_ENCODING_2P = 'BRK_2P'
-D_2P_GREED = '2P_GRD'
-D_2P_PROP = '2P_PRP'
-
+D_2P_GREED = 'GREED'
+D_2P_PROP = 'PRPOPAGATE'
 
 class dependency_graph_node:
     # class for the nodes of the dependency graph obtained
@@ -38,8 +37,19 @@ class encoded_dependency_label:
 ##############################
 
 class dependency_encoder:
-    def __init__(self, encoding_type):
-        self.encoder = encoding_type
+    def __init__(self, encoding, displacement=None, planar_alg=None):
+        if encoding == D_ABSOLUTE_ENCODING:
+            self.encoder=ENCODINGS_MAP[encoding]['encoder']()
+        elif encoding == D_RELATIVE_ENCODING:
+            self.encoder=ENCODINGS_MAP[encoding]['encoder']()
+        elif encoding == D_POS_ENCODING:
+            self.encoder=ENCODINGS_MAP[encoding]['encoder']()
+        elif encoding == D_BRACKET_ENCODING:
+            self.encoder=ENCODINGS_MAP[encoding]['encoder'](displacement)
+        elif encoding == D_BRACKET_ENCODING_2P:
+            self.encoder=ENCODINGS_MAP[encoding]['encoder'](planar_alg, displacement)
+        else:
+            print("[*] Error: encoding",encoding," not valid")
     
     def encode(self, nodes):
         return self.encoder.encode(nodes)[1:]
@@ -88,7 +98,7 @@ class d_pos_encoder:
                 if oi == nodes[i].pos:
                     pi+=step
 
-            current=encoded_dependency_label(D_POS_ENCODING, (pi, oi), node.relation)
+            current=encoded_dependency_label(D_POS_ENCODING, str(pi)+"--"+oi, node.relation)
             encoded_labels.append(current)
         
         return encoded_labels
@@ -108,27 +118,13 @@ class d_brk_encoder:
             # arrow incoming from right
             # head is RIGHT to ID
             if node.id < node.head:
-                # if i have a incoming arrow from right: 
-                #       < at node.id + (displacement?1:0)
-                #       \ at head
-                if self.displacement:
-                    labels_brk[node.id+1]+='<'
-                else:
-                    labels_brk[node.id]+='<'
-
+                labels_brk[node.id + (1 if self.displacement else 0)]+='<'
                 labels_brk[node.head]+='\\'
             
             # arrow incoming from left
             # head is LEFT to ID
             else:
-                # if i have a incoming arrow from left:
-                #       / at node.id + (displacement?1:0)
-                #       > at head
-                if self.displacement:
-                    labels_brk[node.head+1]+='/'
-                else:
-                    labels_brk[node.head]+='/'
-
+                labels_brk[node.head + (1 if self.displacement else 0)]+='/'
                 labels_brk[node.id]+='>'
         
         for node in nodes:
@@ -300,24 +296,22 @@ class d_brk_2p_encoder:
 ##############################
 
 class dependency_decoder:
-    def __init__(self, decoder):
-        self.decoder = decoder
-
-    def decode(self, labels):
-        return self.decoder.decode(labels)
-
-class d_absolute_decoder:
-    def decode(self, labels):
-        decoded_nodes = []
-        i = 1
-        for label in labels:
-            decoded_nodes.append(dependency_graph_node(i, "", label.xi, "", label.li))
-            i+=1
-
-        self.check_loops(decoded_nodes)
-        self.check_roots(decoded_nodes)
-        return decoded_nodes
-    
+    def __init__(self, encoding, displacement=False):
+        if encoding == D_ABSOLUTE_ENCODING:
+            self.decoder=ENCODINGS_MAP[D_ABSOLUTE_ENCODING]['decoder']()
+        elif encoding == D_RELATIVE_ENCODING:
+            self.decoder=ENCODINGS_MAP[D_RELATIVE_ENCODING]['decoder']()
+        elif encoding == D_POS_ENCODING:
+            self.decoder=ENCODINGS_MAP[D_POS_ENCODING]['decoder']()
+        elif encoding == D_BRACKET_ENCODING:
+            # Default to TRUE displacement
+            self.decoder=ENCODINGS_MAP[D_BRACKET_ENCODING]['decoder'](displacement)
+        elif encoding == D_BRACKET_ENCODING_2P:
+            # Default to TRUE displacement 
+            self.decoder=ENCODINGS_MAP[D_BRACKET_ENCODING_2P]['decoder'](displacement)
+        else:
+            print("[*] Error: encoding",encoding," not valid")
+        
     def check_roots(self, nodes):
         has_root=False
         current_root=0
@@ -345,6 +339,7 @@ class d_absolute_decoder:
         for node in nodes:
             has_loop = self.check_loops_rec(nodes, node.id, node.head)  
             if has_loop:
+                print("FIX")
                 # if we have a loop we break the loop haning the node from the root
                 node.head = 0
 
@@ -354,33 +349,44 @@ class d_absolute_decoder:
             # set head at root
             if node.head > len(nodes) or node.head < 0:
                 node.head = 0
-            
 
-class d_relative_decoder:
-    def decode(self, labels):
+    def decode(self, labels, postags,words):
+        decoded_nodes=self.decoder.decode(labels,postags,words)
+        #self.check_loops(decoded_nodes)
+        #self.check_roots(decoded_nodes)
+        return decoded_nodes
+
+class d_absolute_decoder:
+    def decode(self, labels, postags, words):
         decoded_nodes = []
         i = 1
-        for label in labels:
-            decoded_nodes.append(dependency_graph_node(i, "", label.xi+i, "", label.li))
+        for label, postag, word in zip(labels,postags,words):
+            decoded_nodes.append(dependency_graph_node(i, word, int(label.xi), postag, label.li))
+            i+=1
+        return decoded_nodes
+class d_relative_decoder:
+    def decode(self, labels, postags, words):
+        decoded_nodes = []
+        i = 1
+        for label,postag,word in zip(labels,postags,words):
+            decoded_nodes.append(dependency_graph_node(i, word, int(label.xi)+i, postag, label.li))
             i+=1
         
         return decoded_nodes
 class d_pos_decoder:
-    def __init__(self, pos_tags):
-        self.pos_tags=pos_tags
-
-    def decode(self, labels):
+    def decode(self, labels, postags, words):
         decoded_nodes = []
         i=0
-        for label in labels:
+        for label,postag,word in zip(labels,postags,words):
             # get the (pi, oi) tuple
             # oi: PoS tag of the word in the head position
             # pi: number of oi found until reach the head position
-            pi,oi=label.xi 
+            pi,oi=label.xi.split('--')            
+            pi=int(pi)
 
             if (oi=='ROOT'):
                 i+=1
-                decoded_nodes.append(dependency_graph_node(i+1, "", 0, "", label.li))
+                decoded_nodes.append(dependency_graph_node(i+1, word, 0, postag, label.li))
                 continue
 
             # store the value of pi (number of oi found) to substract it
@@ -388,12 +394,13 @@ class d_pos_decoder:
 
             # create the step and the stop point 
             step = 1
-            stop_point = len(self.pos_tags)-i
+            stop_point = len(postags)
             
+            # change them if we have a negative value
             if (pi<0):
                 step = -1
                 stop_point = 0
-
+                
             # iterate over the postags until find the one matching
             # we iterate starting at the word and in the direction 
             # of the head, depending if it is positive or negative
@@ -401,12 +408,12 @@ class d_pos_decoder:
             # of the head
 
             for j in range (i, stop_point, step):                  
-                if (oi==self.pos_tags[j]):
+                if (oi==postags[j]):
                     target_pi-=step
                 if (target_pi==0):
                     break       
                 
-            decoded_nodes.append(dependency_graph_node(i+1, "", j+1, "", label.li))
+            decoded_nodes.append(dependency_graph_node(i+1, word, j+1, postag, label.li))
 
             i+=1
         
@@ -415,59 +422,50 @@ class d_brk_decoder:
     def __init__(self, displacement):
         self.displacement=displacement
 
-    def decode(self, labels):
-        # decoding: each opening bracket closes with the first encountered
-        # can decode non-projective trees where the arcs cross in different directions
-        # cant encode non-projective trees where the arcs cross in the same direction
+    def decode(self, labels, postags, words):
         decoded_nodes=[0 for l in labels]
-        # stack formed by tuples ('brk_char', 'id', 'rel')
-        # char : bracket of the label
-        # id : node that put the char
-        # l_stack -> dependencies where head < id (head is more left than id) (arrow go from right towards left)
-        # r_stack -> dependencies here head > id  (head is more right than id) (arrow go from left towards right)
         l_stack = []
         r_stack = []
         
         current_node = 0
 
-        for label in labels:
+        for label, postag, word in zip(labels,postags,words):
             brks=list(label.xi)
                         
             # create a the node
-            decoded_nodes[current_node]=dependency_graph_node(current_node, "", 0, "", label.li)
+            decoded_nodes[current_node]=dependency_graph_node(current_node, word, 0, postag, label.li)
         
             # fill the relation using brks
             for char in brks:
                 if char == "<":
-                    #  current_node-1 has incoming arc from right
-                    if self.displacement:
-                        node_id = current_node-1
-                    else:
-                        node_id = current_node
+                    node_id = current_node + (-1 if self.displacement else 0)
                     r_stack.append((node_id,char))
+
                 if char == "\\":
                     head_id = r_stack.pop()[0]
                     decoded_nodes[head_id].head=current_node
                 
-                
                 if char =="/":
-                    if self.displacement:
-                        node_id = current_node-1
-                    else:
-                        node_id = current_node
+                    node_id = current_node + (-1 if self.displacement else 0)
                     l_stack.append((node_id,char))
+
                 if char == ">":
                     head_id = l_stack.pop()[0]
                     decoded_nodes[current_node].head=head_id
             
             current_node+=1
 
+        # fix index start at 0
+        for node in decoded_nodes:
+            node.id += 1
+            node.head += (1 if node.head!= 0 else 0)
+
         return decoded_nodes        
 class d_brk_2p_decoder:
     def __init__(self, displacement):
         self.displacement=displacement
     
-    def decode(self, labels):
+    def decode(self, labels, postags, words):
         decoded_nodes=[None for l in labels]
         
         # create plane stacks
@@ -478,7 +476,7 @@ class d_brk_2p_decoder:
         
         current_node=0
 
-        for label in labels:
+        for label, postag, word in zip(labels,postags,words):
             # join the plane signaler char with the bracket char
             brks=list(label.xi)
             temp_brks=[]
@@ -492,65 +490,59 @@ class d_brk_2p_decoder:
             brks=temp_brks
             
             # create a the node
-            decoded_nodes[current_node]=dependency_graph_node(current_node, "", 0, "", label.li)
+            decoded_nodes[current_node]=dependency_graph_node(current_node, word, 0, postag, label.li)
         
             # fill the relation using brks
             for char in brks:
                 if char == "<":
-                    # current_node-1 has incoming arc from right
-                    if self.displacement:
-                        node_id = current_node-1
-                    else:
-                        node_id=current_node
+                    node_id=current_node + (-1 if self.displacement else 0)
                     r_stack_p1.append((node_id,char))
+                
                 if char == "\\":
-                    # current_node has outgoing arc towards left
                     head_id = r_stack_p1.pop()[0]
                     decoded_nodes[head_id].head=current_node
                 
-                
                 if char =="/":
-                    # current_node-1 has outgoing arc towards right
-                    if self.displacement:
-                        node_id = current_node-1
-                    else:
-                        node_id=current_node
+                    node_id=current_node + (-1 if self.displacement else 0)
                     l_stack_p1.append((node_id,char))
+
                 if char == ">":
-                    # current_node has incoming arc from left
                     head_id = l_stack_p1.pop()[0]
                     decoded_nodes[current_node].head=head_id
 
-                    
                 if char == "<*":
-                    # current_node-1 has incoming arc from right
-                    if self.displacement:
-                        node_id = current_node-1
-                    else:
-                        node_id=current_node
+                    node_id=current_node + (-1 if self.displacement else 0)
                     r_stack_p2.append((node_id,char))
+                
                 if char == "\\*":
-                    # current_node has outgoing arc towards left
                     head_id = r_stack_p2.pop()[0]
                     decoded_nodes[head_id].head=current_node
                 
-                
                 if char =="/*":
-                    # current_node-1 has outgoing arc towards right
-                    if self.displacement:
-                        node_id = current_node-1
-                    else:
-                        node_id=current_node
+                    node_id=current_node + (-1 if self.displacement else 0)
                     l_stack_p2.append((node_id,char))
+
                 if char == ">*":
-                    # current_node has incoming arc from left
                     head_id = l_stack_p2.pop()[0]
                     decoded_nodes[current_node].head=head_id
             
             current_node+=1
         
-        return decoded_nodes
+        # fix index start at 0
+        for node in decoded_nodes:
+            node.id += 1
+            node.head += (1 if node.head!= 0 else 0)
 
+        return decoded_nodes    
+
+##############################
+ENCODINGS_MAP = {
+    D_ABSOLUTE_ENCODING:{'encoder':d_absolute_encoder,'decoder':d_absolute_decoder},
+    D_RELATIVE_ENCODING:{'encoder':d_relative_encoder,'decoder':d_relative_decoder},
+    D_POS_ENCODING:{'encoder':d_pos_encoder,'decoder':d_pos_decoder},
+    D_BRACKET_ENCODING:{'encoder':d_brk_encoder,'decoder':d_brk_decoder},
+    D_BRACKET_ENCODING_2P:{'encoder':d_brk_2p_encoder,'decoder':d_brk_2p_decoder}
+}
 ##############################
 
 # parses a conllu file and returns dependency_graph_node
@@ -623,26 +615,7 @@ def parse_conllu(token_tree, nlp=None):
     
     return nodes,pos_tags
 
-# given a tree encodes it and decodes and checks if it is the same
-def test_file(filepath, e, d):
-    data_file = open(filepath, "r", encoding="utf-8")
-
-    i=0
-    for token_tree in parse_tree_incr(data_file):
-        r = test_single(token_tree,e,d)
-        if not r:
-            print("[*] Error at",i)
-            break
-        i+=1
-def test_single(tt,e,d):
-    nodes,pos_tags=parse_conllu(tt)
-    encoded_labels=e.encode(nodes)
-    decoded_nodes=d.decode(encoded_labels)
-
-    return nodes == decoded_nodes
-
-# given a tree encodes it and writes the label to a file
-def linearize_single(tt, e, nlp=None):
+def encode_single(tt, e, nlp=None):
     nodes,pos_tags = parse_conllu(tt,nlp)
     encoded_labels = e.encode(nodes)
 
@@ -654,73 +627,78 @@ def linearize_single(tt, e, nlp=None):
         lt.append((str(l.li)+"_"+str(l.xi)+"_"+(l.encoding_type), p[1], p[0]))
     lt.append(('-EOS-','-EOS-','-EOS-'))
     return lt
-def linearize_dependencies(in_path, out_path, encoder, use_gold=True, lang=None):
+def encode_dependencies(in_path, out_path, encoding_type, displacement=False, planar_alg=D_2P_GREED, no_gold=False, lang=None):
+    # create encoder
+    encoder = dependency_encoder(encoding_type, displacement, planar_alg)
+
+    # open files
     f_in=open(in_path)
     f_out=open(out_path,"w+")
 
     # optional part to linearize tree using predicted pos_tags
     nlp=None
-    if not use_gold:
+    if no_gold:
         stanza.download(lang=lang, model_dir="./stanza_resources")
         nlp = stanza.Pipeline(lang=lang, processors='tokenize,pos', model_dir="./stanza_resources")
     
     tree_counter = 0
     for d_tree in parse_tree_incr(f_in):
-        linearized_tree = linearize_single(d_tree, encoder, nlp)
+        linearized_tree = encode_single(d_tree, encoder, nlp)
         for label in linearized_tree:
             f_out.write(u"\t".join([label[1],label[2],label[0]])+u"\n")
         f_out.write("\n")
         tree_counter+=1
     return tree_counter
 
-def delinearize_single(lbls, d):
+def decode_single(lbls, decoder):
     labels = []
     postags = []
     words = []
     for lbl in lbls:
         word, postag, label = lbl.split("\t")
         label = label.split("_")
-        labels.append(encoded_dependency_label(label[2], int(label[1]), label[0]))
+        labels.append(encoded_dependency_label(label[2], label[1], label[0]))
         postags.append(postag)
         words.append(word)
 
-    
-    decoded_nodes=d.decode(labels)
+    decoded_nodes=decoder.decode(labels,postags,words)
     decoded_tokens=[]
     
-    for w,p,n in zip(words, postags, decoded_nodes):
-        decoded_tokens.append({"id":n.id,"form":w,
-        "lemma":"_","upos":p,"xpos":"_","feats":"_",
+    for n in decoded_nodes:
+        decoded_tokens.append({"id":n.id,"form":n.text,
+        "lemma":"_","upos":n.pos,"xpos":"_","feats":"_",
         "head":n.head,"deprel":n.relation,"deps":"_","misc":"_"})
     
     decoded_token_list=TokenList(decoded_tokens)
     return decoded_token_list.serialize()
-    
-def decode_dependencies(in_path, out_path, decoder):
+def decode_dependencies(in_path, out_path, encoding_type, displacement=False):
+    # create decoder
+    decoder = dependency_decoder(encoding_type, displacement=displacement)
+
+    # open files
     f_in=open(in_path)
     f_out=open(out_path,"w+")
 
-    tree_counter=0
-    decoded_trees = []
+    token_list_counter=0
+    decoded_token_list = []
 
-    current_tree = []
+    current_labels = []
     is_appending = False
     for line in f_in:
         if "-EOS-" in line:
-            decoded_token_list=delinearize_single(current_tree,decoder)
-            f_out.write(str(decoded_token_list))
-            f_out.write("\n")
-            tree_counter+=1
+            decoded_token_list.append(decode_single(current_labels, decoder))
+            token_list_counter+=1
             is_appending=False
         
         if is_appending:
-            current_tree.append(line.replace('\n',''))
+            current_labels.append(line.replace('\n',''))
 
         if "-BOS-" in line:
-            current_tree=[]
+            current_labels=[]
             is_appending=True
 
-    return tree_counter
+    for token_list in decoded_token_list:
+        f_out.write(str(token_list))
+        f_out.write("\n")
 
-linearize_dependencies("./test.gold", "./test_abs.labels", dependency_encoder(d_absolute_encoder()))
-decode_dependencies("./test_abs.labels", "./test_abs.decoded",dependency_decoder(d_absolute_decoder()))
+    return token_list_counter
