@@ -10,7 +10,7 @@ D_POS_ENCODING = 'POS'
 D_BRACKET_ENCODING = 'BRK'
 D_BRACKET_ENCODING_2P = 'BRK_2P'
 D_2P_GREED = 'GREED'
-D_2P_PROP = 'PRPOPAGATE'
+D_2P_PROP = 'PROPAGATE'
 
 class dependency_graph_node:
     # class for the nodes of the dependency graph obtained

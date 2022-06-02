@@ -23,7 +23,7 @@ Can be used to encode single files with main.py or to encode a whole training se
 Example command to encode single file:
 ```
 $ python3.8 encode.py --time --form CONST --enc ABS --input test.gold --output test.labels
-$ python3.8 encode.py --time --form DEPS --enc BRK_2P --planar GREED --disp --nogold --lang en --input test.gold --output test.labels
+$ python3.8 encode.py --time --form DEPS --enc BRK_2P --planar PROPAGATE --disp --nogold --lang en --input test.gold --output test.labels
 ```
 Example command to decode single file
 ```
