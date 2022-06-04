@@ -313,47 +313,59 @@ class dependency_decoder:
             print("[*] Error: encoding",encoding," not valid")
         
     def check_roots(self, nodes):
-        has_root=False
-        current_root=0
+        # sets all roots to the first root found
+        # and sets all cycle-broken/out_of_bounds nodes to the
+        # first root found. if no root is found we set it to the 
+        # first node
+        
+        root=1
+
+        # find root
         for node in nodes:
-            if node.head==0:
-                if not has_root:
-                    has_root=True
-                    current_root=node.id
-                else:
-                    # if we have more than one root we hang all the other roots from the 
-                    # first discovered one
-                    node.head=current_root
+            if node.head == 0:
+                root = node.id
+
+        # if no root found, just make it sure that we have one
+        nodes[root-1].head=0
+
+        for node in nodes:
+            if node.id == root:
+                continue
+            if node.head == 0:
+                node.head = root
+            if node.head == -1:
+                node.head = root
+
+            if node.head == -1:
+                print("error")
+
     
-    def check_loops_rec(self, nodes, check_id, current_head):
-        if check_id==current_head:
-            return True
-        elif current_head == 0:
-            return False
-        else:
-            new_head = nodes[current_head-1].head
-            return self.check_loops_rec(nodes, check_id, new_head)
-
-
     def check_loops(self, nodes):
         for node in nodes:
-            has_loop = self.check_loops_rec(nodes, node.id, node.head)  
-            if has_loop:
-                print("FIX")
-                # if we have a loop we break the loop haning the node from the root
-                node.head = 0
+            visited = []
+            while (node.head != 0) and (node.head!=-1):
+                if node in visited:
+                    node.head = -1
+                else:
+                    visited.append(node)
+                    node = nodes[node.head-1]
+        return None
 
     def check_valid_nodes(self, nodes):
         for node in nodes:
             # if a node has head outside range of nodes
             # set head at root
-            if node.head > len(nodes) or node.head < 0:
-                node.head = 0
+            if node.head < 0:
+                node.head = -1
+            elif node.head > (len(nodes)-1):
+                node.head = -1
+
 
     def decode(self, labels, postags,words):
         decoded_nodes=self.decoder.decode(labels,postags,words)
-        #self.check_loops(decoded_nodes)
-        #self.check_roots(decoded_nodes)
+        self.check_valid_nodes(decoded_nodes)
+        self.check_loops(decoded_nodes)
+        self.check_roots(decoded_nodes)
         return decoded_nodes
 
 class d_absolute_decoder:
@@ -638,30 +650,44 @@ def encode_dependencies(in_path, out_path, encoding_type, displacement=False, pl
     # optional part to linearize tree using predicted pos_tags
     nlp=None
     if no_gold:
-        stanza.download(lang=lang, model_dir="./stanza_resources")
+        #stanza.download(lang=lang, model_dir="./stanza_resources")
         nlp = stanza.Pipeline(lang=lang, processors='tokenize,pos', model_dir="./stanza_resources")
     
     tree_counter = 0
     for d_tree in parse_tree_incr(f_in):
         linearized_tree = encode_single(d_tree, encoder, nlp)
         for label in linearized_tree:
-            f_out.write(u"\t".join([label[1],label[2],label[0]])+u"\n")
+            f_out.write(u" ".join([label[1],label[2],label[0]])+u"\n")
         f_out.write("\n")
         tree_counter+=1
     return tree_counter
 
-def decode_single(lbls, decoder):
+def decode_single(lbls, decoder, nlp):
     labels = []
     postags = []
     words = []
     for lbl in lbls:
-        word, postag, label = lbl.split("\t")
+
+        # mirar por que no devuelve los postags la 
+        # prediccion de ncrfpp, y, si son necesarios
+        # o si se deberian encodear en la label
+
+        word, label = lbl.split(" ")
         label = label.split("_")
         labels.append(encoded_dependency_label(label[2], label[1], label[0]))
-        postags.append(postag)
         words.append(word)
 
-    decoded_nodes=decoder.decode(labels,postags,words)
+    sentence = ""
+    for word in words:
+        sentence+=" "+word
+
+    predicted_postags=[]
+    doc = nlp(sentence)
+    for element in doc.sentences:
+        for word in element.words:
+            predicted_postags.append(word.upos)
+
+    decoded_nodes=decoder.decode(labels,predicted_postags,words)
     decoded_tokens=[]
     
     for n in decoded_nodes:
@@ -679,6 +705,11 @@ def decode_dependencies(in_path, out_path, encoding_type, displacement=False):
     f_in=open(in_path)
     f_out=open(out_path,"w+")
 
+    # start stanza for pos prediction
+    # note that 'en' must be a language variable 
+    #stanza.download(lang='en', model_dir="./stanza_resources")
+    nlp = stanza.Pipeline(lang='en', processors='tokenize,pos', model_dir="./stanza_resources")
+
     token_list_counter=0
     decoded_token_list = []
 
@@ -686,7 +717,7 @@ def decode_dependencies(in_path, out_path, encoding_type, displacement=False):
     is_appending = False
     for line in f_in:
         if "-EOS-" in line:
-            decoded_token_list.append(decode_single(current_labels, decoder))
+            decoded_token_list.append(decode_single(current_labels, decoder, nlp))
             token_list_counter+=1
             is_appending=False
         
@@ -699,6 +730,5 @@ def decode_dependencies(in_path, out_path, encoding_type, displacement=False):
 
     for token_list in decoded_token_list:
         f_out.write(str(token_list))
-        f_out.write("\n")
 
     return token_list_counter
