@@ -6,10 +6,8 @@ def run_encoding_script(form, enc, files_to_encode, outlbl, outmodel, outdec, de
     filename_encoding = enc
     if planar != None:
         filename_encoding += "_"+planar
-    if disp != None:
+    if disp != None and disp == True:
         filename_encoding += "_D"
-    
-    print("[*] Running for encoding",filename_encoding)
 
     if not os.path.exists(args.outcfg):
         os.mkdir(args.outcfg)
@@ -27,7 +25,7 @@ def run_encoding_script(form, enc, files_to_encode, outlbl, outmodel, outdec, de
 
 
     for file_in, file_out in zip(files_to_encode,output_labels):        
-        os.system("python3.8 encode.py --time --form "+form+" --enc "+enc+
+        os.system("taskset --cpu-list 1 python3.8 encode.py --time --form "+form+" --enc "+enc+
             (" --disp " if disp else "")+((" --planar "+planar) if planar else "")+" --input "+file_in+" --output "+file_out)
 
     f_in = open(default_cfg_t)
@@ -45,11 +43,10 @@ def run_encoding_script(form, enc, files_to_encode, outlbl, outmodel, outdec, de
     for line in f_in:
         f_out.write(line)
     f_out.write("raw_dir="+out_lbl_test+'\n')
-    f_out.write("decode_dir="+outdec+'.labels\n')
+    f_out.write("decode_dir="+outdec+"_"+filename_encoding+'.labels\n')
     f_out.write("dset_dir="+outmodel+"_"+filename_encoding+".dset\n")
     f_out.write("load_model_dir="+outmodel+"_"+filename_encoding+".model\n")
 
-    
 
 if __name__=="__main__":
     parser = argparse.ArgumentParser(description='Lineraizes tree files (dev/train/test) in folders and generates config file')
@@ -109,11 +106,11 @@ if __name__=="__main__":
         for encoding in ["ABS","REL","POS"]:
             run_encoding_script(args.form, encoding, files_to_encode, args.outlbl, args.outmodel, args.outdec, args.t_config, args.d_config)
         
-        run_encoding_script(args.form, "BRK", files_to_encode, args.outlbl, args.outmodel, args.outdec, args.t_config, args.d_config)
+        run_encoding_script(args.form, "BRK", files_to_encode, args.outlbl, args.outmodel, args.outdec, args.t_config, args.d_config, disp = False)
         run_encoding_script(args.form, "BRK", files_to_encode, args.outlbl, args.outmodel, args.outdec, args.t_config, args.d_config, disp=True)
-        run_encoding_script(args.form, "BRK_2P", files_to_encode, args.outlbl, args.outmodel, args.outdec, args.t_config, args.d_config, planar="GREED")
+        run_encoding_script(args.form, "BRK_2P", files_to_encode, args.outlbl, args.outmodel, args.outdec, args.t_config, args.d_config, disp = False, planar="GREED")
         run_encoding_script(args.form, "BRK_2P", files_to_encode, args.outlbl, args.outmodel, args.outdec, args.t_config, args.d_config, disp=True,planar="GREED")
-        run_encoding_script(args.form, "BRK_2P", files_to_encode, args.outlbl, args.outmodel, args.outdec, args.t_config, args.d_config ,planar="PROPAGATE")
+        run_encoding_script(args.form, "BRK_2P", files_to_encode, args.outlbl, args.outmodel, args.outdec, args.t_config, args.d_config, disp = False ,planar="PROPAGATE")
         run_encoding_script(args.form, "BRK_2P", files_to_encode, args.outlbl, args.outmodel, args.outdec, args.t_config, args.d_config, disp=True,planar="PROPAGATE")
         
         

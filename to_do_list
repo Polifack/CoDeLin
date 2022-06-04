@@ -1,6 +1,4 @@
 Uso de containers (VENV/CONDA)
 Multitask Learning (machamp)
-
-Volver a tomar tiempos usando taskset --cpu-list 1
 Mirar hugginface
 PoS pide los postags? metodo set_postags()? predecirlos? anadirlos a la label?
