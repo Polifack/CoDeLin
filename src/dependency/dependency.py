@@ -432,7 +432,7 @@ class d_pos_decoder:
         return decoded_nodes
 class d_brk_decoder:
     def __init__(self, displacement):
-        self.displacement=displacement
+        self.displacement = displacement
 
     def decode(self, labels, postags, words):
         decoded_nodes=[0 for l in labels]
@@ -475,7 +475,7 @@ class d_brk_decoder:
         return decoded_nodes        
 class d_brk_2p_decoder:
     def __init__(self, displacement):
-        self.displacement=displacement
+        self.displacement = displacement
     
     def decode(self, labels, postags, words):
         decoded_nodes=[None for l in labels]

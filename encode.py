@@ -24,14 +24,15 @@ def do_encode(t, formalism, encoding, pi, po, planar, disp, no_gold, lang):
 
         if no_gold == True and lang == None:
             print("[*] Error: If not using gold POSTAGS ust specify a language for the predictions.")
-            
+        
         n_trees=encode_dependencies(pi, po, encoding,disp,planar,no_gold,lang)
     ##
 
     if t:
         delta_time=time.time()-start_time
         t_str="{:.2f}".format(delta_time)
-        print("[*] FILE:",pi,"|| ENC:",formalism,"/",encoding,"|| T:",t_str,"|| NT",n_trees,"|| T/S",n_trees/delta_time)
+        e_str = encoding + ("_"+str(disp) if disp!=None else "") + ("_"+planar if planar!=None else "")
+        print("[*] FILE:",pi,"|| ENC:",formalism,"/",e_str,"|| T:",t_str,"|| NT",n_trees,"|| T/S",n_trees/delta_time)
 
 
 if __name__=="__main__":
@@ -45,11 +46,11 @@ if __name__=="__main__":
     parser.add_argument('--enc', metavar='encoding_type', type=str, choices=["ABS","REL","DYN","POS","BRK","BRK_2P"], 
                         required=True, help='encoding type for the encoding')
 
-    parser.add_argument('--disp', action='store_true', required=False, default=True,
+    parser.add_argument('--disp', action='store_true', required=False, default=None,
                         help='use displacement on bracket encoding')
     
     parser.add_argument('--planar', metavar='planar_alg', type=str, choices=['GREED','PROPAGATE'],
-                        required=False, help='planar separation algorithm (only BRK_2P)')
+                        default=None, required=False, help='planar separation algorithm (only BRK_2P)')
 
     parser.add_argument('--nogold', action='store_true', required=False, default=False,
                         help='predict postags instead of using gold anotations')

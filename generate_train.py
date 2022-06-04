@@ -24,9 +24,10 @@ def run_encoding_script(form, enc, files_to_encode, outlbl, outmodel, outdec, de
     output_cfg_d = args.outcfg+"/"+filename_encoding+"_decode.config"
 
 
-    for file_in, file_out in zip(files_to_encode,output_labels):        
-        os.system("taskset --cpu-list 1 python3.8 encode.py --time --form "+form+" --enc "+enc+
+    for file_in, file_out in zip(files_to_encode,output_labels):
+        cmd=("taskset --cpu-list 1 python3.8 encode.py --time --form "+form+" --enc "+enc+
             (" --disp " if disp else "")+((" --planar "+planar) if planar else "")+" --input "+file_in+" --output "+file_out)
+        os.system(cmd)
 
     f_in = open(default_cfg_t)
     f_out = open(output_cfg_t,"w+")
@@ -106,12 +107,9 @@ if __name__=="__main__":
         for encoding in ["ABS","REL","POS"]:
             run_encoding_script(args.form, encoding, files_to_encode, args.outlbl, args.outmodel, args.outdec, args.t_config, args.d_config)
         
-        run_encoding_script(args.form, "BRK", files_to_encode, args.outlbl, args.outmodel, args.outdec, args.t_config, args.d_config, disp = False)
+        run_encoding_script(args.form, "BRK", files_to_encode, args.outlbl, args.outmodel, args.outdec, args.t_config, args.d_config, disp=False)
         run_encoding_script(args.form, "BRK", files_to_encode, args.outlbl, args.outmodel, args.outdec, args.t_config, args.d_config, disp=True)
-        run_encoding_script(args.form, "BRK_2P", files_to_encode, args.outlbl, args.outmodel, args.outdec, args.t_config, args.d_config, disp = False, planar="GREED")
-        run_encoding_script(args.form, "BRK_2P", files_to_encode, args.outlbl, args.outmodel, args.outdec, args.t_config, args.d_config, disp=True,planar="GREED")
-        run_encoding_script(args.form, "BRK_2P", files_to_encode, args.outlbl, args.outmodel, args.outdec, args.t_config, args.d_config, disp = False ,planar="PROPAGATE")
-        run_encoding_script(args.form, "BRK_2P", files_to_encode, args.outlbl, args.outmodel, args.outdec, args.t_config, args.d_config, disp=True,planar="PROPAGATE")
-        
-        
-
+        run_encoding_script(args.form, "BRK_2P", files_to_encode, args.outlbl, args.outmodel, args.outdec, args.t_config, args.d_config, disp=False, planar="GREED")
+        run_encoding_script(args.form, "BRK_2P", files_to_encode, args.outlbl, args.outmodel, args.outdec, args.t_config, args.d_config, disp=True, planar="GREED")
+        run_encoding_script(args.form, "BRK_2P", files_to_encode, args.outlbl, args.outmodel, args.outdec, args.t_config, args.d_config, disp=False, planar="PROPAGATE")
+        run_encoding_script(args.form, "BRK_2P", files_to_encode, args.outlbl, args.outmodel, args.outdec, args.t_config, args.d_config, disp=True, planar="PROPAGATE")
