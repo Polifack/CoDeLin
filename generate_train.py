@@ -109,11 +109,11 @@ if __name__=="__main__":
         for encoding in ["ABS","REL","POS"]:
             run_encoding_script(args.form, encoding, files_to_encode, args.outlbl, args.outmodel, args.outdec, args.t_config, args.d_config)
         
-        run_encoding_script(args.form, "BRK", files_to_encode, args.outlbl, args.outmodel, args.outdec, args.t_config, args.d_config, disp=False)
+        run_encoding_script(args.form, "BRK", files_to_encode, args.outlbl, args.outmodel, args.outdec, args.t_config, args.d_config)
         run_encoding_script(args.form, "BRK", files_to_encode, args.outlbl, args.outmodel, args.outdec, args.t_config, args.d_config, disp=True)
+        run_encoding_script(args.form, "BRK_2P", files_to_encode, args.outlbl, args.outmodel, args.outdec, args.t_config, args.d_config, planar="GREED")
         run_encoding_script(args.form, "BRK_2P", files_to_encode, args.outlbl, args.outmodel, args.outdec, args.t_config, args.d_config, disp=True,planar="GREED")
-        run_encoding_script(args.form, "BRK_2P", files_to_encode, args.outlbl, args.outmodel, args.outdec, args.t_config, args.d_config, disp=True,planar="GREED")
-        run_encoding_script(args.form, "BRK_2P", files_to_encode, args.outlbl, args.outmodel, args.outdec, args.t_config, args.d_config, disp=True,planar="PROPAGATE")
+        run_encoding_script(args.form, "BRK_2P", files_to_encode, args.outlbl, args.outmodel, args.outdec, args.t_config, args.d_config ,planar="PROPAGATE")
         run_encoding_script(args.form, "BRK_2P", files_to_encode, args.outlbl, args.outmodel, args.outdec, args.t_config, args.d_config, disp=True,planar="PROPAGATE")
         
         
