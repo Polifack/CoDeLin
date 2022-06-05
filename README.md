@@ -48,11 +48,10 @@ $ python3.8 encode.py
 	--input test.labels 
 	--output test.decoded
 $ python3.8 decode.py 
-	--time 
 	--form DEPS 
-	--enc ABS 
-	--input test.labels 
-	--output test.decoded
+	--enc POS 
+	--input ./labels_dec/dependencies/UD_English-EWT/UD_English-EWT_POS.labels 
+	--output ./treebanks_dec/dependencies/UD_English-EWT/UD_English-EWT_POS.conllu
 ```
 ### sExample command to generate train:
 ```

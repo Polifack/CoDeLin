@@ -17,7 +17,7 @@ def do_encode(t, formalism, encoding, disp, pi, po):
         n_trees=decode_constituent(pi, po, encoding)
     
     elif formalism =="DEPS":
-        if encoding not in ["ABS","REL","POS","BRK","BRK2P"]:
+        if encoding not in ["ABS","REL","POS","BRK","BRK_2P"]:
             print("[*] Error: Encoding not alowed for selected formalism")
             exit(1)
 
@@ -39,7 +39,7 @@ if __name__=="__main__":
     parser.add_argument('--enc', metavar='encoding type', type=str, choices=["ABS","REL","DYN","POS","BRK","BRK_2P"], 
                         required=True, help='Encoding type for the decodification. Note that it must be the same used in encoding.')
 
-    parser.add_argument('--disp', action='store_true', required=False, default=True,
+    parser.add_argument('--disp', action='store_true', required=False, default=False,
                         help='Use displacement on bracket encoding.')
 
     parser.add_argument('--input', metavar='in file', type=str, required=True,

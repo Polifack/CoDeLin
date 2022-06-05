@@ -44,7 +44,7 @@ def run_encoding_script(form, enc, files_to_encode, outlbl, outmodel, outdec, de
     for line in f_in:
         f_out.write(line)
     f_out.write("raw_dir="+out_lbl_test+'\n')
-    f_out.write("decode_dir="+outdec+"_"+filename_encoding+'.labels\n')
+    f_out.write("decode_dir="+outdec+"/"+outdec+"_"+filename_encoding+'.labels\n')
     f_out.write("dset_dir="+outmodel+"_"+filename_encoding+".dset\n")
     f_out.write("load_model_dir="+outmodel+"_"+filename_encoding+".model\n")
 

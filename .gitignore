@@ -1,9 +1,13 @@
 # treebanks, models, config and labels
 /treebanks/constituent/
 /treebanks/dependencies/
-/models/
+/treebanks_dec/constituent/
+/treebanks_dec/dependencies/
 /labels/constituent/
 /labels/dependencies/
+/labels_dec/constituent/
+/labels_dec/dependencies/
+/models/
 /ncrf_configs/
 
 # stanza resources, ncrfpp and eval scripts

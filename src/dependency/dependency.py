@@ -312,35 +312,41 @@ class dependency_decoder:
         else:
             print("[*] Error: encoding",encoding," not valid")
         
-    def check_roots(self, nodes):
-        # sets all roots to the first root found
-        # and sets all cycle-broken/out_of_bounds nodes to the
-        # first root found. if no root is found we set it to the 
-        # first node
+
+    def f_check_roots(self, nodes):
+        check_rel = False
+        fix_rel = False
+        default_root = 1
         
-        root=1
-
-        # find root
+        # find the root
+        root = None
         for node in nodes:
-            if node.head == 0:
-                root = node.id
+            if not check_rel and node.head == 0:
+                root = node
+                break
+            
+            if check_rel and node.rel == 'root':
+                root = node
+                break
 
-        # if no root found, just make it sure that we have one
-        nodes[root-1].head=0
+       # if no root found pick the first one
+       # this should be configurable
+        if (root == None):
+            root = nodes[default_root]
+        
+        # sanity check
+        root.head = 0
+        if fix_rel:
+            root.rel = 'root'
 
+        # remove -1 nodes from other steps
         for node in nodes:
-            if node.id == root:
-                continue
-            if node.head == 0:
-                node.head = root
-            if node.head == -1:
-                node.head = root
-
-            if node.head == -1:
-                print("error")
+            if node.head <= 0 and (node!=root):
+                node.head = root.id
 
     
     def check_loops(self, nodes):
+        # complexity huge; can it be improved?
         for node in nodes:
             visited = []
             while (node.head != 0) and (node.head!=-1):
@@ -349,7 +355,6 @@ class dependency_decoder:
                 else:
                     visited.append(node)
                     node = nodes[node.head-1]
-        return None
 
     def check_valid_nodes(self, nodes):
         for node in nodes:
@@ -365,7 +370,7 @@ class dependency_decoder:
         decoded_nodes=self.decoder.decode(labels,postags,words)
         self.check_valid_nodes(decoded_nodes)
         self.check_loops(decoded_nodes)
-        self.check_roots(decoded_nodes)
+        self.f_check_roots(decoded_nodes)
         return decoded_nodes
 
 class d_absolute_decoder:
@@ -397,8 +402,8 @@ class d_pos_decoder:
             pi=int(pi)
 
             if (oi=='ROOT'):
-                i+=1
                 decoded_nodes.append(dependency_graph_node(i+1, word, 0, postag, label.li))
+                i+=1
                 continue
 
             # store the value of pi (number of oi found) to substract it
@@ -435,7 +440,7 @@ class d_brk_decoder:
         self.displacement = displacement
 
     def decode(self, labels, postags, words):
-        decoded_nodes=[0 for l in labels]
+        decoded_nodes=[dependency_graph_node(0, "", 0, "", "") for l in labels]
         l_stack = []
         r_stack = []
         
@@ -444,8 +449,11 @@ class d_brk_decoder:
         for label, postag, word in zip(labels,postags,words):
             brks=list(label.xi)
                         
-            # create a the node
-            decoded_nodes[current_node]=dependency_graph_node(current_node, word, 0, postag, label.li)
+            # set parameters to the node
+            decoded_nodes[current_node].id=current_node
+            decoded_nodes[current_node].text=word
+            decoded_nodes[current_node].pos=postag
+            decoded_nodes[current_node].relation=label.li
         
             # fill the relation using brks
             for char in brks:
@@ -454,7 +462,9 @@ class d_brk_decoder:
                     r_stack.append((node_id,char))
 
                 if char == "\\":
-                    head_id = r_stack.pop()[0]
+                    # if the stack is empty when we find it we 
+                    # hang the node from the root
+                    head_id = r_stack.pop()[0] if len(r_stack)>0 else 0
                     decoded_nodes[head_id].head=current_node
                 
                 if char =="/":
@@ -462,7 +472,7 @@ class d_brk_decoder:
                     l_stack.append((node_id,char))
 
                 if char == ">":
-                    head_id = l_stack.pop()[0]
+                    head_id = l_stack.pop()[0] if len(l_stack)>0 else 0
                     decoded_nodes[current_node].head=head_id
             
             current_node+=1
@@ -470,7 +480,7 @@ class d_brk_decoder:
         # fix index start at 0
         for node in decoded_nodes:
             node.id += 1
-            node.head += (1 if node.head!= 0 else 0)
+            node.head = (node.head+1 if node.relation!= 'root' else 0)
 
         return decoded_nodes        
 class d_brk_2p_decoder:
@@ -478,7 +488,7 @@ class d_brk_2p_decoder:
         self.displacement = displacement
     
     def decode(self, labels, postags, words):
-        decoded_nodes=[None for l in labels]
+        decoded_nodes=[dependency_graph_node(0, "", 0, "", "") for l in labels]
         
         # create plane stacks
         l_stack_p1=[]
@@ -501,9 +511,12 @@ class d_brk_2p_decoder:
                     
             brks=temp_brks
             
-            # create a the node
-            decoded_nodes[current_node]=dependency_graph_node(current_node, word, 0, postag, label.li)
-        
+            # set parameters to the node
+            decoded_nodes[current_node].id=current_node
+            decoded_nodes[current_node].text=word
+            decoded_nodes[current_node].pos=postag
+            decoded_nodes[current_node].relation=label.li
+            
             # fill the relation using brks
             for char in brks:
                 if char == "<":
@@ -511,7 +524,7 @@ class d_brk_2p_decoder:
                     r_stack_p1.append((node_id,char))
                 
                 if char == "\\":
-                    head_id = r_stack_p1.pop()[0]
+                    head_id = r_stack_p1.pop()[0] if len(r_stack_p1)>0 else 0
                     decoded_nodes[head_id].head=current_node
                 
                 if char =="/":
@@ -519,7 +532,7 @@ class d_brk_2p_decoder:
                     l_stack_p1.append((node_id,char))
 
                 if char == ">":
-                    head_id = l_stack_p1.pop()[0]
+                    head_id = l_stack_p1.pop()[0] if len(l_stack_p1)>0 else 0
                     decoded_nodes[current_node].head=head_id
 
                 if char == "<*":
@@ -527,7 +540,7 @@ class d_brk_2p_decoder:
                     r_stack_p2.append((node_id,char))
                 
                 if char == "\\*":
-                    head_id = r_stack_p2.pop()[0]
+                    head_id = r_stack_p2.pop()[0] if len(r_stack_p2)>0 else 0
                     decoded_nodes[head_id].head=current_node
                 
                 if char =="/*":
@@ -535,15 +548,15 @@ class d_brk_2p_decoder:
                     l_stack_p2.append((node_id,char))
 
                 if char == ">*":
-                    head_id = l_stack_p2.pop()[0]
+                    head_id = l_stack_p2.pop()[0] if len(l_stack_p2)>0 else 0
                     decoded_nodes[current_node].head=head_id
             
             current_node+=1
         
-        # fix index start at 0
+        # fix index start at 0 and ensure at least one root
         for node in decoded_nodes:
             node.id += 1
-            node.head += (1 if node.head!= 0 else 0)
+            node.head = (node.head+1 if node.relation!='root' else 0)
 
         return decoded_nodes    
 
@@ -639,7 +652,7 @@ def encode_single(tt, e, nlp=None):
         lt.append((str(l.li)+"_"+str(l.xi)+"_"+(l.encoding_type), p[1], p[0]))
     lt.append(('-EOS-','-EOS-','-EOS-'))
     return lt
-def encode_dependencies(in_path, out_path, encoding_type, displacement=False, planar_alg=D_2P_GREED, no_gold=False, lang=None):
+def encode_dependencies(in_path, out_path, encoding_type, planar_alg=D_2P_GREED, no_gold=False, lang=None):
     # create encoder
     encoder = dependency_encoder(encoding_type, displacement, planar_alg)
 
@@ -666,28 +679,36 @@ def decode_single(lbls, decoder, nlp):
     labels = []
     postags = []
     words = []
+    sentence = ""
     for lbl in lbls:
 
         # mirar por que no devuelve los postags la 
         # prediccion de ncrfpp, y, si son necesarios
         # o si se deberian encodear en la label
 
-        word, label = lbl.split(" ")
+        split_lbl = lbl.split(" ")
+        if len(split_lbl)==2:
+            # no postags in label, use prediction
+            word, label = split_lbl
+        
+        elif len(split_lbl)==3:
+            # use golden postags
+            word, postag, label = split_lbl
+            postags.append(postag)
+            
+        
         label = label.split("_")
+        sentence+=" "+word
         labels.append(encoded_dependency_label(label[2], label[1], label[0]))
         words.append(word)
 
-    sentence = ""
-    for word in words:
-        sentence+=" "+word
+    if postags==[]:
+        doc = nlp(sentence)
+        for element in doc.sentences:
+            for word in element.words:
+                postags.append(word.upos)
 
-    predicted_postags=[]
-    doc = nlp(sentence)
-    for element in doc.sentences:
-        for word in element.words:
-            predicted_postags.append(word.upos)
-
-    decoded_nodes=decoder.decode(labels,predicted_postags,words)
+    decoded_nodes=decoder.decode(labels,postags,words)
     decoded_tokens=[]
     
     for n in decoded_nodes:
