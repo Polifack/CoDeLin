@@ -1,4 +1,34 @@
 Uso de containers (VENV/CONDA)
 Multitask Learning (machamp)
 Mirar hugginface
-PoS pide los postags? metodo set_postags()? predecirlos? anadirlos a la label?
+
+[!]
+
+CAMBIAR EN EL TRAIN.LABELS A POSTAGS PREDICHAS
+CAMBIAR EN LOS CONFIGS EL TRAIN POR EL DEV
+CUIDADO EN EL FINNISH DE PALABRAS SEPARADAS
+
+CONSTITUYENTES: ANADIR LOS COLAPSADOS DE POSTAGS A LA LABEL
+
+refactorizar codigo para reducir ciclos?
+
+DEPENDENCIAS: COMPROBAR EL POS DECODING DEBIDO A LOS POSTAGS DE STANZA
+
+
+encode ptb a deps?
+
+los archivos que se decodifican tienen columnas
+word postag label
+los archivos decodificados solo tienen columnas
+word label
+
+esto implica que hay que predecir los postags usando stanza durante el decode?
+
+PoS pide los postags? 
+    predecirlos
+    anadirlos a la label
+    anadirlos al campo word
+
+A la hora de decodificar los arboles de constituyentes se pierden los postags
+y por lo tanto la codificacion de cadenas unarias y por tanto causando
+length unmatches

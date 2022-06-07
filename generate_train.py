@@ -2,12 +2,20 @@ import argparse
 import os
 
 ## auxiliar script for generating ncrf_configs 
-def run_encoding_script(form, enc, files_to_encode, outlbl, outmodel, outdec, default_cfg_t, default_cfg_d, disp=None, planar=None):
+def run_encoding_script(form, enc, files_to_encode, outlbl, outmodel, outdec, default_cfg_t, default_cfg_d, disp=None, planar=None, collapse_unary=None):
     filename_encoding = enc
+
+    # planar algorithm (dependencies brk_2p)
     if planar != None:
         filename_encoding += "_"+planar
+    
+    # displacement (dependencies brk)
     if disp != None and disp == True:
         filename_encoding += "_D"
+
+    # collapse unary (constituent)
+    if collapse_unary !=None:
+        filename_encoding+= "_COL"
 
     if not os.path.exists(args.outcfg):
         os.mkdir(args.outcfg)
@@ -25,8 +33,9 @@ def run_encoding_script(form, enc, files_to_encode, outlbl, outmodel, outdec, de
 
 
     for file_in, file_out in zip(files_to_encode,output_labels):
-        cmd=("taskset --cpu-list 1 python3.8 encode.py --time --form "+form+" --enc "+enc+
-            (" --disp " if disp else "")+((" --planar "+planar) if planar else "")+" --input "+file_in+" --output "+file_out)
+        cmd=("taskset --cpu-list 1 python3.8 encode.py --time --form "+form+" --enc "+enc
+            + (" --disp " if disp else "")+((" --planar "+planar) if planar else "")+((" --colunary ") if collapse_unary else "")
+            + " --input "+file_in+" --output "+file_out)
         os.system(cmd)
 
     f_in = open(default_cfg_t)
@@ -44,7 +53,7 @@ def run_encoding_script(form, enc, files_to_encode, outlbl, outmodel, outdec, de
     for line in f_in:
         f_out.write(line)
     f_out.write("raw_dir="+out_lbl_test+'\n')
-    f_out.write("decode_dir="+outdec+"/"+outdec+"_"+filename_encoding+'.labels\n')
+    f_out.write("decode_dir="+outdec+"_"+filename_encoding+'.labels\n')
     f_out.write("dset_dir="+outmodel+"_"+filename_encoding+".dset\n")
     f_out.write("load_model_dir="+outmodel+"_"+filename_encoding+".model\n")
 
@@ -102,6 +111,7 @@ if __name__=="__main__":
     if args.form=="CONST":
         for encoding in ["REL","ABS","DYN"]:
             run_encoding_script(args.form, encoding, files_to_encode, args.outlbl, args.outmodel, args.outdec, args.t_config, args.d_config)
+            run_encoding_script(args.form, encoding, files_to_encode, args.outlbl, args.outmodel, args.outdec, args.t_config, args.d_config, collapse_unary=True)
     
     elif args.form=="DEPS":
         for encoding in ["ABS","REL","POS"]:

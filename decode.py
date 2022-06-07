@@ -4,7 +4,7 @@ import copy
 import argparse
 import time
 
-def do_encode(t, formalism, encoding, disp, pi, po):
+def do_encode(t, formalism, encoding, disp, remnulls, pi, po):
     if t:
         start_time=time.time()
 
@@ -14,7 +14,7 @@ def do_encode(t, formalism, encoding, disp, pi, po):
             print("[*] Error: Encoding not alowed for selected formalism")
             exit(1)
         
-        n_trees=decode_constituent(pi, po, encoding)
+        n_trees=decode_constituent(pi, po, encoding, remnulls)
     
     elif formalism =="DEPS":
         if encoding not in ["ABS","REL","POS","BRK","BRK_2P"]:
@@ -26,7 +26,8 @@ def do_encode(t, formalism, encoding, disp, pi, po):
     if t:
         delta_time=time.time()-start_time
         t_str="{:.2f}".format(delta_time)
-        print("[*] FILE:",pi,"|| ENC:",formalism,"/",encoding,"|| T:",t_str,"|| NT",n_trees,"|| T/S",n_trees/delta_time)
+        e_str = encoding + ("_REMNULLS" if remnulls else "")
+        print("[*] FILE:",pi,"|| ENC:",formalism,"/",e_str,"|| T:",t_str,"|| NT",n_trees,"|| T/S",n_trees/delta_time)
 
 if __name__=="__main__":
     parser = argparse.ArgumentParser(description='Transform labels back into constituent/dependency trees')
@@ -39,7 +40,10 @@ if __name__=="__main__":
     parser.add_argument('--enc', metavar='encoding type', type=str, choices=["ABS","REL","DYN","POS","BRK","BRK_2P"], 
                         required=True, help='Encoding type for the decodification. Note that it must be the same used in encoding.')
 
-    parser.add_argument('--disp', action='store_true', required=False, default=False,
+    parser.add_argument('--disp', action='store_true', required=False, default=None,
+                        help='Use displacement on bracket encoding.')
+
+    parser.add_argument('--remnulls', action='store_true', required=False, default=None,
                         help='Use displacement on bracket encoding.')
 
     parser.add_argument('--input', metavar='in file', type=str, required=True,
@@ -49,5 +53,5 @@ if __name__=="__main__":
                         help='Path of the file save decoded tree.')
 
     args = parser.parse_args()
-    do_encode(args.time, args.form, args.enc, args.disp, args.input, args.output)
+    do_encode(args.time, args.form, args.enc, args.disp, args.remnulls, args.input, args.output)
 
