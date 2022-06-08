@@ -44,12 +44,12 @@ if __name__=="__main__":
                         help='Use displacement on bracket encoding.')
 
     parser.add_argument('--remnulls', action='store_true', required=False, default=None,
-                        help='Use displacement on bracket encoding.')
+                        help='Clean -NONE- nodes in Constituent Encoding.')
 
-    parser.add_argument('--input', metavar='in file', type=str, required=True,
+    parser.add_argument('input', metavar='in file', type=str,
                         help='Path of the file to decode (.labels file).')
     
-    parser.add_argument('--output', metavar='out file', type=str,  required=True,
+    parser.add_argument('output', metavar='out file', type=str,
                         help='Path of the file save decoded tree.')
 
     args = parser.parse_args()

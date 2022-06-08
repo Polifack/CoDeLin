@@ -35,7 +35,7 @@ def run_encoding_script(form, enc, files_to_encode, outlbl, outmodel, outdec, de
     for file_in, file_out in zip(files_to_encode,output_labels):
         cmd=("taskset --cpu-list 1 python3.8 encode.py --time --form "+form+" --enc "+enc
             + (" --disp " if disp else "")+((" --planar "+planar) if planar else "")+((" --colunary ") if collapse_unary else "")
-            + " --input "+file_in+" --output "+file_out)
+            + " "+file_in+" "+file_out)
         os.system(cmd)
 
     f_in = open(default_cfg_t)
