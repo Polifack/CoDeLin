@@ -4,7 +4,7 @@ import copy
 import argparse
 import time
 
-def do_encode(t, formalism, encoding, disp, remnulls, pi, po):
+def do_encode(t, formalism, encoding, disp, conflict, predict_postags, pi, po):
     if t:
         start_time=time.time()
 
@@ -14,7 +14,7 @@ def do_encode(t, formalism, encoding, disp, remnulls, pi, po):
             print("[*] Error: Encoding not alowed for selected formalism")
             exit(1)
         
-        n_trees=decode_constituent(pi, po, encoding, remnulls)
+        n_trees=decode_constituent(pi, po, encoding, conflict, predict_postags)
     
     elif formalism =="DEPS":
         if encoding not in ["ABS","REL","POS","BRK","BRK_2P"]:
@@ -26,8 +26,7 @@ def do_encode(t, formalism, encoding, disp, remnulls, pi, po):
     if t:
         delta_time=time.time()-start_time
         t_str="{:.2f}".format(delta_time)
-        e_str = encoding + ("_REMNULLS" if remnulls else "")
-        print("[*] FILE:",pi,"|| ENC:",formalism,"/",e_str,"|| T:",t_str,"|| NT",n_trees,"|| T/S",n_trees/delta_time)
+        print("[*] FILE:",pi,"|| ENC:",formalism,"/",encoding,"|| T:",t_str,"|| NT",n_trees,"|| T/S",n_trees/delta_time)
 
 if __name__=="__main__":
     parser = argparse.ArgumentParser(description='Transform labels back into constituent/dependency trees')
@@ -42,9 +41,12 @@ if __name__=="__main__":
 
     parser.add_argument('--disp', action='store_true', required=False, default=None,
                         help='Use displacement on bracket encoding.')
+    
+    parser.add_argument('--conflicts', choices = [C_STRAT_FIRST, C_STRAT_LAST, C_STRAT_MAX], required = False, default=C_CONFLICTS_NONE,
+                        help='Method of labeling conflict resolution in Constituent Parsing')
 
-    parser.add_argument('--remnulls', action='store_true', required=False, default=None,
-                        help='Clean -NONE- nodes in Constituent Encoding.')
+    parser.add_argument('--postags', action='store_true', required=False, default=False,
+                        help='Predict the postags using STANZA tagger')
 
     parser.add_argument('input', metavar='in file', type=str,
                         help='Path of the file to decode (.labels file).')
@@ -53,5 +55,5 @@ if __name__=="__main__":
                         help='Path of the file save decoded tree.')
 
     args = parser.parse_args()
-    do_encode(args.time, args.form, args.enc, args.disp, args.remnulls, args.input, args.output)
+    do_encode(args.time, args.form, args.enc, args.disp, args.conflicts, args.postags, args.input, args.output)
 
