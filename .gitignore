@@ -23,6 +23,6 @@
 /utils/default_cfgs/*
 to_do_list
 
-.vscode
+.vscode/
 /src/constituent/__pycache__
 /src/dependency/__pycache__
