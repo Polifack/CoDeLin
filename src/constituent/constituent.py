@@ -11,21 +11,23 @@ C_DYNAMIC_ENCODING = 'DYN'
 C_STRAT_FIRST="strat_first"
 C_STRAT_LAST="strat_last"
 C_STRAT_MAX="strat_max"
-C_CONFLICTS_NONE="strat_none"
+C_STRAT_NONE="strat_none"
 
 C_NONE_LABEL = "-NONE-"
 C_ROOT_LABEL = "-ROOT-"
 C_END_LABEL = "-END-"
+C_CONFLICT_SEPARATOR = "-||-"
 
 C_BOS = u" ".join(('-BOS-','-BOS-','-BOS-'))
 C_EOS = u" ".join(('-EOS-','-EOS-','-EOS-'))
 
 class encoded_constituent_label:
-    def __init__(self, nc, lc, uc, et):
+    def __init__(self, nc, lc, uc, et, sp):
         self.encoding_type = et
         self.n_commons=int(nc)
         self.last_common=lc
         self.unary_chain=uc if uc!=C_NONE_LABEL else None
+        self.separator=sp
     
     def __repr__(self):
         if self.unary_chain:
@@ -37,7 +39,7 @@ class encoded_constituent_label:
             else:
                 uchain = self.unary_chain
             
-        return f'{self.n_commons}{"*" if self.encoding_type==C_RELATIVE_ENCODING else ""}_{self.last_common}{"_"+uchain if self.unary_chain else ""}'
+        return f'{self.n_commons}{"*" if self.encoding_type==C_RELATIVE_ENCODING else ""}{self.separator}{self.last_common}{self.separator+uchain if self.unary_chain else ""}'
     
     def to_absolute(self, last_label):
         self.n_commons+=last_label.n_commons
@@ -51,16 +53,16 @@ class encoded_constituent_label:
 ##############################
 
 class constituent_encoder:
-    def __init__(self, encoding):
+    def __init__(self, encoding, separator):
         self.encoding = encoding
+        self.separator = separator
 
     def encode(self, tree):
         # add finish point to ensure all labels are encoded
         tree.children=(*tree.children,Tree(C_END_LABEL,[Tree(C_END_LABEL)]))
-
         # collapse unary 
         self.collapse_unary(tree)
-
+        
         # get path_to_leaves
         path_to_leaves = self.path_to_leaves(tree)
 
@@ -82,27 +84,28 @@ class constituent_encoder:
 
                     word = path_a[-1]
                     postag = re.sub(r'[0-9]+', '',path_a[-2])
+                    # clean postag from comments
+                    postag = re.sub('##.*?##', '', postag)
                     unary_chain = None 
 
                     postag_list=postag.split("+")
                     if len(postag.split("+"))>1:
-                        unary_chain=postag_list[:-1]
+                        unary_chain="+".join(postag_list[:-1])
                         postag=postag_list[-1]
-
                     # get values for absolute encoding/relative encoding
                     abs_val=n_commons
                     rel_val=(n_commons-last_n_common)
 
                     # create labels according the encoder selected
                     if self.encoding == C_ABSOLUTE_ENCODING:
-                        lbl=encoded_constituent_label(n_commons, last_common, unary_chain, C_ABSOLUTE_ENCODING)
+                        lbl=encoded_constituent_label(n_commons, last_common, unary_chain, C_ABSOLUTE_ENCODING, self.separator)
                     elif self.encoding == C_RELATIVE_ENCODING:
-                        lbl=encoded_constituent_label(rel_val, last_common, unary_chain, C_RELATIVE_ENCODING)
+                        lbl=encoded_constituent_label(rel_val, last_common, unary_chain, C_RELATIVE_ENCODING, self.separator)
                     else:
                         if (abs_val<=3 and rel_val<=-2):
-                            lbl = encoded_constituent_label(abs_val, last_common, unary_chain, C_ABSOLUTE_ENCODING)
+                            lbl = encoded_constituent_label(abs_val, last_common, unary_chain, C_ABSOLUTE_ENCODING, self.separator)
                         else:
-                            lbl=encoded_constituent_label(rel_val,last_common, unary_chain, C_RELATIVE_ENCODING)
+                            lbl=encoded_constituent_label(rel_val,last_common, unary_chain, C_RELATIVE_ENCODING, self.separator)
                     
                     labels.append(lbl)
                     words.append(word)
@@ -115,7 +118,7 @@ class constituent_encoder:
                 n_commons+=len(a.split("+"))
                 last_common = a
         return labels, postags, words
-   
+
     def collapse_unary(self, tree):
         for child in tree.children:
             self.collapse_unary(child)
@@ -143,7 +146,7 @@ class constituent_encoder:
 ##############################
 
 class constituent_decoder:
-    def __init__(self, encoding, conflict_strat=C_STRAT_MAX):
+    def __init__(self, encoding, conflict_strat):
         self.encoding = encoding
         self.conflict_strat=conflict_strat
 
@@ -178,6 +181,8 @@ class constituent_decoder:
                 # fill intermediate nodes
                 if (current_level.label==C_NONE_LABEL):
                     current_level.label=label.last_common[0]
+                else:
+                    current_level.label=current_level.label+C_CONFLICT_SEPARATOR+label.last_common[0]
             
             else:
                 # descend and create
@@ -197,7 +202,7 @@ class constituent_decoder:
                     if (current_level.label==C_NONE_LABEL):
                         current_level.label=label.last_common[i]
                     else:
-                        current_level.label=current_level.label+"|"+label.last_common[i]
+                        current_level.label=current_level.label+C_CONFLICT_SEPARATOR+label.last_common[i]
                     current_level=current_level.children[len(current_level.children)-1]
 
                 # set last label
@@ -240,8 +245,8 @@ class constituent_decoder:
 
     def postprocess_tree(self, tree, tree_children):
         for c in tree_children:
-            if "|" in  c.label:
-                labels=c.label.split("|")
+            if C_CONFLICT_SEPARATOR in  c.label:
+                labels=c.label.split(C_CONFLICT_SEPARATOR)
                 if self.conflict_strat == C_STRAT_MAX:
                     c.label=max(set(labels), key=labels.count)
                 if self.conflict_strat == C_STRAT_FIRST:
@@ -283,12 +288,13 @@ def encode_single(tree, e):
     lt.append(C_EOS)
 
     return lt
-def encode_constituent(in_path, out_path, encoding_type):
+def encode_constituent(in_path, out_path, encoding_type, separator):
     trees=read_tree_file(in_path)
     f_out=open(out_path,"w+")
 
-    e=constituent_encoder(encoding_type)
+    e=constituent_encoder(encoding_type,separator)
     tree_counter=0
+    
     for tree in trees:
         linearized_tree = encode_single(tree, e)
         for s in linearized_tree:
@@ -298,7 +304,7 @@ def encode_constituent(in_path, out_path, encoding_type):
     return tree_counter
 
 # given a label file decodes it and writes the decoded to a file
-def decode_single(lbls, d, nlp):
+def decode_single(lbls, d, sep, nlp):
     labels = []
     words = []
     postags = []
@@ -318,7 +324,7 @@ def decode_single(lbls, d, nlp):
         
         sentence+=" "+word
         words.append(word)
-        label_split = label.split("_")
+        label_split = label.split(sep)
         
         # get data from label
         if len(label_split)== 2:
@@ -329,7 +335,7 @@ def decode_single(lbls, d, nlp):
         
         et = C_RELATIVE_ENCODING if '*' in nc else C_ABSOLUTE_ENCODING
         nc = nc.replace("*","")
-        labels.append(encoded_constituent_label(nc, lc, uc, et))
+        labels.append(encoded_constituent_label(nc, lc, uc, et, sep))
 
     # postag prediction with this has the problem that we encoded the unary chain
     # in the postags    
@@ -344,7 +350,7 @@ def decode_single(lbls, d, nlp):
                 postags.append("")
     
     return d.decode(labels, words, postags)
-def decode_constituent(in_path, out_path, encoding_type, conflicts, predict_postags):
+def decode_constituent(in_path, out_path, encoding_type, separator, conflicts, predict_postags):
     f_in=open(in_path)
     f_out=open(out_path,"w+")
 
@@ -360,7 +366,7 @@ def decode_constituent(in_path, out_path, encoding_type, conflicts, predict_post
     is_appending = False
     for line in f_in:
         if "-EOS-" in line:
-            decoded_tree=decode_single(current_tree,d,nlp)
+            decoded_tree=decode_single(current_tree,d,separator,nlp)
             f_out.write(str(decoded_tree))
             f_out.write("\n")
             tree_counter+=1

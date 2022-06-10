@@ -19,7 +19,8 @@
 # project related stuff
 /notes
 /deprecated
-generate_train_all.sh
+/utils/generate_train_all.sh
+/utils/default_cfgs/*
 to_do_list
 
 .vscode

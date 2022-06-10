@@ -2,7 +2,7 @@ import argparse
 import os
 
 ## auxiliar script for generating ncrf_configs 
-def run_encoding_script(form, enc, files_to_encode, outlbl, outmodel, outdec, default_cfg_t, default_cfg_d, disp=None, planar=None):
+def run_encoding_script(form, enc, sep, files_to_encode, outlbl, outmodel, outdec, default_cfg_t, default_cfg_d, disp=None, planar=None):
     filename_encoding = enc
 
     # planar algorithm (dependencies brk_2p)
@@ -31,7 +31,7 @@ def run_encoding_script(form, enc, files_to_encode, outlbl, outmodel, outdec, de
     for file_in, file_out in zip(files_to_encode,output_labels):
         cmd=("taskset --cpu-list 1 python3.8 encode.py --time --form "+form+" --enc "+enc
             + (" --disp " if disp else "")+((" --planar "+planar) if planar else "")
-            + " "+file_in+" "+file_out)
+            + (" --sep "+sep+" " if sep else "")+ " "+file_in+" "+file_out)
         os.system(cmd)
 
     f_in = open(default_cfg_t)
@@ -67,6 +67,9 @@ if __name__=="__main__":
 
     parser.add_argument('--form', metavar='formalism', type=str, choices=["CONST","DEPS"], required=True,
                         help='formalism used in the sentence')
+    
+    parser.add_argument('--sep', metavar='separator', type=str, required=False, default=None,
+                        help='label fields separator')
     
     parser.add_argument('--outlbl', metavar='out lbl dir', type=str,  required=True,
                         help='path of the directory where to save the encoded labels')
@@ -106,7 +109,7 @@ if __name__=="__main__":
 
     if args.form=="CONST":
         for encoding in ["REL","ABS","DYN"]:
-            run_encoding_script(args.form, encoding, files_to_encode, args.outlbl, args.outmodel, args.outdec, args.t_config, args.d_config)
+            run_encoding_script(args.form, encoding, args.sep, files_to_encode, args.outlbl, args.outmodel, args.outdec, args.t_config, args.d_config)
     
     elif args.form=="DEPS":
         for encoding in ["ABS","REL","POS"]:

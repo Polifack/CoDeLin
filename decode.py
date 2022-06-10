@@ -4,7 +4,7 @@ import copy
 import argparse
 import time
 
-def do_encode(t, formalism, encoding, disp, conflict, predict_postags, pi, po):
+def do_encode(t, formalism, separator, encoding, disp, conflict, predict_postags, pi, po):
     if t:
         start_time=time.time()
 
@@ -14,7 +14,7 @@ def do_encode(t, formalism, encoding, disp, conflict, predict_postags, pi, po):
             print("[*] Error: Encoding not alowed for selected formalism")
             exit(1)
         
-        n_trees=decode_constituent(pi, po, encoding, conflict, predict_postags)
+        n_trees=decode_constituent(pi, po, encoding, separator, conflict, predict_postags)
     
     elif formalism =="DEPS":
         if encoding not in ["ABS","REL","POS","BRK","BRK_2P"]:
@@ -35,6 +35,9 @@ if __name__=="__main__":
     
     parser.add_argument('--form', metavar='formalism', type=str, choices=["CONST","DEPS"], required=True,
                         help='Formalism used in the sentence. Note that it must be the same used in encoding.')
+
+    parser.add_argument('--sep', metavar='encoding_type', type=str, default="_",
+                        required=False, help='Separator for the fields in the label')
     
     parser.add_argument('--enc', metavar='encoding type', type=str, choices=["ABS","REL","DYN","POS","BRK","BRK_2P"], 
                         required=True, help='Encoding type for the decodification. Note that it must be the same used in encoding.')
@@ -42,7 +45,7 @@ if __name__=="__main__":
     parser.add_argument('--disp', action='store_true', required=False, default=None,
                         help='Use displacement on bracket encoding.')
     
-    parser.add_argument('--conflicts', choices = [C_STRAT_FIRST, C_STRAT_LAST, C_STRAT_MAX], required = False, default=C_CONFLICTS_NONE,
+    parser.add_argument('--conflicts', choices = [C_STRAT_FIRST, C_STRAT_LAST, C_STRAT_MAX,C_STRAT_NONE], required = False, default=C_STRAT_MAX,
                         help='Method of labeling conflict resolution in Constituent Parsing')
 
     parser.add_argument('--postags', action='store_true', required=False, default=False,
@@ -55,5 +58,5 @@ if __name__=="__main__":
                         help='Path of the file save decoded tree.')
 
     args = parser.parse_args()
-    do_encode(args.time, args.form, args.enc, args.disp, args.conflicts, args.postags, args.input, args.output)
+    do_encode(args.time, args.form, args.sep, args.enc, args.disp, args.conflicts, args.postags, args.input, args.output)
 

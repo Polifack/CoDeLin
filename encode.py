@@ -4,7 +4,7 @@ import copy
 import argparse
 import time
 
-def do_encode(t, formalism, encoding, pi, po, planar, disp, no_gold, lang):
+def do_encode(t, formalism, encoding, separator, pi, po, planar, disp, no_gold, lang):
     if t:
         start_time=time.time()
 
@@ -15,7 +15,7 @@ def do_encode(t, formalism, encoding, pi, po, planar, disp, no_gold, lang):
             print("[*] Error: Encoding not alowed for selected formalism.")
             exit(1)
 
-        n_trees=encode_constituent(pi, po, encoding)
+        n_trees=encode_constituent(pi, po, encoding, separator)
     
     elif formalism =="DEPS":
         if encoding not in ["ABS","REL","POS","BRK","BRK_2P"]:
@@ -32,19 +32,22 @@ def do_encode(t, formalism, encoding, pi, po, planar, disp, no_gold, lang):
         delta_time=time.time()-start_time
         t_str="{:.2f}".format(delta_time)
         e_str = encoding + ("_DISP" if disp!=None else "") + ("_"+planar if planar!=None else "")
-        print("[*] FILE:",pi,"|| ENC:",formalism,"/",e_str,"|| T:",t_str,"|| NT",n_trees,"|| T/S",n_trees/delta_time)
+        print("[*] FILE:",pi,"\t|| ENC:",formalism,"/",e_str,"\t|| T:",t_str,"\t|| NT",n_trees,"\t|| T/S",n_trees/delta_time)
 
 
 if __name__=="__main__":
     parser = argparse.ArgumentParser(description='Transform constituent trees or dependency trees into labels')
     parser.add_argument("--time", action='store_true', required=False, 
-                        help='measure encoding/decoding time')
+                        help='Measure encoding/decoding time')
     
     parser.add_argument('--form', metavar='formalism', type=str, choices=["CONST","DEPS"], required=True,
-                        help='formalism used in the sentence')
+                        help='Formalism that the treebank is encoded in')
     
+    parser.add_argument('--sep', metavar='separator', type=str, default="_",
+                        required=False, help='Separator for the fields in the label')
+
     parser.add_argument('--enc', metavar='encoding_type', type=str, choices=["ABS","REL","DYN","POS","BRK","BRK_2P"], 
-                        required=True, help='encoding type for the encoding')
+                        required=True, help='Encoding type for the selected formalism')
 
     parser.add_argument('--disp', action='store_true', required=False, default=None,
                         help='use displacement on bracket encoding')
@@ -65,5 +68,5 @@ if __name__=="__main__":
                         help='path of the file save encoded labels')
 
     args = parser.parse_args()
-    do_encode(args.time, args.form, args.enc, args.input, args.output, args.planar, args.disp, args.nogold, args.lang)
+    do_encode(args.time, args.form, args.enc, args.sep, args.input, args.output, args.planar, args.disp, args.nogold, args.lang)
 

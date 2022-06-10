@@ -1,3 +1,0 @@
-python3.8 generate_train.py --form CONST --indir ./treebanks/constituent/penn-treebank       --outlbl ./labels/constituent/penn-treebank         --outcfg ./ncrf_configs/penn-treebank      --outmodel ./models/penn-treebank        --outdec ./labels_dec/constituent/penn-treebank         --t_config ./default_train.config --d_config ./default_decode.config
-
-python3.8 generate_train.py --form DEPS --indir ./treebanks/dependencies/UD_English-EWT     --outlbl ./labels/dependencies/UD_English-EWT       --outcfg ./ncrf_configs/UD_English-EWT      --outmodel ./models/UD_English-EWT      --outdec ./labels_dec/dependencies/UD_English-EWT       --t_config ./default_train.config --d_config ./default_decode.config
