@@ -1,4 +1,4 @@
-# Tree linearization
+# Constituent and Dependency Trees Linearization System
 
 ## Features
 
