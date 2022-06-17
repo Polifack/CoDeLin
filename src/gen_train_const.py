@@ -1,52 +1,6 @@
 import argparse
 import os
 
-## auxiliar script for generating ncrf_configs 
-def run_encoding_script(form, enc, sep, files_to_encode, outlbl, outmodel, outdec, default_cfg_t, default_cfg_d):
-    filename_encoding = enc
-
-    if not os.path.exists(args.outcfg):
-        os.mkdir(args.outcfg)
-    
-    if not os.path.exists(outlbl+"_"+enc):
-        os.mkdir(args.outlbl+"_"+enc)
-
-    out_lbl_train = outlbl+"_"+enc+"/train.labels"
-    out_lbl_dev = outlbl+"_"+enc+"/dev.labels"
-    out_lbl_test = outlbl+"_"+enc+"/test.labels"
-    
-    output_labels = [out_lbl_train, out_lbl_dev, out_lbl_test]
-    
-    output_cfg_t =  args.outcfg+"/"+enc+"_train.config"
-    output_cfg_d = args.outcfg+"/"+enc+"_decode.config"
-
-
-    for file_in, file_out in zip(files_to_encode, output_labels):
-        cmd=("python3.8 encode-const.py "+enc+" "+file_in+" "+file_out+" --sep "+sep+" --ujoiner "+ujoiner
-            +" --postags "+postags+" --lang "+lang)
-        os.system(cmd)
-
-    f_in = open(default_cfg_t)
-    f_out = open(output_cfg_t,"w+")
-    for line in f_in:
-        f_out.write(line)
-    
-    f_out.write("\ntrain_dir="+out_lbl_train+'\n')
-    f_out.write("dev_dir="+out_lbl_dev+'\n')
-    f_out.write("test_dir="+out_lbl_test+'\n')
-    f_out.write("model_dir="+outmodel+"_"+enc+'\n')
-
-    f_in = open(default_cfg_d)
-    f_out = open(output_cfg_d,"w+")
-    for line in f_in:
-        f_out.write(line)
-
-    f_out.write("raw_dir="+out_lbl_test+'\n')
-    f_out.write("decode_dir="+outdec+"_"+enc+'.labels\n')
-    f_out.write("dset_dir="+outmodel+"_"+enc+".dset\n")
-    f_out.write("load_model_dir="+outmodel+"_"+enc+".model\n")
-
-
 if __name__=="__main__":
     parser = argparse.ArgumentParser(description='Lineraizes tree files (dev/train/test) in folders and generates config file')
     parser.add_argument('--input', metavar='in dir', type=str, required=True,

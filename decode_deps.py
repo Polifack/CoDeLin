@@ -1,4 +1,4 @@
-from src.dependency.dependency import *
+from src.models.dependency import *
 import copy
 import argparse
 import time

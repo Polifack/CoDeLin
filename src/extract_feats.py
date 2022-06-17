@@ -1,7 +1,7 @@
 import argparse
 import stanza
 from conllu import parse_tree_incr
-from dependency.dependency import ConllNode
+from models.dependency import ConllNode
 
 def extract_features_const(in_path):
     # parses all trees in the file and returns a list of the features
@@ -40,6 +40,8 @@ def extract_features_conll(in_path):
                     feats_list.add(key)
     return sorted(feats_list)
     
+
+#  Python script to extract feats in a treebank. Allows for DEPS and CONST files
 
 parser = argparse.ArgumentParser(description='Prints all features in a constituent treebank')
 parser.add_argument('form', metavar='formalism', type=str, choices=['ABS','DEPS'], help='Grammar encoding the file to extract features')
