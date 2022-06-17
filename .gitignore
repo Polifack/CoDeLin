@@ -1,14 +1,10 @@
 # treebanks, models, config and labels
-/treebanks/constituent/
-/treebanks/dependencies/
-/treebanks_dec/constituent/
-/treebanks_dec/dependencies/
-/labels/constituent/
-/labels/dependencies/
-/labels_dec/constituent/
-/labels_dec/dependencies/
-/models/
-/ncrf_configs/
+/treebanks
+/treebanks_dec
+/labels
+/labels_dec
+/models
+/ncrf_configs
 
 # stanza resources, ncrfpp and eval scripts
 /stanza_resources
@@ -19,9 +15,8 @@
 # project related stuff
 /notes
 /deprecated
-/utils/generate_train_all.sh
-/utils/default_cfgs/*
-/to_do_list
+/scripts
+/default_cfgs
 
 .vscode/
 /src/constituent/__pycache__

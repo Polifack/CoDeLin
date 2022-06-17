@@ -18,50 +18,44 @@ Also, for bracket encoding in dependency trees can split the tree in two planes 
 
 ## Usage
 
-Can be used to encode single files with main.py or to encode a whole training set formed by train/dev/test files and generate the corresponding ncrfpp configuration
+Can be used to encode single files with encode_const.py or encode_deps.py respectively or decode single files with decode_const.py or decode_deps.py
 
 ### Encode single file:
 ```
-$ python3.8 encode.py 
-	--time 
-	--form CONST 
-	--enc ABS 
-	--input test.gold 
-	--output test.labels
-$ python3.8 encode.py 
-	--time 
-	--form DEPS 
-	--enc BRK_2P 
-	--planar PROPAGATE 
-	--disp 
-	--nogold 
-	--lang en 
-	--input test.gold 
-	--output test.labels
+$ python3.8 encode_const.py 
+	ABS
+	test.trees
+	test.labels
+	--time
+	--sep _
+	--ujoiner +
+	--feats lem ADM ASP AZP BIZ
+$ python3.8 encode_deps.py 
+	BRK_2P
+	test.labels
+	test.trees
+	--time
+	--sep _
+	--disp
+	--planar GREED
+	--feats c g m mwehead
 ```
-### Example command to decode single file
+### Decode single file
 ```
-$ python3.8 encode.py 
-	--time 
-	--form CONST 
-	--enc REL
-	--input test.labels 
-	--output test.decoded
-$ python3.8 decode.py 
-	--form DEPS 
-	--enc POS 
-	--input ./labels_dec/dependencies/UD_English-EWT/UD_English-EWT_POS.labels 
-	--output ./treebanks_dec/dependencies/UD_English-EWT/UD_English-EWT_POS.conllu
-```
-### sExample command to generate train:
-```
-python3.8 generate_train.py 
-	--form DEPS 
-	--indir ./treebanks/dependencies/UD_Portuguese-GSD  
-	--outlbl ./labels/dependencies/UD_Portuguese-GSD    
-	--outcfg ./ncrf_configs/UD_Portuguese-GSD   
-	--outmodel ./models/UD_Portuguese-GSD   
-	--outdec ./decoded/UD_Portuguese-GSD    
-	--t_config ./default_train.config 
-	--d_config ./default_decode.config
+$ python3.8 decode_const.py
+	ABS
+	test.labels
+	test_decoded.trees
+	--time
+	--sep _
+	--ujoiner +
+	--conflict C_STRAT_MAX
+
+$ python3.8 decode_deps.py 
+	BRK_2P
+	test.labels
+	test_decoded.conllu
+	--time
+	--sep _
+	--disp
 ```
