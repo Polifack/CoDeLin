@@ -53,23 +53,34 @@ if __name__=="__main__":
     files_trees = [train_trees, dev_trees, test_trees]
     
     for enc in encodings:
-        # Create paths if not exist
-        if not os.path.exists(args.outcfg):
-            os.mkdir(args.outcfg)
-    
-        if not os.path.exists(args.outlbl+"_"+enc):
-            os.mkdir(args.outlbl+"_"+enc)
+        outcfg = args.outcfg
+        path = ""
+        for d in outcfg.split('/'):
+        # handle instances of // in string
+            if not d: continue 
+            path += d + '/'
+            if not os.path.isdir(path):
+                os.mkdir(path)
+                
+        outlbl = args.outlbl + "_" + enc
+        path = ""
+        for d in outlbl.split('/'):
+        # handle instances of // in string
+            if not d: continue 
+            path += d + '/'
+            if not os.path.isdir(path):
+                os.mkdir(path)
 
         # Get files for labels output
-        labels_train = args.outlbl+"_"+enc+"/train.labels"
-        labels_dev = args.outlbl+"_"+enc+"/dev.labels"
-        labels_test = args.outlbl+"_"+enc+"/test.labels"
+        labels_train = outlbl+"/train.labels"
+        labels_dev = outlbl+"/dev.labels"
+        labels_test = outlbl+"/test.labels"
         
         files_label = [labels_train, labels_dev, labels_test]
         
         # Get files for config files
-        output_cfg_t =  args.outcfg+"/"+enc+"_train.config"
-        output_cfg_d = args.outcfg+"/"+enc+"_decode.config"
+        output_cfg_t =  outcfg+"/"+enc+"_train.config"
+        output_cfg_d = outcfg+"/"+enc+"_decode.config"
     
 
         feats_string = ""

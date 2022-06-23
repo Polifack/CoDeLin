@@ -109,6 +109,9 @@ class DependencyEncoder:
 
     def encode_rel(self, nodes):
         encoded_labels = []
+
+        # lbl encode_to_root
+
         for node in nodes:
             # skip dummy root
             if node.id == 0:
@@ -389,6 +392,7 @@ class DependencyDecoder:
         for node in nodes:
             if node.head <= 0 and (node!=root):
                 node.head = root.id
+                node.rel = 'fixed'
  
     def check_loops(self, nodes):
         # complexity huge; can it be improved?
@@ -440,11 +444,11 @@ class DependencyDecoder:
             node = ConllNode(i, word, None, postag, None, None, None, None, None, None)
             
             node.relation = label.li
-            node.head = label.xi
+            node.head = int(label.xi)
 
             decoded_nodes.append(node)
             i+=1
-        return decoded_nodes[:1]
+        return decoded_nodes[1:]
 
     def decode_rel(self, labels, postags, words):
         decoded_nodes = [ConllNode.dummy_root()]
@@ -459,7 +463,7 @@ class DependencyDecoder:
             decoded_nodes.append(node)
             i+=1
         
-        return decoded_nodes[:1]
+        return decoded_nodes[1:]
 
     def decode_pos(self, labels, postags, words):
         decoded_nodes = [ConllNode.dummy_root()]
@@ -647,8 +651,8 @@ def parse_conllu(token_tree, nlp=None):
                 predicted_postags.append(word.upos)
 
         for line in data:
-            # check if empty line or comment
-            if (len(line)<=1) or line[0] == "#":
+            # check if not valid line
+            if (len(line)<=1) or len(line.split('\t'))<10 or line[0] == "#":
                 continue
             
             conll_node = ConllNode.from_string(line)
@@ -658,8 +662,8 @@ def parse_conllu(token_tree, nlp=None):
 
     else:
         for line in data:
-            # check if empty line
-            if (len(line)<=1)or line[0] == "#":
+            # check if not valid line
+            if (len(line)<=1) or len(line.split('\t'))<10 or line[0] == "#":
                 continue
             
             conll_node = ConllNode.from_string(line)
@@ -679,9 +683,9 @@ def encode_dependencies(in_path, out_path, separator, encoding_type, displacemen
 
     # optional part to linearize tree using predicted pos_tags
     nlp = None
-    if postags:
-        # stanza.download(lang=lang, model_dir="./stanza_resources")
-        nlp = stanza.Pipeline(lang=lang, processors='tokenize,pos', model_dir="./stanza_resources")
+    # if postags:
+        # stanza.download(lang=lang)
+        # nlp = stanza.Pipeline(lang=lang, processors='tokenize,pos')
     
     # optinal part to include features in output file
     if features:
@@ -703,12 +707,16 @@ def encode_dependencies(in_path, out_path, separator, encoding_type, displacemen
         linearized_tree=[]
         linearized_tree.append(u" ".join(([D_BOS] * (3 + (1+len(features) if features else 0)))))
         
+        # clear dummy root
+        nodes = nodes[1:]
         for n, l, p, w in zip(nodes, encoded_labels, postags, words):
             output_line = [w, p]
 
             # check for additional features
             if features:
+                # set lemma
                 output_line.append(n.lemma)
+                # set additional features
                 f_list = ["_"] * len(features)
                 af = n.feats.split("|")
                 for element in af:
@@ -743,8 +751,9 @@ def decode_dependencies(in_path, out_path, separator, encoding_type, displacemen
 
     # start stanza for pos prediction
     # note that 'en' must be a language variable 
-    #stanza.download(lang='en', model_dir="./stanza_resources")
-    nlp = stanza.Pipeline(lang='en', processors='tokenize,pos', model_dir="./stanza_resources")
+    
+    #stanza.download(lang='en')
+    #nlp = stanza.Pipeline(lang='en', processors='tokenize,pos')
 
     token_list_counter=0
     labels_counter=0

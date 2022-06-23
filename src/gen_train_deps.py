@@ -13,19 +13,33 @@ def run_encoding_script(enc, sep, files_to_encode, outlbl, outmodel, outdec, def
     if disp != None and disp == True:
         filename_encoding += "_D"
 
-    if not os.path.exists(args.outcfg):
-        os.mkdir(args.outcfg)
+    path = ""
     
-    if not os.path.exists(outlbl+"_"+filename_encoding):
-        os.mkdir(args.outlbl+"_"+filename_encoding)
+    outcfg = args.outcfg
+    path = ""
+    for d in outcfg.split('/'):
+    # handle instances of // in string
+        if not d: continue 
+        path += d + '/'
+        if not os.path.isdir(path):
+            os.mkdir(path)
+            
+    outlbl = args.outlbl + "_" + filename_encoding
+    path = ""
+    for d in outlbl.split('/'):
+    # handle instances of // in string
+        if not d: continue 
+        path += d + '/'
+        if not os.path.isdir(path):
+            os.mkdir(path)
 
-    out_lbl_train=outlbl+"_"+filename_encoding+"/train.labels"
-    out_lbl_dev=outlbl+"_"+filename_encoding+"/dev.labels"
-    out_lbl_test=outlbl+"_"+filename_encoding+"/test.labels"
-    
+    out_lbl_train=outlbl+"/train.labels"
+    out_lbl_dev=outlbl+"/dev.labels"
+    out_lbl_test=outlbl+"/test.labels"
     output_labels = [out_lbl_train, out_lbl_dev, out_lbl_test]
-    output_cfg_t =  args.outcfg+"/"+filename_encoding+"_train.config"
-    output_cfg_d = args.outcfg+"/"+filename_encoding+"_decode.config"
+
+    output_cfg_t =  outcfg+"/"+filename_encoding+"_train.config"
+    output_cfg_d = outcfg+"/"+filename_encoding+"_decode.config"
 
 
     feats_string = ""

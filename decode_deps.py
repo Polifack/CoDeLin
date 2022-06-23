@@ -8,14 +8,14 @@ import time
 
 parser = argparse.ArgumentParser(description='Python script to decode DEPENDENCY LABELS back into CONLLU format')
 
+parser.add_argument('enc', metavar='encoding type', type=str, choices=["ABS","REL","POS", "BRK", "BRK_2P"], 
+                    help='Encoding type for the decodification. Note that it must be the same used in encoding.')
+
 parser.add_argument('input', metavar='in file', type=str,
                     help='Path of the file to decode (.labels file).')
 
 parser.add_argument('output', metavar='out file', type=str,
                     help='Path of the file save decoded tree.')
-
-parser.add_argument('enc', metavar='encoding type', type=str, choices=["ABS","REL","POS", "BRK", "BRK_2P"], 
-                    help='Encoding type for the decodification. Note that it must be the same used in encoding.')
 
 parser.add_argument("--time", action='store_true', required=False, 
                     help='Flag to measure decoding time.')

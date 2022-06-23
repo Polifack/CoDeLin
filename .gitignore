@@ -16,8 +16,8 @@
 /notes
 /deprecated
 /scripts
+/logs
 /default_cfgs
 
 .vscode/
-/src/constituent/__pycache__
-/src/dependency/__pycache__
+/src/models/__pycache__

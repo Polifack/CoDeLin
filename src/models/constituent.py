@@ -92,7 +92,7 @@ class constituent_encoder:
                         postag=postag_list[-1]
                     
                     # clean postag and get additional feats if exitt
-                    postag, c_additional_feats, _ = postag.split("##") if len(postag.split("##"))>1 else (re.sub(r'[0-9]+', '', postag), [], None)
+                    postag, c_additional_feats, _ = postag.split("##") if len(postag.split("##"))>1 else (re.sub(r'[0-9]+', '', postag), None, None)
                     
                     # get values for absolute encoding/relative encoding
                     abs_val=n_commons
@@ -109,10 +109,13 @@ class constituent_encoder:
                         else:
                             lbl=encoded_constituent_label(rel_val,last_common, unary_chain, C_RELATIVE_ENCODING, self.separator, self.unary_joiner)
                     
+                    # append the labels, words postags and feats if we need them
                     labels.append(lbl)
                     words.append(word)
                     postags.append(postag)
-                    additional_feats.append(c_additional_feats.split("|"))
+                    
+                    if c_additional_feats:
+                        additional_feats.append(c_additional_feats.split("|"))
 
                     last_n_common=n_commons
                     break
@@ -312,6 +315,9 @@ def extract_features(trees):
                     
 
 def encode_constituent(in_path, out_path, encoding_type, separator, unary_joiner, features):
+
+    # test constituents with previous instead of nexts
+
     trees=read_tree_file(in_path)
     f_out=open(out_path,"w+")
 
@@ -375,7 +381,7 @@ def decode_single(current_tree, d, sep, uj, nlp):
         if len(columns)==2:
             # decoding a predicted file
             # only words and labels
-            word, label = split_lbl
+            word, label = columns
         
         else:
             # decoding a gold file
@@ -394,7 +400,7 @@ def decode_single(current_tree, d, sep, uj, nlp):
             nc, lc = label_components
             uc=None
         else:
-            nc, lc, uc = label_split
+            nc, lc, uc = label_components
         
         et = C_RELATIVE_ENCODING if '*' in nc else C_ABSOLUTE_ENCODING
         nc = nc.replace("*","")
@@ -421,8 +427,8 @@ def decode_constituent(in_path, out_path, encoding_type, separator, unary_joiner
     
     nlp=None
     if predict_postags:
-        # stanza.download(lang=lang, model_dir="./stanza_resources")
-        nlp = stanza.Pipeline(lang=language, processors='tokenize,pos', model_dir="./stanza_resources")
+        # stanza.download(lang=lang, model_dir="~/stanza_resources")
+        nlp = stanza.Pipeline(lang=language, processors='tokenize,pos', model_dir="~/stanza_resources")
 
     tree_counter=0
     labels_counter=0
