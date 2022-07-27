@@ -4,14 +4,15 @@ from conllu import parse_tree_incr
 from models.dependency import ConllNode
 
 def extract_features_const(in_path):
-    # parses all trees in the file and returns a list of the features
-    # sorted by alphabetical order
     trees=read_tree_file(in_path)
     feats_list=set()
     for tree in trees:
         postags = tree.yield_preterminals()
         
         for postag in postags:
+            if len(postag.label.split("##"))<=1:
+                continue
+
             feats = postag.label.split("##")[1].split("|")
             for feat in feats:
                 fs = feat.split("=")
@@ -43,7 +44,10 @@ def extract_features_conll(in_path):
     return sorted(feats_list)
     
 
-#  Python script to extract feats in a treebank. Allows for DEPS and CONST files
+'''
+Python script that returns a ordered list of the features
+included in a conll tree or a constituent tree
+'''
 
 parser = argparse.ArgumentParser(description='Prints all features in a constituent treebank')
 parser.add_argument('form', metavar='formalism', type=str, choices=['CONST','DEPS'], help='Grammar encoding the file to extract features')
@@ -51,7 +55,6 @@ parser.add_argument('input', metavar='in file', type=str, help='Path of the file
 args = parser.parse_args()
 if args.form=='CONST':
     feats = extract_features_const(args.input)
-    print(feats)
 elif args.form=='DEPS':
     feats = extract_features_conll(args.input)
-    print(feats)
+print(" ".join(feats))
