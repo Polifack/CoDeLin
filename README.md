@@ -1,4 +1,4 @@
-# Constituent and Dependency Trees Linearization System
+# COnstituent and DEpendency LINearization system
 
 Unified System to linearize Constituent and Pependency trees into labels to train Sequence Labeling Systems. The main goal of this system is to cast the task of Constituent and Dependency Parsing into a Sequence Labeling Task with good metrics of Speed and Accuracy. The implemented Tree Encodings are based on [Viable Dependency Parsing as Sequence Labeling](https://aclanthology.org/N19-1077.pdf), [Bracket Encodings for 2-Planar Dependency Parsing](https://aclanthology.org/2020.coling-main.223.pdf), [Constituent Parsing as Sequence Labeling](https://aclanthology.org/D18-1162v2.pdf) and [Better, Faster, Stronger Sequence Tagging Constituent Parsers](https://arxiv.org/pdf/1902.10985.pdf)
 
