@@ -3,7 +3,6 @@
 /treebanks_dec
 /labels
 /labels_dec
-/models
 /ncrf_configs
 
 # stanza resources, ncrfpp and eval scripts
