@@ -86,7 +86,7 @@ class C_NaiveDynamicEncoding(ACEncoding):
     def decode(self, linearized_tree):
         # Check valid labels 
         if not linearized_tree:
-            print("[*] No linearized tree found. Aborting.")
+            print("[*] Error while decoding: Null tree.")
             return
         
         # Create constituent tree

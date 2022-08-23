@@ -64,18 +64,18 @@ class D_BrkBasedEncoding(ADEncoding):
             for char in brks:
                 if char == "<":
                     node_id = current_node + (-1 if self.displacement else 0)
-                    r_stack.append((node_id,char))
+                    r_stack.append(node_id)
 
                 if char == "\\":
-                    head_id = r_stack.pop()[0] if len(r_stack)>0 else 0
+                    head_id = r_stack.pop() if len(r_stack) > 0 else 0
                     decoded_nodes[head_id].head=current_node
                 
                 if char =="/":
                     node_id = current_node + (-1 if self.displacement else 0)
-                    l_stack.append((node_id,char))
+                    l_stack.append(node_id)
 
                 if char == ">":
-                    head_id = l_stack.pop()[0] if len(l_stack)>0 else 0
+                    head_id = l_stack.pop() if len(l_stack) > 0 else 0
                     decoded_nodes[current_node].head=head_id
             
             current_node+=1

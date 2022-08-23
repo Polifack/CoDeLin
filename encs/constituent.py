@@ -83,7 +83,7 @@ def encode_constituent(in_path, out_path, encoding_type, separator, unary_joiner
     
     return labels_counter, tree_counter, len(label_set)
 
-def decode_constituent(in_path, out_path, encoding_type, separator, unary_joiner, conflicts):
+def decode_constituent(in_path, out_path, encoding_type, separator, unary_joiner, conflicts, nulls):
     '''
     Decodes the selected file according to the specified parameters:
     :param in_path: Path of the labels file to be decoded
@@ -109,8 +109,12 @@ def decode_constituent(in_path, out_path, encoding_type, separator, unary_joiner
     labels_counter = 0
     for tree in encoded_constituent_trees:
         decoded_tree = decoder.decode(tree)
-        #print(decoded_tree)
-        final_tree = postprocess_tree(decoded_tree, conflicts)
+        
+        # check if null tree obtained during decoding
+        if decoded_tree == None:
+            final_tree=Tree("-None-", [Tree("-None-")])
+        else:
+            final_tree = postprocess_tree(decoded_tree, conflicts, nulls)
         f_out.write(str(final_tree).replace('\n','')+'\n')
 
         tree_counter+=1

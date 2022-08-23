@@ -37,25 +37,27 @@ def clean_nulls_child(tree, tree_children, child):
 
         tree.children=tuple(new_children)  
         
-def postprocess_tree_child(tree, conflicts):
+def postprocess_tree_child(tree, conflicts, nulls):
     for c in tree.children:
         if type(c) is Tree:
-            postprocess_tree_child(c, conflicts)
+            postprocess_tree_child(c, conflicts, nulls)
         check_conflicts(c, conflicts)
-        clean_nulls_child(tree, tree.children, c)
+        if nulls:
+            clean_nulls_child(tree, tree.children, c)
 
     check_conflicts(tree, conflicts)
-def postprocess_tree(tree, conflicts):
+def postprocess_tree(tree, conflicts, nulls):
     '''
     Apply heuristics to the reconstructed Constituent Trees
     in order to ensure correctness
     '''
     # Clean Null Roots
-    while len(tree.children)==1 and tree.label==C_NONE_LABEL:
-        tree = tree.children[0]
+    if (nulls):
+        while len(tree.children)==1 and tree.label==C_NONE_LABEL:
+            tree = tree.children[0]
     
     # Postprocess Childs
-    postprocess_tree_child(tree, conflicts)
+    postprocess_tree_child(tree, conflicts, nulls)
 
     return tree
 

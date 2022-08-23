@@ -79,7 +79,7 @@ class C_NaiveAbsoluteEncoding(ACEncoding):
     def decode(self, linearized_tree):
         # Check valid labels 
         if not linearized_tree:
-            print("[*] No linearized tree found. Aborting.")
+            print("[*] Error while decoding: Null tree.")
             return
 
         # Create constituent tree
@@ -93,7 +93,6 @@ class C_NaiveAbsoluteEncoding(ACEncoding):
 
         for row in linearized_tree:
             word, postag, label = row
-
             # Descend through the tree until reach the level indicated by last_common
             current_level = tree
 

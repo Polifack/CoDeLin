@@ -114,9 +114,9 @@ class D_Brk2PBasedEncoding(ADEncoding):
                     cross_plane_1 = False
                     cross_plane_2 = False
                     for node in plane_1:                
-                        cross_plane_1=cross_plane_1 or self.check_cross(next_arc, node)
+                        cross_plane_1 = cross_plane_1 or self.check_cross(next_arc, node)
                     for node in plane_2:        
-                        cross_plane_2=cross_plane_2 or self.check_cross(next_arc, node)
+                        cross_plane_2 = cross_plane_2 or self.check_cross(next_arc, node)
                     
                     if not cross_plane_1:
                         plane_1.append(next_arc)

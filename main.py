@@ -54,6 +54,9 @@ if __name__=="__main__":
 
     parser.add_argument('--conflict', choices = [C_STRAT_FIRST, C_STRAT_LAST, C_STRAT_MAX, C_STRAT_NONE], required = False, default=C_STRAT_MAX,
                         help='DECODE CONSTITUENT GRAMMARS ONLY: Method of conflict resolution for conflicting tree node labels.')
+    
+    parser.add_argument('--nulls', required = False, action='store_true', default=False, 
+                        help='DECODE CONSTITUENT GRAMMARS ONLY: Allow null nodes in the decoded tree.')
 
     args = parser.parse_args()
 
@@ -66,7 +69,7 @@ if __name__=="__main__":
             n_labels, n_trees, n_diff_labels = encode_constituent(args.input, args.output, args.enc, args.sep, args.ujoiner, args.feats)
         
         elif args.operation == OP_DEC:
-            n_trees, n_labels = decode_constituent(args.input, args.output, args.enc, args.sep, args.ujoiner, args.conflict)
+            n_trees, n_labels = decode_constituent(args.input, args.output, args.enc, args.sep, args.ujoiner, args.conflict, args.nulls)
     
     elif args.formalism == F_DEPENDENCY:
         

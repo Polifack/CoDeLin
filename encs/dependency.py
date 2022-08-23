@@ -144,7 +144,7 @@ def decode_dependencies(in_path, out_path, separator, encoding_type, displacemen
 
         if EOS in line:
             # End of Sentence: Decode and Write
-            sentence = "# "+" ".join(current_words)+'\n'
+            sentence = "# text = "+" ".join(current_words)+'\n'
             decoded_conllu = decoder.decode(current_labels, current_postags, current_words)
             postprocess_tree(decoded_conllu, root_search, multiroot)
             

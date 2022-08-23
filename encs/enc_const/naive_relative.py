@@ -79,7 +79,7 @@ class C_NaiveRelativeEncoding(ACEncoding):
     def decode(self, linearized_tree):
         # Check valid labels 
         if not linearized_tree:
-            print("[*] No linearized tree found. Aborting.")
+            print("[*] Error while decoding: Null tree.")
             return
         
         # Create constituent tree
@@ -134,7 +134,9 @@ class C_NaiveRelativeEncoding(ACEncoding):
                         current_level.label=label.last_common[i]
                     else:
                         current_level.label=current_level.label+C_CONFLICT_SEPARATOR+label.last_common[i]
-                    current_level = current_level.children[len(current_level.children)-1]
+
+                    if len(current_level.children)>0:
+                        current_level = current_level.children[len(current_level.children)-1]
 
                 # If we reach a POS tag, set it as child of the current chain
                 if current_level.is_preterminal():
