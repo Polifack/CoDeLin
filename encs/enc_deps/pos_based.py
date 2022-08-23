@@ -50,6 +50,8 @@ class D_PosBasedEncoding(ADEncoding):
 
             node.relation = label.li
             
+            if label.xi == "-NONE-":
+                label.xi = "ROOT--0"
 
             oi, pi = label.xi.split('--')            
 

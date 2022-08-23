@@ -179,6 +179,8 @@ class D_Brk2PBasedEncoding(ADEncoding):
         current_node=1
         for label, postag, word in zip(labels,postags,words):
             # join the plane signaler char with the bracket char
+            if label.xi == "-NONE-":
+                label.xi = ""
             brks=list(label.xi)
             temp_brks=[]
             

@@ -133,8 +133,26 @@ def decode_dependencies(in_path, out_path, separator, encoding_type, displacemen
     current_postags = []
 
     for line in f_in: 
+        # split the line and get word/label
+        line = line.replace('\n','')
 
-        if BOS in line:
+        line_splitter = ' ' if ' ' in line else '\t'
+        split_line = line.split(line_splitter)
+        
+        if len(split_line)<=1:
+            continue
+        
+        word = split_line[0]
+        lbl_str = split_line[-1]
+        
+        # check for postags in label
+        if len(split_line) == 2:
+            postag = ""
+        else:
+            postag = split_line[1]
+
+        # parse
+        if BOS == word:
             # Begin of Sentence: Reset Lists
             current_labels=[]
             current_words=[]
@@ -142,9 +160,10 @@ def decode_dependencies(in_path, out_path, separator, encoding_type, displacemen
 
             continue
 
-        if EOS in line:
+        if EOS == word:
             # End of Sentence: Decode and Write
             sentence = "# text = "+" ".join(current_words)+'\n'
+            print(sentence)
             decoded_conllu = decoder.decode(current_labels, current_postags, current_words)
             postprocess_tree(decoded_conllu, root_search, multiroot)
             
@@ -158,19 +177,12 @@ def decode_dependencies(in_path, out_path, separator, encoding_type, displacemen
 
         labels_counter+=1
 
-        line = line.replace('\n','')
-        split_line = line.split('\t')
-        
-        if len(split_line)<=1:
-            continue
-        if len(split_line) == 2:
-            word, lbl_str = split_line
-            postag = ""
-        else:
-            word = split_line[0]
-            postag = split_line[1]
-            lbl_str = split_line[-1]
+        # check for bad predicted label as -bos- or -eos-
+        if lbl_str == BOS or lbl_str == EOS:
+            print("[*] Error: bad prediction for label")
+            lbl_str = "-NONE-_0"
 
+        # append labels
         current_labels.append(DependencyLabel.from_string(lbl_str, separator))
         current_words.append(word)
         current_postags.append(postag)

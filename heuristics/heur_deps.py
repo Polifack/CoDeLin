@@ -56,7 +56,9 @@ def check_loops(nodes):
                 node.head = -1
             else:
                 visited.append(node)
-                node = nodes[node.head-1]
+                next_node_id = min(max(node.head-1, 0), len(nodes)-1)
+
+                node = nodes[next_node_id]
 
 def check_valid_heads(nodes):
     '''

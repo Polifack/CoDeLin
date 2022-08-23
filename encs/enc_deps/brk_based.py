@@ -52,6 +52,8 @@ class D_BrkBasedEncoding(ADEncoding):
         
         current_node = 1
         for label, postag, word in zip(labels, postags, words):
+            if label.xi == "-NONE-":
+                label.xi = ""
             brks=list(label.xi)
                         
             # set parameters to the node

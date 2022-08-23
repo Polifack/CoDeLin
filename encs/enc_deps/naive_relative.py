@@ -28,6 +28,9 @@ class D_NaiveRelativeEncoding(ADEncoding):
         for label, postag, word in zip(labels, postags, words):
             node = ConllNode(i, word, None, postag, None, None, None, None, None, None)
 
+            if label.xi == "-NONE-":
+                label.xi = 0
+
             node.relation = label.li
             node.head = int(label.xi)+node.id
 
