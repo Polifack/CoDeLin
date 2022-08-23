@@ -163,7 +163,6 @@ def decode_dependencies(in_path, out_path, separator, encoding_type, displacemen
         if EOS == word:
             # End of Sentence: Decode and Write
             sentence = "# text = "+" ".join(current_words)+'\n'
-            print(sentence)
             decoded_conllu = decoder.decode(current_labels, current_postags, current_words)
             postprocess_tree(decoded_conllu, root_search, multiroot)
             
