@@ -1,3 +1,4 @@
+import stanza
 from models.dependency_label import DependencyLabel
 from models.conll_node import ConllNode
 from encs.enc_deps import *
@@ -99,7 +100,7 @@ def encode_dependencies(in_path, out_path, separator, encoding_type, displacemen
     return tree_counter, label_counter, len(label_set)
 
 # Decoding
-def decode_dependencies(in_path, out_path, separator, encoding_type, displacement, multiroot, root_search):
+def decode_dependencies(in_path, out_path, separator, encoding_type, displacement, planar, multiroot, root_search, postags, lang):
     '''
     Decodes the selected file according to the specified parameters:
     :param in_path: Path of the file to be encoded
@@ -112,15 +113,15 @@ def decode_dependencies(in_path, out_path, separator, encoding_type, displacemen
     '''
 
     if encoding_type == D_ABSOLUTE_ENCODING:
-            decoder = D_NaiveAbsoluteEncoding(separator)
+        decoder = D_NaiveAbsoluteEncoding(separator)
     if encoding_type == D_RELATIVE_ENCODING:
-            decoder = D_NaiveRelativeEncoding(separator)
+        decoder = D_NaiveRelativeEncoding(separator)
     if encoding_type == D_POS_ENCODING:
-            decoder = D_PosBasedEncoding(separator)
+        decoder = D_PosBasedEncoding(separator)
     if encoding_type == D_BRACKET_ENCODING:
-            decoder = D_BrkBasedEncoding(separator, displacement)
+        decoder = D_BrkBasedEncoding(separator, displacement)
     if encoding_type == D_BRACKET_ENCODING_2P:
-            decoder = D_Brk2PBasedEncoding(separator, displacement)
+        decoder = D_Brk2PBasedEncoding(separator, displacement, planar)
 
     f_in=open(in_path)
     f_out=open(out_path,"w+")
@@ -132,11 +133,15 @@ def decode_dependencies(in_path, out_path, separator, encoding_type, displacemen
     current_words = []
     current_postags = []
 
+    if postags:
+        stanza.download(lang=lang)
+        nlp = stanza.Pipeline(lang=lang, processors='tokenize,pos')
+
     for line in f_in: 
         # split the line and get word/label
         line = line.replace('\n','')
 
-        line_splitter = ' ' if ' ' in line else '\t'
+        line_splitter = '\t' if '\t' in line else ' '
         split_line = line.split(line_splitter)
         
         if len(split_line)<=1:
@@ -162,7 +167,11 @@ def decode_dependencies(in_path, out_path, separator, encoding_type, displacemen
 
         if EOS == word:
             # End of Sentence: Decode and Write
-            sentence = "# text = "+" ".join(current_words)+'\n'
+            sentence = " ".join(current_words)
+            if postags:
+                doc=nlp(sentence)
+                current_postags = [word.pos for sent in doc.sentences for word in sent.words]
+            sentence = "# text = "+sentence+'\n'
             decoded_conllu = decoder.decode(current_labels, current_postags, current_words)
             postprocess_tree(decoded_conllu, root_search, multiroot)
             
@@ -178,8 +187,7 @@ def decode_dependencies(in_path, out_path, separator, encoding_type, displacemen
 
         # check for bad predicted label as -bos- or -eos-
         if lbl_str == BOS or lbl_str == EOS:
-            print("[*] Error: bad prediction for label")
-            lbl_str = "-NONE-_0"
+            lbl_str = "-NONE-"+separator+"0"
 
         # append labels
         current_labels.append(DependencyLabel.from_string(lbl_str, separator))

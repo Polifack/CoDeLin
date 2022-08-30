@@ -58,6 +58,12 @@ if __name__=="__main__":
     parser.add_argument('--nulls', required = False, action='store_true', default=False, 
                         help='DECODE CONSTITUENT GRAMMARS ONLY: Allow null nodes in the decoded tree.')
 
+    parser.add_argument('--postags', required = False, action='store_true', default = False, 
+                        help = 'Predict Part of Speech tags using Stanza tagger')
+    
+    parser.add_argument('--lang', required=False, type=str, default='en', 
+                        help = 'Language employed in part of speech predition')
+
     args = parser.parse_args()
 
     if args.time:
@@ -77,7 +83,7 @@ if __name__=="__main__":
             n_trees, n_labels, n_diff_labels = encode_dependencies(args.input, args.output, args.sep, args.enc, args.disp, args.planar, args.feats)
         
         elif args.operation == OP_DEC:
-            n_trees, n_labels = decode_dependencies(args.input, args.output, args.sep, args.enc, args.disp, args.mroot, args.rsearch)
+            n_trees, n_labels = decode_dependencies(args.input, args.output, args.sep, args.enc, args.disp, args.planar, args.mroot, args.rsearch, args.postags, args.lang)
 
 
 

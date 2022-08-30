@@ -6,7 +6,7 @@ from models.dependency_label import DependencyLabel
 from models.conll_node import ConllNode
 
 class D_Brk2PBasedEncoding(ADEncoding):
-    def __init__(self, displacement, planar_alg):
+    def __init__(self, separator, displacement, planar_alg):
         if planar_alg not in [D_2P_GREED, D_2P_PROP]:
             print("[*] Error: Unknown planar separation algorithm")
             exit(1)
