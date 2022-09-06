@@ -9,6 +9,7 @@ class D_BrkBasedEncoding(ADEncoding):
         super().__init__(separator)
         self.displacement = displacement
 
+
     def encode(self, nodes):
         labels_brk=["" for e in nodes]
         encoded_labels=[]

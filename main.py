@@ -45,7 +45,7 @@ if __name__=="__main__":
                         default=D_2P_GREED, required=False, 
                         help='ENCODE DEPENDENCY GRAMMARS ONLY: Planar separation algorithm. (Dependency Bracket 2Planar Encoding Exclusive)')
 
-    parser.add_argument('--mroot', action='store_true', required=False, default=False,
+    parser.add_argument('--rsingle', action='store_true', required=False, default=False,
                         help='DECODE DEPENDENCY GRAMMARS ONLY: Postprocess the decoded tree to have only one root.')
 
     parser.add_argument('--rsearch', metavar='root search strategy', type=str, default=D_ROOT_HEAD,
@@ -83,7 +83,7 @@ if __name__=="__main__":
             n_trees, n_labels, n_diff_labels = encode_dependencies(args.input, args.output, args.sep, args.enc, args.disp, args.planar, args.feats)
         
         elif args.operation == OP_DEC:
-            n_trees, n_labels = decode_dependencies(args.input, args.output, args.sep, args.enc, args.disp, args.planar, args.mroot, args.rsearch, args.postags, args.lang)
+            n_trees, n_labels = decode_dependencies(args.input, args.output, args.sep, args.enc, args.disp, args.planar, args.rsingle, args.rsearch, args.postags, args.lang)
 
 
 

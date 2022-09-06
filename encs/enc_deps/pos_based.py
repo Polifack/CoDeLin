@@ -11,26 +11,19 @@ class D_PosBasedEncoding(ADEncoding):
         
     def encode(self, nodes):
         encoded_labels = []
-
         for node in nodes:
-            # skip dummy root
             if node.id == 0:
                 continue                
 
             li = node.relation
 
-            # xi computation
-            node_head = int(node.head)
-            node_id = int(node.id)
-            
+            node_head, node_id = int(node.head), int(node.id)            
             pi = nodes[node_head].upos
             oi = 0
-
-            # if not root, compute the oi value
             if node_head != 0:
                 step = 1 if node_id < node_head else -1
 
-                for i in range(node_id, node_head+step, step):
+                for i in range(node_id+step, node_head+step, step):
                     if pi == nodes[i].upos:
                         oi += step
 
@@ -56,19 +49,14 @@ class D_PosBasedEncoding(ADEncoding):
             oi, pi = label.xi.split('--')            
 
             oi = int(oi)
-
-            # ROOT is a special case
             if (pi==D_POSROOT or oi==0):
                 node.head = 0
                 decoded_nodes.append(node)
                 
                 i+=1
                 continue
-
-            # store the value of pi (number of oi found) to substract it
             target_oi = oi
 
-            # create the step and the stop point 
             step = 1 if oi > 0 else -1
             stop_point = (len(postags)+1) if oi > 0 else 0
 
