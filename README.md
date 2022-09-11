@@ -89,3 +89,10 @@ The Constituent and Dependency Trees Linearization System has been tested with [
 
 ## To Do List
 
+- Option to change how the root is encoded in bracket based encoding.
+- Change how root relations are encoded in relative dependency encoding.
+- Change the head-selection algorithm in dependency encoding. New algorithm should be able to select head using both head field and deprel field.
+- Add a new purelly incremental constituent tree encoding. This new encoding should encode the tree using w-1 and w instead of w+1 and w. This should allow to use a single LSTM in the sequence labeling architecture
+- Add head-driven phrase structure grammars as formalism. 
+- Add semantic dependency parsing structure option.
+- Explore the addition of Named Entity Recognition and Part of Speech Tagging to labels.
