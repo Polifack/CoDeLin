@@ -77,6 +77,6 @@ def parse_constituent_labels(in_file, separator, ujoiner):
         if BOS in label or EOS in label:
             label = "1"+separator+"ROOT"
 
-        current_tree.append((word, postag, ConstituentLabel.from_string(label, separator, ujoiner)))
+        current_tree.append([word, postag, ConstituentLabel.from_string(label, separator, ujoiner)])
 
     return linearized_trees

@@ -76,7 +76,7 @@ class C_NaiveAbsoluteEncoding(ACEncoding):
         
         return words, postags, labels, additional_feats
 
-    def decode(self, linearized_tree):
+    def decode(self, linearized_tree, postags):
         # Check valid labels 
         if not linearized_tree:
             print("[*] Error while decoding: Null tree.")

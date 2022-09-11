@@ -75,7 +75,7 @@ if __name__=="__main__":
             n_labels, n_trees, n_diff_labels = encode_constituent(args.input, args.output, args.enc, args.sep, args.ujoiner, args.feats)
         
         elif args.operation == OP_DEC:
-            n_trees, n_labels = decode_constituent(args.input, args.output, args.enc, args.sep, args.ujoiner, args.conflict, args.nulls)
+            n_trees, n_labels = decode_constituent(args.input, args.output, args.enc, args.sep, args.ujoiner, args.conflict, args.nulls, args.postags, args.lang)
     
     elif args.formalism == F_DEPENDENCY:
         

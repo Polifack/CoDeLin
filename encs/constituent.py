@@ -83,7 +83,7 @@ def encode_constituent(in_path, out_path, encoding_type, separator, unary_joiner
     
     return labels_counter, tree_counter, len(label_set)
 
-def decode_constituent(in_path, out_path, encoding_type, separator, unary_joiner, conflicts, nulls):
+def decode_constituent(in_path, out_path, encoding_type, separator, unary_joiner, conflicts, nulls, postags, lang):
     '''
     Decodes the selected file according to the specified parameters:
     :param in_path: Path of the labels file to be decoded
@@ -104,10 +104,25 @@ def decode_constituent(in_path, out_path, encoding_type, separator, unary_joiner
     encoded_constituent_trees = parse_constituent_labels(in_path, separator, unary_joiner)
 
     f_out=open(out_path,"w+")
-
+    if postags:
+        stanza.download(lang=lang)
+        nlp = stanza.Pipeline(lang=lang, processors='tokenize,pos')
     tree_counter = 0
     labels_counter = 0
     for tree in encoded_constituent_trees:
+        current_postags = None
+        
+        # generate postags if needed
+        if postags:
+            sentence=""
+            for element in tree:
+                word = element[0]
+                sentence +=" "+word
+            doc=nlp(sentence)
+            postags = [word.pos for sent in doc.sentences for word in sent.words]
+            for line, postag in zip(tree, postags):
+                line[1] = postag
+        
         decoded_tree = decoder.decode(tree)
         
         # check if null tree obtained during decoding
