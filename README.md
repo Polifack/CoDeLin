@@ -119,9 +119,15 @@ Results for the experiments performed with CoDeLin labels using different sequen
 
 F-1 score and speed for the selected constituent treebanks using the different sequence labeling systems.
 
+![F-1 const](https://raw.githubusercontent.com/Polifack/CoDeLin/main/pics/const_fscore.png)
+![Speed const](https://raw.githubusercontent.com/Polifack/CoDeLin/main/pics/const_speed.png)
+
 ### Dependency Parsing
 
 Labeled Attachment Score (LAS) and speed for the selected Universal Dependencies treebanks using the different sequence labeling systems.
+
+![Las deps](https://raw.githubusercontent.com/Polifack/CoDeLin/main/pics/deps_las.png)
+![Speed deps](https://raw.githubusercontent.com/Polifack/CoDeLin/main/pics/deps_speed.png)
 
 ## To Do List
 
