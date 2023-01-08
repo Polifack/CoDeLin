@@ -1,4 +1,4 @@
-from utils.constants import D_POSROOT, D_EMPTYREL
+from src.utils.constants import D_POSROOT, D_EMPTYREL
 
 class ConllNode:
     def __init__(self, wid, form, lemma, upos, xpos, feats, head, deprel, deps, misc):

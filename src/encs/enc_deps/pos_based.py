@@ -1,9 +1,7 @@
-from encs.abstract_encoding import ADEncoding
-
-from models.dependency_label import DependencyLabel
-from models.conll_node import ConllNode
-
-from utils.constants import D_POSROOT
+from src.encs.abstract_encoding import ADEncoding
+from src.models.deps_label import DependencyLabel
+from src.models.conll_node import ConllNode
+from src.utils.constants import D_POSROOT
 
 class D_PosBasedEncoding(ADEncoding):
     def __init__(self, separator):

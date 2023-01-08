@@ -1,10 +1,10 @@
 import stanza
-from models.dependency_label import DependencyLabel
-from models.conll_node import ConllNode
-from encs.enc_deps import *
-from utils.constants import *
-from utils.reader import parse_conllu
-from heuristics.heur_deps import postprocess_tree
+from src.models.deps_label import DependencyLabel
+from src.models.conll_node import ConllNode
+from src.encs.enc_deps import *
+from src.utils.constants import *
+from src.utils.reader import parse_conllu
+from src.heuristics.heur_deps import postprocess_tree
 
 # Encoding
 def encode_dependencies(in_path, out_path, separator, encoding_type, displacement, planar_alg, features):

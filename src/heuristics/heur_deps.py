@@ -1,4 +1,4 @@
-from utils.constants import D_NULLHEAD, D_ROOT_HEAD, D_ROOT_REL
+from src.utils.constants import D_NULLHEAD, D_ROOT_HEAD, D_ROOT_REL
 
 def postprocess_tree(nodes, search_root_strat, multiroot):
     '''

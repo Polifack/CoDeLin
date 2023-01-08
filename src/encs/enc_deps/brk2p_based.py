@@ -1,9 +1,7 @@
-from encs.abstract_encoding import ADEncoding
-
-from utils.constants import D_2P_GREED, D_2P_PROP
-
-from models.dependency_label import DependencyLabel
-from models.conll_node import ConllNode
+from src.encs.abstract_encoding import ADEncoding
+from src.utils.constants import D_2P_GREED, D_2P_PROP
+from src.models.deps_label import DependencyLabel
+from src.models.conll_node import ConllNode
 
 class D_Brk2PBasedEncoding(ADEncoding):
     def __init__(self, separator, displacement, planar_alg):

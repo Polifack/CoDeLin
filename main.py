@@ -1,6 +1,6 @@
-from encs.dependency import encode_dependencies, decode_dependencies
-from encs.constituent import encode_constituent, decode_constituent
-from utils.constants import *
+from src.encs.dependency import encode_dependencies, decode_dependencies
+from src.encs.constituent import encode_constituent, decode_constituent
+from src.utils.constants import *
 
 import argparse
 import time
@@ -55,8 +55,8 @@ if __name__=="__main__":
     parser.add_argument('--conflict', choices = [C_STRAT_FIRST, C_STRAT_LAST, C_STRAT_MAX, C_STRAT_NONE], required = False, default=C_STRAT_MAX,
                         help='DECODE CONSTITUENT GRAMMARS ONLY: Method of conflict resolution for conflicting tree node labels.')
     
-    parser.add_argument('--nulls', required = False, action='store_true', default=False, 
-                        help='DECODE CONSTITUENT GRAMMARS ONLY: Allow null nodes in the decoded tree.')
+    parser.add_argument('--nulls', required = False, action='store_true', default=True, 
+                        help='DECODE CONSTITUENT GRAMMARS ONLY: Remove null nodes in the decoded tree.')
 
     parser.add_argument('--postags', required = False, action='store_true', default = False, 
                         help = 'Predict Part of Speech tags using Stanza tagger')

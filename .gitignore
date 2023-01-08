@@ -17,6 +17,7 @@
 /scripts
 /logs
 /default_cfgs
+/evalb
 
 .vscode/
 /src/models/__pycache__

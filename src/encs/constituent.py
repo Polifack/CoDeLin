@@ -1,15 +1,10 @@
-from models.constituent_label import ConstituentLabel
-from encs.enc_const import *
-from utils.constants import EOS, BOS, C_ABSOLUTE_ENCODING, C_RELATIVE_ENCODING, C_DYNAMIC_ENCODING
-from utils.reader import parse_constituent_labels
-from heuristics.heur_const import postprocess_tree
-
-from stanza.models.constituency.parse_tree import Tree
-from stanza.models.constituency.tree_reader import read_trees, read_tree_file
+from src.models.const_label import ConstituentLabel
+from src.encs.enc_const import *
+from src.utils.constants import EOS, BOS, C_ABSOLUTE_ENCODING, C_RELATIVE_ENCODING, C_DYNAMIC_ENCODING
+from src.utils.reader import parse_constituent_labels
 
 import stanza.pipeline
-import copy
-import re
+from src.models.const_tree import ConstituentTree
 
 
 ## Encoding and decoding
@@ -25,19 +20,12 @@ def encode_constituent(in_path, out_path, encoding_type, separator, unary_joiner
     :param features: features to add as columns to the labels file
     '''
 
-    trees=read_tree_file(in_path)
-    f_out=open(out_path,"w+")
-
     if encoding_type == C_ABSOLUTE_ENCODING:
             encoder = C_NaiveAbsoluteEncoding(separator, unary_joiner)
     if encoding_type == C_RELATIVE_ENCODING:
             encoder = C_NaiveRelativeEncoding(separator, unary_joiner)
     if encoding_type == C_DYNAMIC_ENCODING:
             encoder = C_NaiveDynamicEncoding(separator, unary_joiner)
-    
-    tree_counter=0
-    labels_counter=0
-    label_set = set()
 
     if features:
         f_idx_dict = {}
@@ -46,7 +34,17 @@ def encode_constituent(in_path, out_path, encoding_type, separator, unary_joiner
             f_idx_dict[f]=i
             i+=1
 
-    for tree in trees:
+    file_out = open(out_path, "w")
+    file_in = open(in_path, "r")
+
+    tree_counter=0
+    labels_counter=0
+    label_set = set()
+
+    for line in file_in:
+        line = line.rstrip()
+        tree = ConstituentTree.from_string(line)
+
         words, pos_tags, labels, additional_feats = encoder.encode(tree)
         linearized_tree=[]
 
@@ -71,14 +69,15 @@ def encode_constituent(in_path, out_path, encoding_type, separator, unary_joiner
             # add the label
             label_set.add(str(l))
             output_line.append(str(l))
-                                  
+                                    
             linearized_tree.append(u"\t".join(output_line))
         linearized_tree.append(u"\t".join(([EOS] * (3 + (len(features) if features else 0)))))
 
         for row in linearized_tree:
             labels_counter+=1
-            f_out.write(str(row)+'\n')
-        f_out.write("\n")
+            file_out.write(str(row)+'\n')
+        
+        file_out.write("\n")
         tree_counter+=1
     
     return labels_counter, tree_counter, len(label_set)
@@ -127,9 +126,13 @@ def decode_constituent(in_path, out_path, encoding_type, separator, unary_joiner
         
         # check if null tree obtained during decoding
         if decoded_tree == None:
-            final_tree=Tree("-None-", [Tree("-None-")])
+            final_tree = ConstituentTree.empty_tree()
         else:
-            final_tree = postprocess_tree(decoded_tree, conflicts, nulls)
+            decoded_tree.postprocess_tree(conflicts, nulls)
+            final_tree = decoded_tree
+            if "-NONE-" in str(final_tree):
+                print("has nones:"+" ".join(decoded_tree.get_words()))
+
         f_out.write(str(final_tree).replace('\n','')+'\n')
 
         tree_counter+=1

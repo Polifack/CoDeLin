@@ -1,7 +1,7 @@
 from conllu import parse_tree_incr
-from models.conll_node import ConllNode
-from models.constituent_label import ConstituentLabel
-from utils.constants import C_NO_POSTAG_LABEL, BOS, EOS
+from src.models.conll_node import ConllNode
+from src.models.const_label import ConstituentLabel
+from src.utils.constants import C_NO_POSTAG_LABEL, BOS, EOS
 
 def parse_conllu(in_file):
     '''
