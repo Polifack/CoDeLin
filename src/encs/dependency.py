@@ -1,10 +1,8 @@
 import stanza
 from src.models.deps_label import DependencyLabel
-from src.models.conll_node import ConllNode
 from src.encs.enc_deps import *
 from src.utils.constants import *
-from src.utils.reader import parse_conllu
-from src.heuristics.heur_deps import postprocess_tree
+from src.models.deps_tree import DependencyTree
 
 # Encoding
 def encode_dependencies(in_path, out_path, separator, encoding_type, displacement, planar_alg, features):
@@ -30,10 +28,6 @@ def encode_dependencies(in_path, out_path, separator, encoding_type, displacemen
             encoder = D_BrkBasedEncoding(separator, displacement)
     if encoding_type == D_BRACKET_ENCODING_2P:
             encoder = D_Brk2PBasedEncoding(separator, displacement, planar_alg)
-
-    # Open Files
-    f_in=open(in_path)
-    f_out=open(out_path,"w+")
     
     # Read Features
     if features:
@@ -46,22 +40,21 @@ def encode_dependencies(in_path, out_path, separator, encoding_type, displacemen
     tree_counter = 0
     label_counter = 0
 
-    conll_node_list = parse_conllu(f_in)
+
+    trees = DependencyTree.read_conllu_file(in_path, filter_projective=False)
+    f_out = open(out_path,"w+")
     label_set = set()
     
-    for node_list in conll_node_list:
+    for t in trees:
         # encode labels
-        encoded_labels = encoder.encode(node_list)
+        encoded_labels = encoder.encode(t)
         
         # append BOS to tree
         linearized_tree=[]
         linearized_tree.append(u"\t".join(([BOS] * (3 + (1+len(features) if features else 0)))))
-        
-        # clear dummy root
-        node_list = node_list[1:]
 
         # append labels to tree
-        for n, l in zip(node_list, encoded_labels):
+        for n, l in zip(t, encoded_labels):
             # append the label to a set to count different labels
             label_set.add(l)
 
@@ -172,13 +165,13 @@ def decode_dependencies(in_path, out_path, separator, encoding_type, displacemen
                 doc=nlp(sentence)
                 current_postags = [word.pos for sent in doc.sentences for word in sent.words]
             sentence = "# text = "+sentence+'\n'
+
+            # decode and postprocess
             decoded_conllu = decoder.decode(current_labels, current_postags, current_words)
-            postprocess_tree(decoded_conllu, root_search, multiroot)
-            
-            f_out.write(sentence)
-            for l in decoded_conllu:
-                f_out.write(str(l))
-            f_out.write('\n')
+            decoded_conllu.postprocess_tree(root_search, multiroot)
+
+            # write
+            DependencyTree.write_conllu(f_out, decoded_conllu)
 
             token_list_counter+=1
             continue
@@ -187,7 +180,7 @@ def decode_dependencies(in_path, out_path, separator, encoding_type, displacemen
 
         # check for bad predicted label as -bos- or -eos-
         if lbl_str == BOS or lbl_str == EOS:
-            lbl_str = "-NONE-"+separator+"0"
+            lbl_str = D_NONE_LABEL+separator+"0"
 
         # append labels
         current_labels.append(DependencyLabel.from_string(lbl_str, separator))

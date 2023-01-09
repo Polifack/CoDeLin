@@ -4,6 +4,6 @@
 3	are	be	VBP	VBP	_	0	root	0:root	_
 4	not	not	RB	RB	_	3	advmod	3:advmod	_
 5	what	what	WP	WP	_	7	obj	7:obj	_
-6	they	they	PRP	PRP	_	7   nsubj	7:nsubj	_
+6	they	they	PRP	PRP	_	7	nsubj	7:nsubj	_
 7	seem	seem	VBP	VBP	_	3	ccomp	3:ccomp	_
 8	.	.	PUNCT	PUNCT	_	3	punct	3:punct	_

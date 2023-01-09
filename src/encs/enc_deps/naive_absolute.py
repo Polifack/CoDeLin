@@ -1,21 +1,17 @@
 from src.encs.abstract_encoding import ADEncoding
 from src.models.deps_label import DependencyLabel
-from src.models.conll_node import ConllNode
+from src.models.deps_tree import DependencyTree
+from src.utils.constants import D_NONE_LABEL
 
 class D_NaiveAbsoluteEncoding(ADEncoding):
     def __init__(self, separator):
         super().__init__(separator)
 
-    def encode(self, nodes):
+    def encode(self, dep_tree):
         encoded_labels = []
-        for node in nodes:
-            # skip dummy root
-            if node.id == 0:
-                continue
-
+        dep_tree.remove_dummy()
+        for node in dep_tree:
             li = node.relation
-
-            # xi computation
             xi = node.head
             
             current = DependencyLabel(xi, li, self.separator)
@@ -24,18 +20,20 @@ class D_NaiveAbsoluteEncoding(ADEncoding):
         return encoded_labels
     
     def decode(self, labels, postags, words):
-        decoded_nodes = [ConllNode.dummy_root()]
+        dep_tree = DependencyTree.empty_tree(len(labels)+1)
 
-        i = 1
-        for label, postag, word in zip(labels, postags, words):
-            node = ConllNode(i, word, None, postag, None, None, None, None, None, None)
+        for i in range(len(labels)):
+            label  = labels[i]
+            postag = postags[i]
+            word   = words[i]
             
-            if label.xi == "-NONE-":
+            if label.xi == D_NONE_LABEL:
                 label.xi = 0
             
-            node.relation = label.li
-            node.head = int(label.xi)
+            dep_tree.update_word(i+1, word)
+            dep_tree.update_upos(i+1, postag)
+            dep_tree.update_relation(i+1, label.li)
+            dep_tree.update_head(i+1, int(label.xi))
 
-            decoded_nodes.append(node)
-            i+=1
-        return decoded_nodes[1:]
+        dep_tree.remove_dummy()
+        return dep_tree

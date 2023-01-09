@@ -1,7 +1,7 @@
 from src.encs.abstract_encoding import ADEncoding
-from src.utils.constants import D_2P_GREED, D_2P_PROP
+from src.utils.constants import D_2P_GREED, D_2P_PROP, D_NONE_LABEL
 from src.models.deps_label import DependencyLabel
-from src.models.conll_node import ConllNode
+from src.models.deps_tree import DependencyTree
 
 class D_Brk2PBasedEncoding(ADEncoding):
     def __init__(self, separator, displacement, planar_alg):
@@ -13,40 +13,15 @@ class D_Brk2PBasedEncoding(ADEncoding):
         self.planar_alg = planar_alg
 
 
-    def check_cross(self, next_arc, node):
-        # las condiciones para que dos nodos se crucen son:
-        #   id del next_arc esta entre la cabeza y el id del nodo siendo comprobado
-        #   cabeza del next_arc no esta entre la cabeza y el id del nodo siendo comprobado
-        # o
-        #   id del next_arc no esta entre la cabeza y el id del nodo siendo comprobado
-        #   cabeza del next_arc esta entre la cabeza y el id del nodo siendo comprobado
-        #
-        # hay que tener en cuenta que si las cabezas coinciden *no* es un cruce
-        
-                
-        if ((next_arc.head == node.head) or (next_arc.head==node.id)):
-             return False
 
-        r_id_inside = (node.head < next_arc.id < node.id)
-        l_id_inside = (node.id < next_arc.id < node.head)
-
-        id_inside = r_id_inside or l_id_inside
-
-        r_head_inside = (node.head < next_arc.head < node.id)
-        l_head_inside = (node.id < next_arc.head < node.head)
-
-        head_inside = r_head_inside or l_head_inside
-
-        return head_inside^id_inside
-
-    def get_next_edge(self, nodes, idx_l, idx_r):
+    def get_next_edge(self, dep_tree, idx_l, idx_r):
         next_arc=None
 
-        if nodes[idx_l].head==idx_r:
-            next_arc = nodes[idx_l]
+        if dep_tree[idx_l].head==idx_r:
+            next_arc = dep_tree[idx_l]
         
-        elif nodes[idx_r].head==idx_l:
-            next_arc = nodes[idx_r]
+        elif dep_tree[idx_r].head==idx_l:
+            next_arc = dep_tree[idx_r]
         
         return next_arc
 
@@ -61,7 +36,7 @@ class D_Brk2PBasedEncoding(ADEncoding):
                 # if the node in position 'i' has an arc to 'j' 
                 # or node in position 'j' has an arc to 'i'
                 next_arc=self.get_next_edge(nodes, i, j)
-                if next_arc == None:
+                if next_arc is None:
                     continue
                 else:
                     # check restrictions
@@ -90,31 +65,31 @@ class D_Brk2PBasedEncoding(ADEncoding):
         # add all nodes from the dependency graph that crosses the current edge
         # to the corresponding forbidden plane
         for node in nodes:
-            if self.check_cross(current_edge, node):
+            if current_edge.check_cross(node):
                 if node not in fp3mi:
                     (fp1, fp2)=self.propagate(nodes, fp1, fp2, node, 3-i)
         
         return fp1, fp2
 
-    def two_planar_greedy(self,nodes):    
+    def two_planar_greedy(self, dep_tree):    
         plane_1 = []
         plane_2 = []
 
-        for i in range(0, (len(nodes))):
+        for i in range(len(dep_tree)):
             for j in range(i, -1, -1):
                 # if the node in position 'i' has an arc to 'j' 
                 # or node in position 'j' has an arc to 'i'
-                next_arc=self.get_next_edge(nodes, i, j)
-                if next_arc == None:
+                next_arc = self.get_next_edge(dep_tree, i, j)
+                if next_arc is None:
                     continue
 
                 else:
                     cross_plane_1 = False
                     cross_plane_2 = False
                     for node in plane_1:                
-                        cross_plane_1 = cross_plane_1 or self.check_cross(next_arc, node)
+                        cross_plane_1 = cross_plane_1 or next_arc.check_cross(node)
                     for node in plane_2:        
-                        cross_plane_2 = cross_plane_2 or self.check_cross(next_arc, node)
+                        cross_plane_2 = cross_plane_2 or next_arc.check_cross(node)
                     
                     if not cross_plane_1:
                         plane_1.append(next_arc)
@@ -125,27 +100,37 @@ class D_Brk2PBasedEncoding(ADEncoding):
         return plane_1,plane_2
 
 
-    def encode(self, nodes):
-        if self.plane_algorithm==D_2P_GREED:
-            p1_nodes, p2_nodes = self.two_planar_greedy(nodes)
-        elif self.plane_algorithm==D_2P_PROP:
-            p1_nodes, p2_nodes = self.two_planar_propagate(nodes)
-
-        labels_brk=["" for e in nodes]
-        labels_brk=self.encode_step(p1_nodes, labels_brk, ['>','/','\\','<'])
-        labels_brk=self.encode_step(p2_nodes, labels_brk, ['>*','/*','\\*','<*'])
+    def encode(self, dep_tree):
+        # create brackets array
+        n_nodes = len(dep_tree)
+        labels_brk     = [""] * (n_nodes + 1)
         
-        lbls=[]
-        for node in nodes:
-            if node.id == 0:
-                continue
+        # remove dummy root
+        # dep_tree.remove_dummy()
+
+        # separate the planes
+        if self.planar_alg==D_2P_GREED:
+            p1_nodes, p2_nodes = self.two_planar_greedy(dep_tree)
+        elif self.planar_alg==D_2P_PROP:
+            p1_nodes, p2_nodes = self.two_planar_propagate(dep_tree)
             
+        # get brackets separatelly
+        labels_brk = self.encode_step(p1_nodes, labels_brk, ['>','/','\\','<'])
+        labels_brk = self.encode_step(p2_nodes, labels_brk, ['>*','/*','\\*','<*'])
+        
+        # merge and obtain labels
+        lbls=[]
+        dep_tree.remove_dummy()
+        for node in dep_tree:
             current = DependencyLabel(labels_brk[node.id], node.relation, self.separator)
             lbls.append(current)
         return lbls
+
     def encode_step(self, p, lbl_brk, brk_chars):
+        p=(p[1:])
         for node in p:
-            if node.id==0 or node.head==0:
+            # skip root relations (optional?)
+            if node.head==0:
                 continue
             if node.id < node.head:
                 if self.displacement:
@@ -164,9 +149,7 @@ class D_Brk2PBasedEncoding(ADEncoding):
         return lbl_brk
 
     def decode(self, labels, postags, words):
-        decoded_nodes=[ConllNode.dummy_root()]
-        for l in labels:
-            decoded_nodes.append(ConllNode.empty_node())
+        decoded_tree = DependencyTree.empty_tree(len(labels)+1)
         
         # create plane stacks
         l_stack_p1=[]
@@ -175,11 +158,9 @@ class D_Brk2PBasedEncoding(ADEncoding):
         r_stack_p2=[]
         
         current_node=1
+
         for label, postag, word in zip(labels,postags,words):
-            # join the plane signaler char with the bracket char
-            if label.xi == "-NONE-":
-                label.xi = ""
-            brks=list(label.xi)
+            brks = list(label.xi) if label.xi != D_NONE_LABEL else []
             temp_brks=[]
             
             for i in range(0, len(brks)):
@@ -191,10 +172,9 @@ class D_Brk2PBasedEncoding(ADEncoding):
             brks=temp_brks
             
             # set parameters to the node
-            decoded_nodes[current_node].id = current_node
-            decoded_nodes[current_node].form = word
-            decoded_nodes[current_node].upos = postag
-            decoded_nodes[current_node].relation = label.li
+            decoded_tree.update_word(current_node, word)
+            decoded_tree.update_upos(current_node, postag)
+            decoded_tree.update_relation(current_node, label.li)
             
             # fill the relation using brks
             for char in brks:
@@ -204,7 +184,7 @@ class D_Brk2PBasedEncoding(ADEncoding):
                 
                 if char == "\\":
                     head_id = r_stack_p1.pop()[0] if len(r_stack_p1)>0 else 0
-                    decoded_nodes[head_id].head=current_node
+                    decoded_tree.update_head(head_id, current_node)
                 
                 if char =="/":
                     node_id=current_node + (-1 if self.displacement else 0)
@@ -212,7 +192,7 @@ class D_Brk2PBasedEncoding(ADEncoding):
 
                 if char == ">":
                     head_id = l_stack_p1.pop()[0] if len(l_stack_p1)>0 else 0
-                    decoded_nodes[current_node].head=head_id
+                    decoded_tree.update_head(current_node, head_id)
 
                 if char == "<*":
                     node_id=current_node + (-1 if self.displacement else 0)
@@ -220,7 +200,7 @@ class D_Brk2PBasedEncoding(ADEncoding):
                 
                 if char == "\\*":
                     head_id = r_stack_p2.pop()[0] if len(r_stack_p2)>0 else 0
-                    decoded_nodes[head_id].head=current_node
+                    decoded_tree.update_head(head_id, current_node)
                 
                 if char =="/*":
                     node_id=current_node + (-1 if self.displacement else 0)
@@ -228,8 +208,9 @@ class D_Brk2PBasedEncoding(ADEncoding):
 
                 if char == ">*":
                     head_id = l_stack_p2.pop()[0] if len(l_stack_p2)>0 else 0
-                    decoded_nodes[current_node].head=head_id
+                    decoded_tree.update_head(current_node, head_id)
             
             current_node+=1
 
-        return decoded_nodes[1:]    
+        decoded_tree.remove_dummy()
+        return decoded_tree   

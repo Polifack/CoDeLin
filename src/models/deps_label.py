@@ -12,3 +12,7 @@ class DependencyLabel:
     def from_string(lbl_str, sep):
         xi, li = lbl_str.split(sep)
         return DependencyLabel(xi, li, sep)
+    
+    @staticmethod
+    def empty_label(separator):
+        return DependencyLabel("", "", separator)
