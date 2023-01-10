@@ -1,6 +1,6 @@
 from src.models.const_label import ConstituentLabel
 from src.encs.enc_const import *
-from src.utils.constants import EOS, BOS, C_ABSOLUTE_ENCODING, C_RELATIVE_ENCODING, C_DYNAMIC_ENCODING, C_NO_POSTAG_LABEL
+from src.utils.constants import EOS, BOS, C_ABSOLUTE_ENCODING, C_RELATIVE_ENCODING, C_DYNAMIC_ENCODING, C_NO_POSTAG_LABEL, C_NONE_LABEL
 
 import stanza.pipeline
 from src.models.const_tree import ConstituentTree
@@ -52,6 +52,7 @@ def encode_constituent(in_path, out_path, encoding_type, separator, unary_joiner
         for l, p, w, af in zip(labels, pos_tags, words, additional_feats):
             # create the output line of the linearized tree
             output_line = [w,p]
+            
             # check for additional information inside the postag label
             if features:
                 f_list = ["_"] * len(features)
@@ -140,7 +141,8 @@ def decode_constituent(in_path, out_path, encoding_type, separator, unary_joiner
 
     if postags:
         stanza.download(lang=lang)
-        nlp = stanza.Pipeline(lang=lang, processors='tokenize,pos')
+        nlp = stanza.Pipeline(lang=lang, processors='tokenize, pos')
+    
     tree_counter = 0
     labels_counter = 0
     for tree in encoded_constituent_trees:
@@ -165,8 +167,6 @@ def decode_constituent(in_path, out_path, encoding_type, separator, unary_joiner
         else:
             decoded_tree.postprocess_tree(conflicts, nulls)
             final_tree = decoded_tree
-            if "-NONE-" in str(final_tree):
-                print("has nones:"+" ".join(decoded_tree.get_words()))
 
         f_out.write(str(final_tree).replace('\n','')+'\n')
 

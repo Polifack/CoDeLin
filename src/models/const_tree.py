@@ -7,6 +7,7 @@ class ConstituentTree:
         self.parent = None
         self.label = label
         self.children = children
+        self.features = {}
 
 # Adders and deleters
     def add_child(self, child):
@@ -96,6 +97,25 @@ class ConstituentTree:
         '''
         return len(self.children) == 1 and self.children[0].is_terminal()
 
+# Terminal getters
+    def get_terminals(self):
+        '''
+        Function that returns the terminal nodes of a tree
+        '''
+        if self.is_terminal():
+            return [self]
+        else:
+            return [node for child in self.children for node in child.get_terminals()]
+
+    def get_preterminals(self):
+        '''
+        Function that returns the terminal nodes of a tree
+        '''
+        if self.is_preterminal():
+            return [self]
+        else:
+            return [node for child in self.children for node in child.get_preterminals()]
+
 # Tree processing
     def collapse_unary(self, unary_joiner="+"):
         '''
@@ -137,6 +157,29 @@ class ConstituentTree:
                 child.path_to_leaves_rec(common_path, paths, idx)
                 idx+=1
         return paths
+
+    def extract_features(self, f_mark = "##", f_sep = "|"):
+        # go through all pre-terminal nodes
+        # of the tree
+        for node in self.get_preterminals():
+            if f_mark in node.label:
+                print(node.label)
+                label = node.label.split(f_mark)[0]
+                features   = node.label.split(f_mark)[1]
+
+                node.label = label
+
+                # add features to the tree
+                for feature in features.split(f_sep):
+                    
+                    if feature == "_":
+                        continue
+                
+                    key = feature.split("=")[0]
+                    value = feature.split("=")[1]
+
+                    node.features[key]=value
+
 
     def fill_pos_nodes(self, postag, word, unary_chain, unary_joiner):
         if unary_chain:
@@ -239,8 +282,8 @@ class ConstituentTree:
             if s[i]=="(":
                 # If we find a l_brk we create a new tree
                 # with label=next_word. Skip next_word.
-                
-                t = ConstituentTree(s[i+1], [])
+                w = s[i+1]
+                t = ConstituentTree(w, [])
                 stack.append(t)
                 i+=1
 
@@ -261,12 +304,13 @@ class ConstituentTree:
                 # If we find a word set it as children
                 # of the current tree.
                 t = stack.pop()
-                c = ConstituentTree(s[i], [])
+                w = s[i]
+                c = ConstituentTree(w, [])
                 t.add_child(c)
                 stack.append(t)
 
             i+=1
-        return 
+        return t
 
 # Default trees
     @staticmethod
