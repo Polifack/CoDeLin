@@ -1,4 +1,4 @@
-from utils.constants import C_END_LABEL, C_NONE_LABEL
+from src.utils.constants import C_END_LABEL, C_NONE_LABEL
 
 from stanza.models.constituency.parse_tree import Tree
 

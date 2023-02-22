@@ -1,7 +1,7 @@
-from encs.abstract_encoding import ADEncoding
+from src.encs.abstract_encoding import ADEncoding
 
-from models.dependency_label import DependencyLabel
-from models.conll_node import ConllNode
+from src.models.dependency_label import DependencyLabel
+from src.models.conll_node import ConllNode
 
 class D_BrkBasedEncoding(ADEncoding):
     

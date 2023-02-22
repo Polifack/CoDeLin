@@ -1,4 +1,4 @@
-from utils.constants import C_ABSOLUTE_ENCODING, C_RELATIVE_ENCODING, C_DYNAMIC_ENCODING, C_NONE_LABEL
+from src.utils.constants import C_ABSOLUTE_ENCODING, C_RELATIVE_ENCODING, C_DYNAMIC_ENCODING, C_NONE_LABEL
 
 class ConstituentLabel:
     def __init__(self, nc, lc, uc, et, sp, uj):

@@ -1,6 +1,6 @@
-from encs.dependency import encode_dependencies, decode_dependencies
-from encs.constituent import encode_constituent, decode_constituent
-from utils.constants import *
+from src.encs.dependency import encode_dependencies, decode_dependencies
+from src.encs.constituent import encode_constituent, decode_constituent
+from src.utils.constants import *
 
 import argparse
 import time

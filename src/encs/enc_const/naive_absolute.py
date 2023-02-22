@@ -1,7 +1,7 @@
-from encs.abstract_encoding import ACEncoding
-from utils.tree_tools import *
-from utils.constants import C_ABSOLUTE_ENCODING, C_ROOT_LABEL, C_CONFLICT_SEPARATOR, C_NONE_LABEL
-from models.constituent_label import ConstituentLabel
+from src.encs.abstract_encoding import ACEncoding
+from src.utils.tree_tools import *
+from src.utils.constants import C_ABSOLUTE_ENCODING, C_ROOT_LABEL, C_CONFLICT_SEPARATOR, C_NONE_LABEL
+from src.models.constituent_label import ConstituentLabel
 
 import re
 

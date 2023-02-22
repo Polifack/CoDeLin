@@ -1,8 +1,8 @@
-from models.constituent_label import ConstituentLabel
-from encs.enc_const import *
-from utils.constants import EOS, BOS, C_ABSOLUTE_ENCODING, C_RELATIVE_ENCODING, C_DYNAMIC_ENCODING
-from utils.reader import parse_constituent_labels
-from heuristics.heur_const import postprocess_tree
+from src.models.constituent_label import ConstituentLabel
+from src.encs.enc_const import *
+from src.utils.constants import EOS, BOS, C_ABSOLUTE_ENCODING, C_RELATIVE_ENCODING, C_DYNAMIC_ENCODING
+from src.utils.reader import parse_constituent_labels
+from src.heuristics.heur_const import postprocess_tree
 
 from stanza.models.constituency.parse_tree import Tree
 from stanza.models.constituency.tree_reader import read_trees, read_tree_file

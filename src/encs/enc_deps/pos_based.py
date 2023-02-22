@@ -1,9 +1,9 @@
-from encs.abstract_encoding import ADEncoding
+from src.encs.abstract_encoding import ADEncoding
 
-from models.dependency_label import DependencyLabel
-from models.conll_node import ConllNode
+from src.models.dependency_label import DependencyLabel
+from src.models.conll_node import ConllNode
 
-from utils.constants import D_POSROOT
+from src.utils.constants import D_POSROOT
 
 class D_PosBasedEncoding(ADEncoding):
     def __init__(self, separator):
@@ -36,7 +36,6 @@ class D_PosBasedEncoding(ADEncoding):
 
     def decode(self, labels, postags, words):
         decoded_nodes = [ConllNode.dummy_root()]
-        
         i = 1
         for label, postag, word in zip(labels, postags, words):
             node = ConllNode(i, word, None, postag, None, None, None, None, None, None)
@@ -47,7 +46,7 @@ class D_PosBasedEncoding(ADEncoding):
                 label.xi = "0--ROOT"
 
             oi, pi = label.xi.split('--')            
-
+            
             oi = int(oi)
             if (pi==D_POSROOT or oi==0):
                 node.head = 0
@@ -59,14 +58,12 @@ class D_PosBasedEncoding(ADEncoding):
 
             step = 1 if oi > 0 else -1
             stop_point = (len(postags)+1) if oi > 0 else 0
-
-            for j in range (node.id, stop_point, step):                  
+            for j in range (node.id+step, stop_point, step):                  
                 if (pi == postags[j-1]):
                     target_oi -= step
                 
                 if (target_oi==0):
                     break       
-            
             node.head = j
             
             decoded_nodes.append(node)

@@ -1,0 +1,21 @@
+-BOS-	-BOS-	-BOS-
+understood	VERB	2--VERB_advcl
+.	PUNCT	-1--VERB_punct
+when	SCONJ	1--VERB_mark
+i	PRON	1--VERB_nsubj
+need	VERB	1--VERB_advcl
+to	PART	1--ADJ_mark
+be	AUX	1--ADJ_cop
+alone	ADJ	-1--VERB_xcomp
+,	PUNCT	1--VERB_punct
+i	PRON	1--VERB_nsubj
+work	VERB	0---ROOT-_root
+out	ADP	-1--VERB_compound:prt
+a	DET	1--NOUN_det
+few	ADJ	1--NOUN_amod
+times	NOUN	-1--VERB_obl:tmod
+each	DET	1--NOUN_det
+week	NOUN	-1--VERB_obl:tmod
+.	PUNCT	-1--VERB_punct
+-EOS-	-EOS-	-EOS-
+

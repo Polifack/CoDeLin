@@ -1,4 +1,4 @@
-from utils.constants import C_CONFLICT_SEPARATOR, C_STRAT_MAX, C_STRAT_FIRST, C_STRAT_LAST, C_NONE_LABEL
+from src.utils.constants import C_CONFLICT_SEPARATOR, C_STRAT_MAX, C_STRAT_FIRST, C_STRAT_LAST, C_NONE_LABEL
 from stanza.models.constituency.parse_tree import Tree
 
 def check_conflicts(node, conflict_strat):
