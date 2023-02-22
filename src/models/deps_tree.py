@@ -1,4 +1,4 @@
-from src.utils.constants import D_ROOT_HEAD, D_NULLHEAD, D_ROOT_REL
+from src.utils.constants import D_ROOT_HEAD, D_NULLHEAD, D_ROOT_REL, D_POSROOT, D_EMPTYREL
 
 class ConllNode:
     def __init__(self, wid, form, lemma=None, upos=None, xpos=None, feats=None, head=None, deprel=None, deps=None, misc=None):
@@ -218,12 +218,12 @@ class DependencyTree:
             if search_root_strat == D_ROOT_HEAD:
                 if node.head == 0:
                     root = node.id
-                break
+                    break
             
             elif search_root_strat == D_ROOT_REL:
                 if node.rel == 'root' or node.rel == 'ROOT':
                     root = node.id
-                break
+                    break
         return root
 
     def fix_oob_heads(self):
