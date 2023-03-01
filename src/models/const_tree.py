@@ -153,7 +153,7 @@ class ConstituentTree:
         self.add_left_child(ConstituentTree(C_START_LABEL, []))
         
 
-    def path_to_leaves(self, collapse_unary=True, unary_joiner="+", dummy=C_DUMMY_END):
+    def path_to_leaves(self, collapse_unary=True, unary_joiner="+"):
         '''
         Function that given a Tree returns a list of paths
         from the root to the leaves, encoding a level index into
@@ -163,18 +163,11 @@ class ConstituentTree:
         if collapse_unary:
             self.collapse_unary(unary_joiner)
 
-        if dummy==C_DUMMY_END:
-            self.add_end_node()
-            return self.path_to_leaves_rec_end([],[],0)
-        
-        elif dummy==C_DUMMY_START:
-            self.add_start_node()
-            return self.path_to_leaves_rec_start([],[],0)
-        else:
-            raise ValueError("[!] Dummy must be either C_DUMMY_END or C_DUMMY_START")
+        self.add_end_node()
+        return self.path_to_leaves_rec_end([],[],0)
 
 
-    def path_to_leaves_rec_end(self, current_path, paths, idx):
+    def path_to_leaves_rec(self, current_path, paths, idx):
         '''
         Recursive step of the path_to_leaves function where we store
         the common path based on the current node
@@ -188,26 +181,7 @@ class ConstituentTree:
             common_path = copy.deepcopy(current_path)
             common_path.append(self.label+str(idx)) 
             for child in self.children:                
-                child.path_to_leaves_rec_end(common_path, paths, idx)
-                idx+=1
-        
-        return paths
-
-    def path_to_leaves_rec_start(self, current_path, paths, idx):
-        '''
-        Recursive step of the path_to_leaves function where we store the 
-        common path based on the previous node
-        '''
-
-        if (len(self.children) == 0):
-            current_path.append(self.label)
-            paths.append(current_path)
-        
-        else:
-            for child in self.children:                
-                common_path = copy.deepcopy(current_path)
-                common_path.append(self.label+str(idx)) 
-                child.path_to_leaves_rec_start(common_path, paths, idx)
+                child.path_to_leaves_rec(common_path, paths, idx)
                 idx+=1
         
         return paths
@@ -288,6 +262,14 @@ class ConstituentTree:
                 self.label = labels[0]
             if conflict_strat == C_STRAT_LAST:
                 self.label = labels[len(labels)-1]
+
+    def reverse_tree(self):
+        '''
+        Reverses the order of all the tree children
+        '''
+        for c in self.children:
+            c.reverse_tree()
+        self.children.reverse()
 
 # Printing and python-related functions
     def __str__(self):
