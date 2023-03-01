@@ -1,4 +1,4 @@
-from src.utils.constants import C_END_LABEL, C_NONE_LABEL, C_ROOT_LABEL
+from src.utils.constants import C_END_LABEL, C_START_LABEL, C_NONE_LABEL, C_DUMMY_END, C_DUMMY_START
 from src.utils.constants import C_CONFLICT_SEPARATOR, C_STRAT_MAX, C_STRAT_FIRST, C_STRAT_LAST, C_NONE_LABEL
 import copy
 
@@ -18,6 +18,16 @@ class ConstituentTree:
             raise TypeError("[!] Child must be a ConstituentTree")
 
         self.children.append(child)
+        child.parent = self
+
+    def add_left_child(self, child):
+        '''
+        Function that adds a child to the left of the current tree
+        '''
+        if type(child) is not ConstituentTree:
+            raise TypeError("[!] Child must be a ConstituentTree")
+        
+        self.children = [child] + self.children
         child.parent = self
 
     def del_child(self, child):
@@ -130,40 +140,84 @@ class ConstituentTree:
 
     def add_end_node(self):
         '''
-        Function that adds a dummy end node to the tree
-        to ease parsing tasks
+        Function that adds a dummy end node to the 
+        rightmost part of the tree
         '''
         self.add_child(ConstituentTree(C_END_LABEL, []))
 
-    def path_to_leaves(self, collapse_unary=True, unary_joiner="+"):
+    def add_start_node(self):
+        '''
+        Function that adds a dummy start node to the leftmost
+        part of the tree
+        '''
+        self.add_left_child(ConstituentTree(C_START_LABEL, []))
+        
+
+    def path_to_leaves(self, collapse_unary=True, unary_joiner="+", dummy=C_DUMMY_END):
         '''
         Function that given a Tree returns a list of paths
         from the root to the leaves, encoding a level index into
         nodes to make them unique.
         '''
-        self.add_end_node()
+            
         if collapse_unary:
             self.collapse_unary(unary_joiner)
 
-        return self.path_to_leaves_rec([],[],0)
-    def path_to_leaves_rec(self, current_path, paths, idx):
-        if (len(self.children)==0):
+        if dummy==C_DUMMY_END:
+            self.add_end_node()
+            return self.path_to_leaves_rec_end([],[],0)
+        
+        elif dummy==C_DUMMY_START:
+            self.add_start_node()
+            return self.path_to_leaves_rec_start([],[],0)
+        else:
+            raise ValueError("[!] Dummy must be either C_DUMMY_END or C_DUMMY_START")
+
+
+    def path_to_leaves_rec_end(self, current_path, paths, idx):
+        '''
+        Recursive step of the path_to_leaves function where we store
+        the common path based on the current node
+        '''
+
+        if (len(self.children) == 0):
             current_path.append(self.label)
             paths.append(current_path)
+        
         else:
             common_path = copy.deepcopy(current_path)
-            common_path.append(self.label+str(idx))
-            for child in self.children:
-                child.path_to_leaves_rec(common_path, paths, idx)
+            common_path.append(self.label+str(idx)) 
+            for child in self.children:                
+                child.path_to_leaves_rec_end(common_path, paths, idx)
                 idx+=1
+        
         return paths
+
+    def path_to_leaves_rec_start(self, current_path, paths, idx):
+        '''
+        Recursive step of the path_to_leaves function where we store the 
+        common path based on the previous node
+        '''
+
+        if (len(self.children) == 0):
+            current_path.append(self.label)
+            paths.append(current_path)
+        
+        else:
+            for child in self.children:                
+                common_path = copy.deepcopy(current_path)
+                common_path.append(self.label+str(idx)) 
+                child.path_to_leaves_rec_start(common_path, paths, idx)
+                idx+=1
+        
+        return paths
+
 
     def extract_features(self, f_mark = "##", f_sep = "|"):
         # go through all pre-terminal nodes
         # of the tree
         for node in self.get_preterminals():
             if f_mark in node.label:
-                print(node.label)
                 label = node.label.split(f_mark)[0]
                 features   = node.label.split(f_mark)[1]
 
