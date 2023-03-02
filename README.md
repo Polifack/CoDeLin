@@ -10,6 +10,7 @@ Allows for the linearization of trees using different algorithms and for two for
 	- Absolute encoding
 	- Relative encoding
 	- Dynamic encoding
+	- Incremental encoding
 - Dependency tree
 	- Absolute encoding
 	- Relative encoding
@@ -129,13 +130,14 @@ Labeled Attachment Score (LAS) and speed for the selected Universal Dependencies
 ![Las deps](https://raw.githubusercontent.com/Polifack/CoDeLin/main/pics/deps_las.png)
 ![Speed deps](https://raw.githubusercontent.com/Polifack/CoDeLin/main/pics/deps_speed.png)
 
+
 ## To Do List
 
 - Option to change how the root is encoded in bracket based encoding.
 - Change how root relations are encoded in relative dependency encoding.
 - Change the head-selection algorithm in dependency encoding. New algorithm should be able to select head using both head field and deprel field.
 - Add a new head-selection heuristic based on taking as 'root' as the node that most other nodes depend into (more outgoing arrows)
-- Add a new purelly incremental constituent tree encoding. This new encoding should encode the tree using w-1 and w instead of w+1 and w. This should allow to use a single LSTM in the sequence labeling architecture
+- Add a new purelly incremental constituent tree encoding. This new encoding should encode the tree using w-1 and w instead of w+1 and w. This should allow to use a single LSTM in the sequence labeling architecture ![Done](https://raw.githubusercontent.com/Polifack/CoDeLin/main/pics/incr_enc.png)
 - Add head-driven phrase structure grammars as formalism. 
 - Add semantic dependency parsing structure option.
 - Explore the addition of Named Entity Recognition and Part of Speech Tagging to labels.
