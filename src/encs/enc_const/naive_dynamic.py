@@ -123,7 +123,7 @@ class C_NaiveDynamicEncoding(ACEncoding):
                 # If current level has no label yet, put the label
                 # If current level has label but different than this one, set it as a conflict
                 if (current_level.label==C_NONE_LABEL):
-                    current_level.label = label.last_common[0]
+                    current_level.label = label.last_common[0].rstrip()
                 else:
                     current_level.label = current_level.label + C_CONFLICT_SEPARATOR + label.last_common[0]
             else:

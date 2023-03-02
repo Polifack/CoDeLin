@@ -1,6 +1,9 @@
 from src.models.const_label import ConstituentLabel
 from src.encs.enc_const import *
-from src.utils.constants import EOS, BOS, C_ABSOLUTE_ENCODING, C_RELATIVE_ENCODING, C_DYNAMIC_ENCODING, C_NO_POSTAG_LABEL, C_NONE_LABEL
+from src.utils.extract_feats import extract_features_const
+from src.utils.constants import EOS, BOS
+from src.utils.constants import C_INCREMENTAL_ENCODING, C_ABSOLUTE_ENCODING, C_RELATIVE_ENCODING, C_DYNAMIC_ENCODING
+from src.utils.constants import C_NO_POSTAG_LABEL, C_NONE_LABEL
 
 import stanza.pipeline
 from src.models.const_tree import ConstituentTree
@@ -25,6 +28,11 @@ def encode_constituent(in_path, out_path, encoding_type, separator, unary_joiner
             encoder = C_NaiveRelativeEncoding(separator, unary_joiner)
     if encoding_type == C_DYNAMIC_ENCODING:
             encoder = C_NaiveDynamicEncoding(separator, unary_joiner)
+    if encoding_type == C_INCREMENTAL_ENCODING:
+            encoder = C_NaiveIncrementalEncoding(separator, unary_joiner)
+
+    if features == ["ALL"]:
+        features = extract_features_const(in_path)
 
     if features:
         f_idx_dict = {}
@@ -45,6 +53,7 @@ def encode_constituent(in_path, out_path, encoding_type, separator, unary_joiner
         tree = ConstituentTree.from_string(line)
 
         words, pos_tags, labels, additional_feats = encoder.encode(tree)
+
         linearized_tree=[]
 
         linearized_tree.append(u"\t".join(([BOS] * (3 + (len(features) if features else 0)))))
@@ -99,6 +108,8 @@ def decode_constituent(in_path, out_path, encoding_type, separator, unary_joiner
             decoder = C_NaiveRelativeEncoding(separator, unary_joiner)
     if encoding_type == C_DYNAMIC_ENCODING:
             decoder = C_NaiveDynamicEncoding(separator, unary_joiner)
+    if encoding_type == C_INCREMENTAL_ENCODING:
+            decoder = C_NaiveIncrementalEncoding(separator, unary_joiner)
 
     f_in=open(in_path)
     

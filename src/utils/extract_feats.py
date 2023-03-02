@@ -1,45 +1,27 @@
 import argparse
-from stanza.models.constituency.tree_reader import read_tree_file
-from conllu import parse_tree_incr
-from models.dependency import ConllNode
+from src.models.const_tree import ConstituentTree
+from src.models.deps_tree import DependencyTree
 
 def extract_features_const(in_path):
-    trees=read_tree_file(in_path)
-    feats_list=set()
-    for tree in trees:
-        postags = tree.yield_preterminals()
+    file_in = open(in_path, "r")
+    feats_set = set()
+    for line in file_in:
+        line = line.rstrip()
+        tree = ConstituentTree.from_string(line)
+        tree.extract_features()
+        feats = tree.get_feature_names()
         
-        for postag in postags:
-            if len(postag.label.split("##"))<=1:
-                continue
+        feats_set = feats_set.union(feats)
 
-            feats = postag.label.split("##")[1].split("|")
-            for feat in feats:
-                fs = feat.split("=")
-                if len(fs)>1:
-                    key=fs[0]
-                    feats_list.add(key)
-
-    
-    return sorted(feats_list)
+    return sorted(feats_set)
 
 def extract_features_conll(in_path):
     feats_list=set()
-    i=0
-    for tree in parse_tree_incr(open(in_path)):
-        data = tree.serialize().split('\n')
-        for line in data:
-            # check if not valid line
-            if (len(line)<=1) or len(line.split('\t'))<10 or line[0] == "#":
-                continue
-
-            conll_node = ConllNode.from_string(line)
-            feats = conll_node.feats.split("|")
-            for feat in feats:
-                fs = feat.split("=")
-                if len(fs)>1:
-                    key=fs[0]
-                    feats_list.add(key)
+    trees = DependencyTree.read_conllu_file(in_path, filter_projective=False)
+    for t in trees:
+        for node in t:
+            if node.feats != "_":
+                feats_list = feats_list.union(a for a in (node.feats.keys()))
 
     return sorted(feats_list)
     
@@ -49,12 +31,12 @@ Python script that returns a ordered list of the features
 included in a conll tree or a constituent tree
 '''
 
-parser = argparse.ArgumentParser(description='Prints all features in a constituent treebank')
-parser.add_argument('form', metavar='formalism', type=str, choices=['CONST','DEPS'], help='Grammar encoding the file to extract features')
-parser.add_argument('input', metavar='in file', type=str, help='Path of the file to clean (.trees file).')
-args = parser.parse_args()
-if args.form=='CONST':
-    feats = extract_features_const(args.input)
-elif args.form=='DEPS':
-    feats = extract_features_conll(args.input)
-print(" ".join(feats))
+# parser = argparse.ArgumentParser(description='Prints all features in a constituent treebank')
+# parser.add_argument('form', metavar='formalism', type=str, choices=['CONST','DEPS'], help='Grammar encoding the file to extract features')
+# parser.add_argument('input', metavar='in file', type=str, help='Path of the file to clean (.trees file).')
+# args = parser.parse_args()
+# if args.form=='CONST':
+#     feats = extract_features_const(args.input)
+# elif args.form=='DEPS':
+#     feats = extract_features_conll(args.input)
+# print(" ".join(feats))

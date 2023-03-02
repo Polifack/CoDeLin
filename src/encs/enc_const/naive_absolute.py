@@ -10,8 +10,9 @@ class C_NaiveAbsoluteEncoding(ACEncoding):
         self.separator = separator
         self.unary_joiner = unary_joiner
 
-    def encode(self, constituent_tree):
+    def encode(self, constituent_tree):        
         leaf_paths = constituent_tree.path_to_leaves(collapse_unary=True, unary_joiner=self.unary_joiner)
+
         labels=[]
         words=[]
         postags=[]
@@ -37,7 +38,6 @@ class C_NaiveAbsoluteEncoding(ACEncoding):
                     # Build the Leaf Unary Chain
                     unary_chain = None
                     leaf_unary_chain = postag.split(self.unary_joiner)
-
                     if len(leaf_unary_chain)>1:
                         unary_list = []
                         for element in leaf_unary_chain[:-1]:
@@ -57,11 +57,13 @@ class C_NaiveAbsoluteEncoding(ACEncoding):
                         postag = re.sub(r'[0-9]+', '', postag)
 
                     # Append the data
-                    labels.append(ConstituentLabel(n_commons, last_common, unary_chain, C_ABSOLUTE_ENCODING, self.separator, self.unary_joiner))
+                    labels.append(ConstituentLabel(n_commons, last_common, unary_chain, C_ABSOLUTE_ENCODING, 
+                                                   self.separator, self.unary_joiner))
+                    
                     words.append(word)
                     postags.append(postag)
                     additional_feats.append(feats)
-
+                
                     break
                 
                 # Store Last Common and increase n_commons 
@@ -71,7 +73,7 @@ class C_NaiveAbsoluteEncoding(ACEncoding):
         
         return words, postags, labels, additional_feats
 
-    def decode(self, linearized_tree):
+    def decode(self, linearized_tree, features=None):
         # Check valid labels 
         if not linearized_tree:
             print("[*] Error while decoding: Null tree.")
@@ -86,7 +88,7 @@ class C_NaiveAbsoluteEncoding(ACEncoding):
 
         for row in linearized_tree:
             word, postag, label = row
-            
+
             # Descend through the tree until reach the level indicated by last_common
             current_level = tree
             for level_index in range(label.n_commons):
@@ -102,7 +104,7 @@ class C_NaiveAbsoluteEncoding(ACEncoding):
                 # If current level has no label yet, put the label
                 # If current level has label but different than this one, set it as a conflict
                 if (current_level.label == C_NONE_LABEL):
-                    current_level.label = label.last_common[0]
+                    current_level.label = label.last_common[0].rstrip()
                 else:
                     current_level.label = current_level.label + C_CONFLICT_SEPARATOR + label.last_common[0]
             else:
@@ -126,14 +128,12 @@ class C_NaiveAbsoluteEncoding(ACEncoding):
                     temp_current_level = current_level
                     current_level.label = label.last_common[i+1]
                     current_level.children = [temp_current_level]
-                
                 else:
                     current_level.label=label.last_common[i+1]
             
             # Fill POS tag in this node or previous one
             if (label.n_commons >= old_n_commons):
                 current_level.fill_pos_nodes(postag, word, label.unary_chain, self.unary_joiner)
-            
             else:
                 old_level.fill_pos_nodes(postag, word, label.unary_chain, self.unary_joiner)
 

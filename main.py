@@ -7,7 +7,7 @@ import time
 
 if __name__=="__main__":
 
-    encodings = [C_ABSOLUTE_ENCODING, C_RELATIVE_ENCODING, C_DYNAMIC_ENCODING, 
+    encodings = [C_ABSOLUTE_ENCODING, C_RELATIVE_ENCODING, C_DYNAMIC_ENCODING, C_INCREMENTAL_ENCODING,
                 D_ABSOLUTE_ENCODING, D_RELATIVE_ENCODING, D_POS_ENCODING, D_BRACKET_ENCODING, D_BRACKET_ENCODING_2P]
 
     parser = argparse.ArgumentParser(description='Constituent and Dependencies Linearization System')

@@ -1,84 +1,100 @@
 from src.encs.abstract_encoding import ACEncoding
-from src.utils.constants import C_RELATIVE_ENCODING, C_ROOT_LABEL, C_CONFLICT_SEPARATOR, C_NONE_LABEL
+from src.utils.constants import C_ABSOLUTE_ENCODING, C_ROOT_LABEL, C_CONFLICT_SEPARATOR, C_NONE_LABEL, C_DUMMY_END
 from src.models.const_label import ConstituentLabel
 from src.models.const_tree import ConstituentTree
 
 import re
 
-class C_NaiveRelativeEncoding(ACEncoding):
+class C_NaiveIncrementalEncoding(ACEncoding):
     def __init__(self, separator, unary_joiner):
         self.separator = separator
         self.unary_joiner = unary_joiner
 
-    def encode(self, constituent_tree):
-        leaf_paths = constituent_tree.path_to_leaves(collapse_unary=True, unary_joiner=self.unary_joiner)
+    def get_unary_chain(self, postag):
+        unary_chain = None
+        leaf_unary_chain = postag.split(self.unary_joiner)
 
+        if len(leaf_unary_chain)>1:
+            unary_list = []
+            for element in leaf_unary_chain[:-1]:
+                unary_list.append(element.split("##")[0])
+
+            unary_chain = self.unary_joiner.join(unary_list)
+            postag = leaf_unary_chain[len(leaf_unary_chain)-1]
+        
+        return unary_chain, postag
+    
+    def get_features(self, node, feature_marker="##", feature_splitter="|"):
+        postag_split = node.split(feature_marker)
+        feats = None
+
+        if len(postag_split) > 1:
+            postag = re.sub(r'[0-9]+', '', postag_split[0])
+            feats = postag_split[1].split(feature_splitter)
+        else:
+            postag = re.sub(r'[0-9]+', '', node)
+        return postag, feats
+    
+    def clean_last_common(self, node, feature_marker="##"):
+        node = re.sub(r'[0-9]+', '', node)
+        last_common = node.split(feature_marker)[0]
+        return last_common
+
+    def encode(self, constituent_tree):
+        constituent_tree.reverse_tree()
+        leaf_paths = constituent_tree.path_to_leaves(collapse_unary=True, unary_joiner=self.unary_joiner)
         labels=[]
         words=[]
         postags=[]
         additional_feats=[]
 
-        last_n_common=0
-        for i in range(0, len(leaf_paths)-1):
-            path_a=leaf_paths[i]
-            path_b=leaf_paths[i+1]
+        for i in range(1, len(leaf_paths)):
+            path_a = leaf_paths[i-1]
+            path_b = leaf_paths[i]
             
-            last_common=""
-            n_commons=0
-            for a,b in zip(path_a, path_b):
+            last_common = ""
+            n_commons   = 0
 
+            for a,b in zip(path_a, path_b):
                 if (a!=b):
                     # Remove the digits and aditional feats in the last common node
-                    last_common = re.sub(r'[0-9]+', '', last_common)
-                    last_common = last_common.split("##")[0]
+                    last_common = self.clean_last_common(last_common)
 
                     # Get word and POS tag
-                    word = path_a[-1]
+                    word   = path_a[-1]
                     postag = path_a[-2]
                     
                     # Build the Leaf Unary Chain
-                    unary_chain = None
-                    leaf_unary_chain = postag.split(self.unary_joiner)
-                    if len(leaf_unary_chain)>1:
-                        unary_list = []
-                        for element in leaf_unary_chain[:-1]:
-                            unary_list.append(element.split("##")[0])
-
-                        unary_chain = self.unary_joiner.join(unary_list)
-                        postag = leaf_unary_chain[len(leaf_unary_chain)-1]
+                    unary_chain, postag = self.get_unary_chain(postag)
                     
                     # Clean the POS Tag and extract additional features
-                    postag_split = postag.split("##")
-                    feats = None
-
-                    if len(postag_split) > 1:
-                        postag = re.sub(r'[0-9]+', '', postag_split[0])
-                        feats = postag_split[1].split("|")
-                    else:
-                        postag = re.sub(r'[0-9]+', '', postag)
+                    postag, feats = self.get_features(postag)
 
                     # Append the data
-                    labels.append(ConstituentLabel((n_commons-last_n_common), last_common, unary_chain, C_RELATIVE_ENCODING, self.separator, self.unary_joiner))
+                    labels.append(ConstituentLabel(n_commons, last_common, unary_chain, C_ABSOLUTE_ENCODING, self.separator, self.unary_joiner))
                     words.append(word)
                     postags.append(postag)
                     additional_feats.append(feats)
 
-                    last_n_common=n_commons
                     break
                 
                 # Store Last Common and increase n_commons 
                 # Note: When increasing n_commons use the number from split the collapsed chains
-                n_commons += len(a.split(self.unary_joiner))
+                n_commons  += len(a.split(self.unary_joiner))
                 last_common = a
         
+        # reverse and return
+        words.reverse(); postags.reverse(); labels.reverse(); additional_feats.reverse()
         return words, postags, labels, additional_feats
+
+
 
     def decode(self, linearized_tree):
         # Check valid labels 
         if not linearized_tree:
             print("[*] Error while decoding: Null tree.")
             return
-        
+
         # Create constituent tree
         tree = ConstituentTree(C_ROOT_LABEL, [])
         current_level = tree
@@ -86,36 +102,26 @@ class C_NaiveRelativeEncoding(ACEncoding):
         old_n_commons=0
         old_level=None
 
-        is_first = True
-        last_label = None
-
+        linearized_tree.reverse()
         for row in linearized_tree:
             word, postag, label = row
             
-            # Convert the labels to absolute scale
-            if last_label!=None:
-                label.to_absolute(last_label)
-            
-            # First label must have a positive n_commons value
-            if is_first and label.n_commons < 0:
-                label.n_commons = 0
-            
             # Descend through the tree until reach the level indicated by last_common
             current_level = tree
-
             for level_index in range(label.n_commons):
                 if (current_level.is_terminal()) or (level_index >= old_n_commons):
                     current_level.add_child(ConstituentTree(C_NONE_LABEL, []))
+                
                 current_level = current_level.r_child()
 
             # Split the Last Common field of the Label in case it has a Unary Chain Collapsed
             label.last_common = label.last_common.split(self.unary_joiner)
 
-            if len(label.last_common)==1:
+            if len(label.last_common) == 1:
                 # If current level has no label yet, put the label
                 # If current level has label but different than this one, set it as a conflict
-                if (current_level.label==C_NONE_LABEL):
-                    current_level.label=label.last_common[0].rstrip()
+                if (current_level.label == C_NONE_LABEL):
+                    current_level.label = label.last_common[0]
                 else:
                     current_level.label = current_level.label + C_CONFLICT_SEPARATOR + label.last_common[0]
             else:
@@ -128,32 +134,31 @@ class C_NaiveRelativeEncoding(ACEncoding):
                     current_level = current_level.r_child()
                 
                 for i in range(len(label.last_common)-1):
-                    if (current_level.label==C_NONE_LABEL):
-                        current_level.label=label.last_common[i]
+                    if (current_level.label == C_NONE_LABEL):
+                        current_level.label = label.last_common[i]
                     else:
-                        current_level.label=current_level.label+C_CONFLICT_SEPARATOR+label.last_common[i]
-
-                    if len(current_level.children)>0:
-                        current_level = current_level.r_child()
+                        current_level.label = current_level.label + C_CONFLICT_SEPARATOR + label.last_common[i]
+                    current_level = current_level.r_child()
 
                 # If we reach a POS tag, set it as child of the current chain
                 if current_level.is_preterminal():
-                    temp_current_level =current_level
+                    temp_current_level = current_level
                     current_level.label = label.last_common[i+1]
                     current_level.children = [temp_current_level]
+                
                 else:
                     current_level.label=label.last_common[i+1]
             
             # Fill POS tag in this node or previous one
             if (label.n_commons >= old_n_commons):
                 current_level.fill_pos_nodes(postag, word, label.unary_chain, self.unary_joiner)
+            
             else:
                 old_level.fill_pos_nodes(postag, word, label.unary_chain, self.unary_joiner)
 
             old_n_commons=label.n_commons
             old_level=current_level
-            
-            last_label=label
-        
+
         tree=tree.children[0]
+        tree.reverse_tree()
         return tree

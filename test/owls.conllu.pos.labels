@@ -1,0 +1,11 @@
+-BOS-	-BOS-	-BOS-
+The	DT	1--NNS_det
+owls	NNS	1--VBP_nsubj
+are	VBP	-1---ROOT-_root
+not	RB	-1--VBP_advmod
+what	WP	1--VBP_obj
+they	PRP	1--VBP_nsubj
+seem	VBP	-1--VBP_ccomp
+.	PUNCT	-2--VBP_punct
+-EOS-	-EOS-	-EOS-
+

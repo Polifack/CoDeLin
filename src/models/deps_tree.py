@@ -8,7 +8,7 @@ class ConllNode:
         self.lemma = lemma if lemma else "_"    # word lemma/stem
         self.upos = upos if upos else "_"       # universal postag
         self.xpos = xpos if xpos else "_"       # language_specific postag
-        self.feats = feats if feats else "_"    # morphological features
+        self.feats = self.parse_feats(feats) if feats else "_"    # morphological features
         
         self.head = int(head)                   # id of the word that depends on
         self.relation = deprel                  # type of relation with head
@@ -21,6 +21,12 @@ class ConllNode:
 
     def delta_head(self):
         return self.head - self.id
+    
+    def parse_feats(self, feats):
+        if feats == '_':
+            return {}
+        else:
+            return dict([tuple(x.split('=')) for x in feats.split('|')])
 
     def check_cross(self, other):
         if ((self.head == other.head) or (self.head==other.id)):

@@ -1,0 +1,11 @@
+-BOS-	-BOS-	-BOS-
+The	DT	1_S
+owls	NNS	2_NP
+are	VBP	1_S
+not	RB	2_VP
+what	WP	2_VP_WHNP
+they	PRP	3_SBAR_NP
+seem	VBP	4_S_VP
+.	PUNCT	1_S
+-EOS-	-EOS-	-EOS-
+

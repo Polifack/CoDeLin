@@ -1,13 +1,13 @@
-from src.utils.constants import C_END_LABEL, C_START_LABEL, C_NONE_LABEL, C_DUMMY_END, C_DUMMY_START
+from src.utils.constants import C_END_LABEL, C_START_LABEL, C_NONE_LABEL
 from src.utils.constants import C_CONFLICT_SEPARATOR, C_STRAT_MAX, C_STRAT_FIRST, C_STRAT_LAST, C_NONE_LABEL
 import copy
 
 class ConstituentTree:
-    def __init__(self, label, children):
+    def __init__(self, label, children, feats=None):
         self.parent = None
         self.label = label
         self.children = children
-        self.features = {}
+        self.features = feats
 
 # Adders and deleters
     def add_child(self, child):
@@ -74,6 +74,43 @@ class ConstituentTree:
             return self
         else:
             return self.parent.get_root()
+
+    def extract_features(self, f_mark = "##", f_sep = "|"):
+        # go through all pre-terminal nodes
+        # of the tree
+        for node in self.get_preterminals():
+            
+            if f_mark in node.label:
+                node.features = {}
+                label = node.label.split(f_mark)[0]
+                features   = node.label.split(f_mark)[1]
+
+                node.label = label
+
+                # add features to the tree
+                for feature in features.split(f_sep):
+                    
+                    if feature == "_":
+                        continue
+                
+                    key = feature.split("=")[0]
+                    value = feature.split("=")[1]
+
+                    node.features[key]=value
+
+    def get_feature_names(self):
+        '''
+        Returns a set containing all feature names
+        for the tree
+        '''
+        feat_names = set()
+
+        for child in self.children:
+            feat_names = feat_names.union(child.get_feature_names())
+        if self.features is not None:
+            feat_names = feat_names.union(set(self.features.keys()))
+
+        return feat_names            
 
 # Word and Postags getters
     def get_words(self):
@@ -159,57 +196,40 @@ class ConstituentTree:
         from the root to the leaves, encoding a level index into
         nodes to make them unique.
         '''
-            
+        self.add_end_node()
+                    
         if collapse_unary:
             self.collapse_unary(unary_joiner)
 
-        self.add_end_node()
-        return self.path_to_leaves_rec_end([],[],0)
-
+        paths = self.path_to_leaves_rec([],[],0)
+        return paths
 
     def path_to_leaves_rec(self, current_path, paths, idx):
         '''
         Recursive step of the path_to_leaves function where we store
         the common path based on the current node
         '''
-
-        if (len(self.children) == 0):
-            current_path.append(self.label)
-            paths.append(current_path)
+        # pass by value
+        path = copy.deepcopy(current_path)
         
+        if (len(self.children)==0):
+            # we are at a leaf. store the path in a new list
+            path.append(self.label)
+            paths.append(path)
         else:
-            common_path = copy.deepcopy(current_path)
-            common_path.append(self.label+str(idx)) 
-            for child in self.children:                
-                child.path_to_leaves_rec(common_path, paths, idx)
+            path.append(self.label+str(idx))
+            for child in self.children:
+                child.path_to_leaves_rec(path, paths, idx)
                 idx+=1
-        
         return paths
 
-
-    def extract_features(self, f_mark = "##", f_sep = "|"):
-        # go through all pre-terminal nodes
-        # of the tree
-        for node in self.get_preterminals():
-            if f_mark in node.label:
-                label = node.label.split(f_mark)[0]
-                features   = node.label.split(f_mark)[1]
-
-                node.label = label
-
-                # add features to the tree
-                for feature in features.split(f_sep):
-                    
-                    if feature == "_":
-                        continue
-                
-                    key = feature.split("=")[0]
-                    value = feature.split("=")[1]
-
-                    node.features[key]=value
-
-
     def fill_pos_nodes(self, postag, word, unary_chain, unary_joiner):
+        if self.label == postag:
+            # if the current level is already a postag level. This may happen on 
+            # trees shaped as (NP tree) that exist on the SPMRL treebanks
+            self.children.append(word)
+            return
+        
         if unary_chain:
             unary_chain = unary_chain.split(unary_joiner)
             unary_chain.reverse()
@@ -275,11 +295,19 @@ class ConstituentTree:
     def __str__(self):
         if len(self.children) == 0:
             label_str = self.label
+            
+            if self.features is not None:
+                features_str = "##" + "|".join([key+"="+value for key,value in self.features.items()])
+            
             label_str = label_str.replace("(","-LRB-")
             label_str = label_str.replace(")","-RRB-")
-            return label_str
         else:
-            return "(" + self.label + " " + " ".join([str(child) for child in self.children]) + ")"
+            label_str =  "(" + self.label + " "
+            if self.features is not None:
+                label_str +="##"+ "|".join([key+"="+value for key,value in self.features.items()]) 
+            
+            label_str += " ".join([str(child) for child in self.children]) + ")"
+        return label_str
 
     def __repr__(self):
         return self.__str__()

@@ -1,0 +1,11 @@
+-BOS-	-BOS-	-BOS-
+The	DT	<_det
+owls	NNS	\<_nsubj
+are	VBP	\///_root
+not	RB	>_advmod
+what	WP	<_obj
+they	PRP	<_nsubj
+seem	VBP	\\>_ccomp
+.	PUNCT	>_punct
+-EOS-	-EOS-	-EOS-
+

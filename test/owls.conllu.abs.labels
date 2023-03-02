@@ -1,0 +1,11 @@
+-BOS-	-BOS-	-BOS-
+The	DT	2_det
+owls	NNS	3_nsubj
+are	VBP	0_root
+not	RB	3_advmod
+what	WP	7_obj
+they	PRP	7_nsubj
+seem	VBP	3_ccomp
+.	PUNCT	3_punct
+-EOS-	-EOS-	-EOS-
+
