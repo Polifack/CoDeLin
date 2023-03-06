@@ -46,9 +46,7 @@ class D_PosBasedEncoding(ADEncoding):
 
         i = 1
         postags = lin_tree.postags
-        print(postags)
         for word, postag, features, label in lin_tree.iterrows():
-
             node_id = i
             if label.xi == D_NONE_LABEL:
                 label.xi = POS_ROOT_LABEL
@@ -63,6 +61,7 @@ class D_PosBasedEncoding(ADEncoding):
             # Set head for root
             if (pi==D_POSROOT or oi==0):
                 dep_tree.update_head(node_id, 0)
+                i+=1
                 continue
 
             # Compute head position
@@ -71,18 +70,18 @@ class D_PosBasedEncoding(ADEncoding):
             step = 1 if oi > 0 else -1
             stop_point = (len(postags)+1) if oi > 0 else 0
 
-            for j in range (node_id+step, stop_point, step):
-                print(postags[j-1], pi)
+            for j in range(node_id+step, stop_point, step):
                 if (pi == postags[j-1]):
                     target_oi -= step
                 
                 if (target_oi==0):
-                    print("found")
                     break
             
             head_id = j
             dep_tree.update_head(node_id, head_id)
+            
             i+=1
 
+        
         dep_tree.remove_dummy()
         return dep_tree

@@ -2,6 +2,8 @@ from src.encs.abstract_encoding import ADEncoding
 from src.utils.constants import D_2P_GREED, D_2P_PROP, D_NONE_LABEL
 from src.models.deps_label import D_Label
 from src.models.deps_tree import D_Tree
+from src.models.linearized_tree import LinearizedTree
+
 
 class D_Brk2PBasedEncoding(ADEncoding):
     def __init__(self, separator, displacement, planar_alg):
@@ -125,7 +127,7 @@ class D_Brk2PBasedEncoding(ADEncoding):
         for node in dep_tree:
             current = D_Label(labels_brk[node.id], node.relation, self.separator)
             lbls.append(current)
-        return lbls
+        return LinearizedTree(dep_tree.get_words(), dep_tree.get_postags(), dep_tree.get_feats(), lbls, len(lbls))
 
     def encode_step(self, p, lbl_brk, brk_chars):
         p=(p[1:])
@@ -149,8 +151,8 @@ class D_Brk2PBasedEncoding(ADEncoding):
                 lbl_brk[node.id]+=brk_chars[0]
         return lbl_brk
 
-    def decode(self, labels, postags, words):
-        decoded_tree = D_Tree.empty_tree(len(labels)+1)
+    def decode(self, lin_tree):
+        decoded_tree = D_Tree.empty_tree(len(lin_tree)+1)
         
         # create plane stacks
         l_stack_p1=[]
@@ -160,7 +162,7 @@ class D_Brk2PBasedEncoding(ADEncoding):
         
         current_node=1
 
-        for label, postag, word in zip(labels,postags,words):
+        for word, postag, features, label in lin_tree.iterrows():
             brks = list(label.xi) if label.xi != D_NONE_LABEL else []
             temp_brks=[]
             
