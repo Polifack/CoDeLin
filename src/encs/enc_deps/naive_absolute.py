@@ -1,6 +1,6 @@
 from src.encs.abstract_encoding import ADEncoding
-from src.models.deps_label import DependencyLabel
-from src.models.deps_tree import DependencyTree
+from src.models.deps_label import D_Label
+from src.models.deps_tree import D_Tree
 from src.utils.constants import D_NONE_LABEL
 
 class D_NaiveAbsoluteEncoding(ADEncoding):
@@ -14,13 +14,13 @@ class D_NaiveAbsoluteEncoding(ADEncoding):
             li = node.relation
             xi = node.head
             
-            current = DependencyLabel(xi, li, self.separator)
+            current = D_Label(xi, li, self.separator)
             encoded_labels.append(current)
 
         return encoded_labels
     
     def decode(self, labels, postags, words):
-        dep_tree = DependencyTree.empty_tree(len(labels)+1)
+        dep_tree = D_Tree.empty_tree(len(labels)+1)
 
         for i in range(len(labels)):
             label  = labels[i]

@@ -1,6 +1,6 @@
 from src.utils.constants import D_ROOT_HEAD, D_NULLHEAD, D_ROOT_REL, D_POSROOT, D_EMPTYREL
 
-class ConllNode:
+class D_Node:
     def __init__(self, wid, form, lemma=None, upos=None, xpos=None, feats=None, head=None, deprel=None, deps=None, misc=None):
         self.id = int(wid)                      # word id
         
@@ -54,17 +54,17 @@ class ConllNode:
     @staticmethod
     def from_string(conll_str):
         wid,form,lemma,upos,xpos,feats,head,deprel,deps,misc = conll_str.split('\t')
-        return ConllNode(int(wid), form, lemma, upos, xpos, feats, int(head), deprel, deps, misc)
+        return D_Node(int(wid), form, lemma, upos, xpos, feats, int(head), deprel, deps, misc)
 
     @staticmethod
     def dummy_root():
-        return ConllNode(0, D_POSROOT, None, D_POSROOT, None, None, 0, D_EMPTYREL, None, None)
+        return D_Node(0, D_POSROOT, None, D_POSROOT, None, None, 0, D_EMPTYREL, None, None)
     
     @staticmethod
     def empty_node():
-        return ConllNode(0, None, None, None, None, None, 0, None, None, None)
+        return D_Node(0, None, None, None, None, None, 0, None, None, None)
 
-class DependencyTree:
+class D_Tree:
     def __init__(self, nodes):
         self.nodes = nodes
 
@@ -280,9 +280,9 @@ class DependencyTree:
         ''' 
         Creates an empty dependency tree with l nodes
         '''
-        t = DependencyTree([])
+        t = D_Tree([])
         for i in range(l):
-            n = ConllNode.empty_node()
+            n = D_Node.empty_node()
             n.id = i
             t.append_node(n)
         return t
@@ -302,7 +302,7 @@ class DependencyTree:
         data = data[dependency_tree_start_index:]
         nodes = []
         if dummy_root:
-            nodes.append(ConllNode.dummy_root())
+            nodes.append(D_Node.dummy_root())
         
         for line in data:
             # check if not valid line (empty or not enough fields)
@@ -323,10 +323,10 @@ class DependencyTree:
             if clean_omisions and "." in wid:
                 continue
 
-            conll_node = ConllNode.from_string(line)
+            conll_node = D_Node.from_string(line)
             nodes.append(conll_node)
         
-        return DependencyTree(nodes)
+        return D_Tree(nodes)
     
     @staticmethod
     def read_conllu_file(file_path, filter_projective = True):
@@ -341,7 +341,7 @@ class DependencyTree:
         
         trees = []
         for x in data:
-            t = DependencyTree.from_string(x)
+            t = D_Tree.from_string(x)
             if not filter_projective or t.is_projective():
                 trees.append(t)
         return trees    

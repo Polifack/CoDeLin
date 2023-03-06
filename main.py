@@ -61,6 +61,9 @@ if __name__=="__main__":
     parser.add_argument('--postags', required = False, action='store_true', default = False, 
                         help = 'Predict Part of Speech tags using Stanza tagger')
     
+    parser.add_argument('--hfr', required=False, action='store_true', default=False,
+                        help = 'Encode "root" nodes as a special label in relative encoding (i.e. "0_ROOT" instead of "-3_ROOT" )')
+    
     parser.add_argument('--lang', required=False, type=str, default='en', 
                         help = 'Language employed in part of speech predition')
 
@@ -72,18 +75,24 @@ if __name__=="__main__":
     if args.formalism == F_CONSTITUENT:
         
         if args.operation == OP_ENC:
-            n_labels, n_trees, n_diff_labels = encode_constituent(args.input, args.output, args.enc, args.sep, args.ujoiner, args.feats)
+            n_labels, n_trees, n_diff_labels = encode_constituent(args.input, args.output, args.enc, 
+                                                                  args.sep, args.ujoiner, args.feats)
         
         elif args.operation == OP_DEC:
-            n_trees, n_labels = decode_constituent(args.input, args.output, args.enc, args.sep, args.ujoiner, args.conflict, args.nulls, args.postags, args.lang)
+            n_trees, n_labels = decode_constituent(args.input, args.output, args.enc, args.sep, 
+                                                   args.ujoiner, args.conflict, args.nulls, 
+                                                   args.postags, args.lang)
     
     elif args.formalism == F_DEPENDENCY:
         
         if args.operation == OP_ENC:
-            n_trees, n_labels, n_diff_labels = encode_dependencies(args.input, args.output, args.sep, args.enc, args.disp, args.planar, args.feats)
+            n_trees, n_labels, n_diff_labels = encode_dependencies(args.input, args.output, args.enc, args.sep, 
+                                                                   args.disp, args.planar, args.hfr, args.feats)
         
         elif args.operation == OP_DEC:
-            n_trees, n_labels = decode_dependencies(args.input, args.output, args.sep, args.enc, args.disp, args.planar, args.rsingle, args.rsearch, args.postags, args.lang)
+            n_trees, n_labels = decode_dependencies(args.input, args.output, args.enc, args.sep, 
+                                                    args.disp, args.planar, args.rsingle, args.rsearch, 
+                                                    args.hfr, args.postags, args.lang)
 
 
 

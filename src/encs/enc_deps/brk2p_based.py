@@ -1,7 +1,7 @@
 from src.encs.abstract_encoding import ADEncoding
 from src.utils.constants import D_2P_GREED, D_2P_PROP, D_NONE_LABEL
-from src.models.deps_label import DependencyLabel
-from src.models.deps_tree import DependencyTree
+from src.models.deps_label import D_Label
+from src.models.deps_tree import D_Tree
 
 class D_Brk2PBasedEncoding(ADEncoding):
     def __init__(self, separator, displacement, planar_alg):
@@ -122,7 +122,7 @@ class D_Brk2PBasedEncoding(ADEncoding):
         lbls=[]
         dep_tree.remove_dummy()
         for node in dep_tree:
-            current = DependencyLabel(labels_brk[node.id], node.relation, self.separator)
+            current = D_Label(labels_brk[node.id], node.relation, self.separator)
             lbls.append(current)
         return lbls
 
@@ -149,7 +149,7 @@ class D_Brk2PBasedEncoding(ADEncoding):
         return lbl_brk
 
     def decode(self, labels, postags, words):
-        decoded_tree = DependencyTree.empty_tree(len(labels)+1)
+        decoded_tree = D_Tree.empty_tree(len(labels)+1)
         
         # create plane stacks
         l_stack_p1=[]

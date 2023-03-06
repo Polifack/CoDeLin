@@ -1,13 +1,13 @@
 import argparse
-from src.models.const_tree import ConstituentTree
-from src.models.deps_tree import DependencyTree
+from src.models.const_tree import C_Tree
+from src.models.deps_tree import D_Tree
 
 def extract_features_const(in_path):
     file_in = open(in_path, "r")
     feats_set = set()
     for line in file_in:
         line = line.rstrip()
-        tree = ConstituentTree.from_string(line)
+        tree = C_Tree.from_string(line)
         tree.extract_features()
         feats = tree.get_feature_names()
         
@@ -17,7 +17,7 @@ def extract_features_const(in_path):
 
 def extract_features_conll(in_path):
     feats_list=set()
-    trees = DependencyTree.read_conllu_file(in_path, filter_projective=False)
+    trees = D_Tree.read_conllu_file(in_path, filter_projective=False)
     for t in trees:
         for node in t:
             if node.feats != "_":

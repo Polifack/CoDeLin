@@ -1,7 +1,7 @@
 from src.encs.abstract_encoding import ACEncoding
 from src.utils.constants import C_ABSOLUTE_ENCODING, C_RELATIVE_ENCODING, C_ROOT_LABEL, C_CONFLICT_SEPARATOR, C_NONE_LABEL
-from src.models.const_label import ConstituentLabel
-from src.models.const_tree import ConstituentTree
+from src.models.const_label import C_Label, C_LinearizedTree
+from src.models.const_tree import C_Tree
 
 import re
 
@@ -10,14 +10,12 @@ class C_NaiveDynamicEncoding(ACEncoding):
         self.separator = separator
         self.unary_joiner = unary_joiner
 
-    def encode(self, constituent_tree):
-        # Add finish node and collapse unary branches
-        leaf_paths = constituent_tree.path_to_leaves(collapse_unary=True, unary_joiner=self.unary_joiner)
+    def __str__(self):
+        return "Constituent Naive Dynamic Encoding"
 
-        labels=[]
-        words=[]
-        postags=[]
-        additional_feats=[]
+    def encode(self, constituent_tree):
+        lc_tree = C_LinearizedTree.empty_tree()
+        leaf_paths = constituent_tree.path_to_leaves(collapse_unary=True, unary_joiner=self.unary_joiner)
 
         last_n_common=0
         for i in range(0, len(leaf_paths)-1):
@@ -63,13 +61,11 @@ class C_NaiveDynamicEncoding(ACEncoding):
                     rel_val=(n_commons-last_n_common)
 
                     if (abs_val<=3 and rel_val<=-2):
-                        labels.append(ConstituentLabel(abs_val, last_common, unary_chain, C_ABSOLUTE_ENCODING, self.separator, self.unary_joiner))
+                        c_label = (C_Label(abs_val, last_common, unary_chain, C_ABSOLUTE_ENCODING, self.separator, self.unary_joiner))
                     else:
-                        labels.append(ConstituentLabel(rel_val, last_common, unary_chain, C_RELATIVE_ENCODING, self.separator, self.unary_joiner))
+                        c_label = (C_Label(rel_val, last_common, unary_chain, C_RELATIVE_ENCODING, self.separator, self.unary_joiner))
                     
-                    words.append(word)
-                    postags.append(postag)
-                    additional_feats.append(feats)
+                    lc_tree.add_row(word, postag, feats, c_label)
 
                     last_n_common=n_commons
                     break
@@ -79,7 +75,9 @@ class C_NaiveDynamicEncoding(ACEncoding):
                 n_commons += len(a.split(self.unary_joiner))
                 last_common = a
         
-        return words, postags, labels, additional_feats
+        # n = max number of features of the tree
+        lc_tree.n = max([len(f) for f in lc_tree.additional_feats])
+        return lc_tree
 
     def decode(self, linearized_tree):
         # Check valid labels 
@@ -88,7 +86,7 @@ class C_NaiveDynamicEncoding(ACEncoding):
             return
         
         # Create constituent tree
-        tree = ConstituentTree(C_ROOT_LABEL, [])
+        tree = C_Tree(C_ROOT_LABEL, [])
         current_level = tree
 
         old_n_commons=0
@@ -97,8 +95,7 @@ class C_NaiveDynamicEncoding(ACEncoding):
         is_first = True
         last_label = None
 
-        for row in linearized_tree:
-            word, postag, label = row
+        for word, postag, feats, label in linearized_tree.iterrows():
             
             # Convert the labels to absolute scale
             if last_label!=None and label.encoding_type==C_RELATIVE_ENCODING:
@@ -112,7 +109,7 @@ class C_NaiveDynamicEncoding(ACEncoding):
             current_level = tree
             for level_index in range(label.n_commons):
                 if (len(current_level.children)==0) or (level_index >= old_n_commons):
-                    current_level.add_child(ConstituentTree(C_NONE_LABEL, []))
+                    current_level.add_child(C_Tree(C_NONE_LABEL, []))
                 
                 current_level = current_level.r_child()
 

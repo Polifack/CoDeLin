@@ -1,11 +1,11 @@
 import stanza
-from src.models.deps_label import DependencyLabel
+from src.models.deps_label import D_Label
 from src.encs.enc_deps import *
 from src.utils.constants import *
-from src.models.deps_tree import DependencyTree
+from src.models.deps_tree import D_Tree
 
 # Encoding
-def encode_dependencies(in_path, out_path, separator, encoding_type, displacement, planar_alg, features):
+def encode_dependencies(in_path, out_path, encoding_type, separator, displacement, planar_alg, root_enc, features):
     '''
     Encodes the selected file according to the specified parameters:
     :param in_path: Path of the file to be encoded
@@ -21,7 +21,7 @@ def encode_dependencies(in_path, out_path, separator, encoding_type, displacemen
     if encoding_type == D_ABSOLUTE_ENCODING:
             encoder = D_NaiveAbsoluteEncoding(separator)
     if encoding_type == D_RELATIVE_ENCODING:
-            encoder = D_NaiveRelativeEncoding(separator)
+            encoder = D_NaiveRelativeEncoding(separator, root_enc)
     if encoding_type == D_POS_ENCODING:
             encoder = D_PosBasedEncoding(separator)
     if encoding_type == D_BRACKET_ENCODING:
@@ -41,7 +41,7 @@ def encode_dependencies(in_path, out_path, separator, encoding_type, displacemen
     label_counter = 0
 
 
-    trees = DependencyTree.read_conllu_file(in_path, filter_projective=False)
+    trees = D_Tree.read_conllu_file(in_path, filter_projective=False)
     f_out = open(out_path,"w+")
     label_set = set()
     
@@ -93,7 +93,72 @@ def encode_dependencies(in_path, out_path, separator, encoding_type, displacemen
     return tree_counter, label_counter, len(label_set)
 
 # Decoding
-def decode_dependencies(in_path, out_path, separator, encoding_type, displacement, planar, multiroot, root_search, postags, lang):
+
+def read_linearized_tree(content):
+    '''
+    Reads a linearized tree from a list of strings shaped as
+    -BOS- \t -BOS- \t (...) \t -BOS- \t ...
+    word \t postag \t (...) \t label \t ...
+    word \t postag \t (...) \t label \t ...
+    -EOS- \t -EOS- \t (...) \t -EOS- \t ...
+    '''
+    for line in content:
+        line = line.replace('\n','')
+
+        line_splitter = '\t' if '\t' in line else ' '
+        split_line = line.split(line_splitter)
+        
+        if len(split_line)<=1:
+            continue
+        
+        word = split_line[0]
+        lbl_str = split_line[-1]
+        
+        # check for postags in label
+        if len(split_line) == 2:
+            postag = ""
+        else:
+            postag = split_line[1]
+        
+        # parse
+        if BOS == word:
+            # Begin of Sentence: Reset Lists
+            current_labels=[]
+            current_words=[]
+            current_postags=[]
+
+            continue
+
+        if EOS == word:
+            # End of Sentence: Decode and Write
+            sentence = " ".join(current_words)
+            if postags:
+                doc = nlp(sentence)
+                current_postags = [word.pos for sent in doc.sentences for word in sent.words]
+            sentence = "# text = "+sentence+'\n'
+
+            # decode and postprocess
+            decoded_conllu = decoder.decode(current_labels, current_postags, current_words)
+            decoded_conllu.postprocess_tree(root_search, multiroot)
+
+            # write
+            D_Tree.write_conllu(f_out, decoded_conllu)
+
+            token_list_counter+=1
+            continue
+
+        labels_counter+=1
+
+        # check for bad predicted label as -bos- or -eos-
+        if lbl_str == BOS or lbl_str == EOS:
+            lbl_str = D_NONE_LABEL+separator+"0"
+
+        # append labels
+        current_labels.append(D_Label.from_string(lbl_str, separator))
+        current_words.append(word)
+        current_postags.append(postag)
+
+def decode_dependencies(in_path, out_path, encoding_type, separator, displacement, planar, multiroot, root_search, root_enc, postags, lang):
     '''
     Decodes the selected file according to the specified parameters:
     :param in_path: Path of the file to be encoded
@@ -108,7 +173,7 @@ def decode_dependencies(in_path, out_path, separator, encoding_type, displacemen
     if encoding_type == D_ABSOLUTE_ENCODING:
         decoder = D_NaiveAbsoluteEncoding(separator)
     if encoding_type == D_RELATIVE_ENCODING:
-        decoder = D_NaiveRelativeEncoding(separator)
+        decoder = D_NaiveRelativeEncoding(separator, root_enc)
     if encoding_type == D_POS_ENCODING:
         decoder = D_PosBasedEncoding(separator)
     if encoding_type == D_BRACKET_ENCODING:
@@ -171,7 +236,7 @@ def decode_dependencies(in_path, out_path, separator, encoding_type, displacemen
             decoded_conllu.postprocess_tree(root_search, multiroot)
 
             # write
-            DependencyTree.write_conllu(f_out, decoded_conllu)
+            D_Tree.write_conllu(f_out, decoded_conllu)
 
             token_list_counter+=1
             continue
@@ -183,7 +248,7 @@ def decode_dependencies(in_path, out_path, separator, encoding_type, displacemen
             lbl_str = D_NONE_LABEL+separator+"0"
 
         # append labels
-        current_labels.append(DependencyLabel.from_string(lbl_str, separator))
+        current_labels.append(D_Label.from_string(lbl_str, separator))
         current_words.append(word)
         current_postags.append(postag)
 

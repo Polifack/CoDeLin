@@ -1,26 +1,26 @@
-# COnstituent and DEpendency LINearization system
+# **CO**nstituent and **DE**pendency **LIN**earization system
 
-Unified System to linearize Constituent and Pependency trees into labels to train Sequence Labeling Systems. The main goal of this system is to cast the task of Constituent and Dependency Parsing into a Sequence Labeling Task with good metrics of Speed and Accuracy. The implemented Tree Encodings are based on [Viable Dependency Parsing as Sequence Labeling](https://aclanthology.org/N19-1077.pdf), [Bracket Encodings for 2-Planar Dependency Parsing](https://aclanthology.org/2020.coling-main.223.pdf), [Constituent Parsing as Sequence Labeling](https://aclanthology.org/D18-1162v2.pdf) and [Better, Faster, Stronger Sequence Tagging Constituent Parsers](https://arxiv.org/pdf/1902.10985.pdf)
+Unified System to linearize Constituent and Dependency trees into labels to employ with Sequence Labeling Systems. The implemented Tree Encodings are based on [Viable Dependency Parsing as Sequence Labeling](https://aclanthology.org/N19-1077.pdf), [Bracket Encodings for 2-Planar Dependency Parsing](https://aclanthology.org/2020.coling-main.223.pdf), [Constituent Parsing as Sequence Labeling](https://aclanthology.org/D18-1162v2.pdf) and [Better, Faster, Stronger Sequence Tagging Constituent Parsers](https://arxiv.org/pdf/1902.10985.pdf)
 
 ## Features
 
 Allows for the linearization of trees using different algorithms and for two formalisms
 
 - Constituent tree
-	- Absolute encoding
-	- Relative encoding
-	- Dynamic encoding
-	- Incremental encoding
+	- **ABS**olute encoding
+	- **REL**ative encoding
+	- **DYN**amic encoding
+	- **INC**remental encoding
 - Dependency tree
-	- Absolute encoding
-	- Relative encoding
-	- POS based encoding
-	- Bracket encoding
+	- **ABS**olute encoding
+	- **REL**ative encoding
+	- **POS** based encoding
+	- **BR**ac**K**et encoding
 
 Also, for bracket encoding in dependency trees can split the tree in two planes using two different algorithms:
 
-- Greedy Planar Separation
-- Propagation Planar Separation
+- **GREED**y Planar Separation
+- **PROP**agation Planar Separation
 
 ## Usage
 
@@ -48,6 +48,7 @@ Dependency only parameters:
 - Planar algorithm: Algorithm employed in 2-planar bracket based encoding; Indicated by: --planar [GREED | PROPAGATE].
 - Single root: Flag that if present will post-process dependency trees to force root uniqueness. Indicated by --sroot.
 - Root search: Indicates the method of root search employed in dependency parsing. The available options are take the first node with head=0 as root or take the first node with rel=0 as root; Indicated by --rsearch [start_gethead | strat_getrel]. Default is strat_gethead.
+- Hfr: Flag indicating to encode root dependencies in relative encoding as a special label (e.g. encode '-NONE-_root' instead of '-3_root')
 
 
 ### Encode single file example:

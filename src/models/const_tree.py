@@ -2,7 +2,7 @@ from src.utils.constants import C_END_LABEL, C_START_LABEL, C_NONE_LABEL
 from src.utils.constants import C_CONFLICT_SEPARATOR, C_STRAT_MAX, C_STRAT_FIRST, C_STRAT_LAST, C_NONE_LABEL
 import copy
 
-class ConstituentTree:
+class C_Tree:
     def __init__(self, label, children, feats=None):
         self.parent = None
         self.label = label
@@ -14,7 +14,7 @@ class ConstituentTree:
         '''
         Function that adds a child to the current tree
         '''
-        if type(child) is not ConstituentTree:
+        if type(child) is not C_Tree:
             raise TypeError("[!] Child must be a ConstituentTree")
 
         self.children.append(child)
@@ -24,7 +24,7 @@ class ConstituentTree:
         '''
         Function that adds a child to the left of the current tree
         '''
-        if type(child) is not ConstituentTree:
+        if type(child) is not C_Tree:
             raise TypeError("[!] Child must be a ConstituentTree")
         
         self.children = [child] + self.children
@@ -35,7 +35,7 @@ class ConstituentTree:
         Function that deletes a child from the current tree
         without adding its children to the current tree
         '''
-        if type(child) is not ConstituentTree:
+        if type(child) is not C_Tree:
             raise TypeError("[!] Child must be a ConstituentTree")
 
         self.children.remove(child)
@@ -180,14 +180,14 @@ class ConstituentTree:
         Function that adds a dummy end node to the 
         rightmost part of the tree
         '''
-        self.add_child(ConstituentTree(C_END_LABEL, []))
+        self.add_child(C_Tree(C_END_LABEL, []))
 
     def add_start_node(self):
         '''
         Function that adds a dummy start node to the leftmost
         part of the tree
         '''
-        self.add_left_child(ConstituentTree(C_START_LABEL, []))
+        self.add_left_child(C_Tree(C_START_LABEL, []))
         
 
     def path_to_leaves(self, collapse_unary=True, unary_joiner="+"):
@@ -233,12 +233,12 @@ class ConstituentTree:
         if unary_chain:
             unary_chain = unary_chain.split(unary_joiner)
             unary_chain.reverse()
-            pos_tree = ConstituentTree(postag, [ConstituentTree(word, [])])
+            pos_tree = C_Tree(postag, [C_Tree(word, [])])
             for node in unary_chain:
-                temp_tree = ConstituentTree(node, [pos_tree])
+                temp_tree = C_Tree(node, [pos_tree])
                 pos_tree = temp_tree
         else:
-            pos_tree = ConstituentTree(postag, [ConstituentTree(word, [])])
+            pos_tree = C_Tree(postag, [C_Tree(word, [])])
 
         self.add_child(pos_tree)
 
@@ -259,7 +259,7 @@ class ConstituentTree:
         
         # Postprocess Childs
         for c in self.children:
-            if type(c) is ConstituentTree:
+            if type(c) is C_Tree:
                 c.postprocess_tree(conflict_strat, clean_nulls)
 
         if (clean_nulls):
@@ -304,7 +304,7 @@ class ConstituentTree:
         else:
             label_str =  "(" + self.label + " "
             if self.features is not None:
-                label_str +="##"+ "|".join([key+"="+value for key,value in self.features.items()]) 
+                features_str = "##"+ "|".join([key+"="+value for key,value in self.features.items()]) 
             
             label_str += " ".join([str(child) for child in self.children]) + ")"
         return label_str
@@ -313,7 +313,7 @@ class ConstituentTree:
         return self.__str__()
 
     def __eq__(self, other):
-        if isinstance(other, ConstituentTree):
+        if isinstance(other, C_Tree):
             return self.label == other.label and self.children == other.children
         return False
 
@@ -347,7 +347,7 @@ class ConstituentTree:
                 # If we find a l_brk we create a new tree
                 # with label=next_word. Skip next_word.
                 w = s[i+1]
-                t = ConstituentTree(w, [])
+                t = C_Tree(w, [])
                 stack.append(t)
                 i+=1
 
@@ -369,7 +369,7 @@ class ConstituentTree:
                 # of the current tree.
                 t = stack.pop()
                 w = s[i]
-                c = ConstituentTree(w, [])
+                c = C_Tree(w, [])
                 t.add_child(c)
                 stack.append(t)
 
@@ -379,4 +379,4 @@ class ConstituentTree:
 # Default trees
     @staticmethod
     def empty_tree():
-        return ConstituentTree(C_NONE_LABEL, [])
+        return C_Tree(C_NONE_LABEL, [])

@@ -1,4 +1,4 @@
-from src.models.const_label import ConstituentLabel
+from src.models.const_label import C_Label, C_LinearizedTree
 from src.encs.enc_const import *
 from src.utils.extract_feats import extract_features_const
 from src.utils.constants import EOS, BOS
@@ -6,7 +6,7 @@ from src.utils.constants import C_INCREMENTAL_ENCODING, C_ABSOLUTE_ENCODING, C_R
 from src.utils.constants import C_NO_POSTAG_LABEL, C_NONE_LABEL
 
 import stanza.pipeline
-from src.models.const_tree import ConstituentTree
+from src.models.const_tree import C_Tree
 
 
 ## Encoding and decoding
@@ -50,42 +50,9 @@ def encode_constituent(in_path, out_path, encoding_type, separator, unary_joiner
 
     for line in file_in:
         line = line.rstrip()
-        tree = ConstituentTree.from_string(line)
-
-        words, pos_tags, labels, additional_feats = encoder.encode(tree)
-
-        linearized_tree=[]
-
-        linearized_tree.append(u"\t".join(([BOS] * (3 + (len(features) if features else 0)))))
-
-        for l, p, w, af in zip(labels, pos_tags, words, additional_feats):
-            # create the output line of the linearized tree
-            output_line = [w,p]
-            
-            # check for additional information inside the postag label
-            if features:
-                f_list = ["_"] * len(features)
-                if af is not None:
-                    for element in af:
-                        key, value = element.split("=", 1) if len(element.split("=",1))==2 else (None, None)
-                        if key in f_idx_dict.keys():
-                            f_list[f_idx_dict[key]] = value
-                
-                # append the additional elements or the placehodler
-                for element in f_list:
-                    output_line.append(element)
-
-            # add the label
-            label_set.add(str(l))
-            output_line.append(str(l))
-                                    
-            linearized_tree.append(u"\t".join(output_line))
-        linearized_tree.append(u"\t".join(([EOS] * (3 + (len(features) if features else 0)))))
-
-        for row in linearized_tree:
-            labels_counter+=1
-            file_out.write(str(row)+'\n')
-        
+        tree = C_Tree.from_string(line)
+        linearized_tree = encoder.encode(tree)
+        file_out.write(linearized_tree.to_string(f_idx_dict))
         file_out.write("\n")
         tree_counter+=1
     
@@ -111,78 +78,31 @@ def decode_constituent(in_path, out_path, encoding_type, separator, unary_joiner
     if encoding_type == C_INCREMENTAL_ENCODING:
             decoder = C_NaiveIncrementalEncoding(separator, unary_joiner)
 
-    f_in=open(in_path)
-    
-    encoded_constituent_trees = []
-    current_tree = []
-    
-    # read the trees
-    for line in f_in:
-        # skip empty line
-        if len(line)<=1:
-            continue
-
-        # Separate the label file into columns
-        line_columns = line.split("\t") if ("\t") in line else line.split(" ")
-        word = line_columns[0]
-
-        if BOS == word:
-            current_tree=[]
-            continue
-        
-        if EOS == word:
-            encoded_constituent_trees.append(current_tree)
-            continue
-
-        if len(line_columns) == 2:
-            word, label = line_columns
-            postag = C_NO_POSTAG_LABEL
-        else:
-            word, postag, label = line_columns[0], line_columns[1], line_columns[-1]
-        
-        # check for bad predictions. hang from root.
-        if BOS in label or EOS in label:
-            label = "1"+separator+"ROOT"
-
-        current_tree.append([word, postag, ConstituentLabel.from_string(label, separator, unary_joiner)])
-
-    # encode the trees
-    
-    f_out=open(out_path,"w+")
-
     if postags:
         stanza.download(lang=lang)
         nlp = stanza.Pipeline(lang=lang, processors='tokenize, pos')
+
+    f_in = open(in_path)
+    f_out = open(out_path,"w+")
     
-    tree_counter = 0
+    tree_string   = ""
     labels_counter = 0
-    for tree in encoded_constituent_trees:
-        current_postags = None
-        
-        # generate postags if needed
-        if postags:
-            sentence=""
-            for element in tree:
-                word = element[0]
-                sentence +=" "+word
-            doc=nlp(sentence)
-            postags = [word.pos for sent in doc.sentences for word in sent.words]
-            for line, postag in zip(tree, postags):
-                line[1] = postag
-        
-        decoded_tree = decoder.decode(tree)
-        
-        # check if null tree obtained during decoding
-        if decoded_tree == None:
-            final_tree = ConstituentTree.empty_tree()
-        else:
+    tree_counter = 0
+
+    for line in f_in:
+        if line == "\n":
+            current_tree = C_LinearizedTree.from_string(tree_string, separator, unary_joiner)
+            if postags:
+                c_tags = nlp(current_tree.get_sentence())
+                current_tree.set_postags([word.pos for word in c_tags])
+
+            decoded_tree = decoder.decode(current_tree)
             decoded_tree.postprocess_tree(conflicts, nulls)
-            final_tree = decoded_tree
 
-        f_out.write(str(final_tree).replace('\n','')+'\n')
-
-        tree_counter+=1
-        labels_counter+=len(tree)
-
-
+            f_out.write(str(decoded_tree).replace('\n','')+'\n')
+            tree_string   = ""
+            tree_counter+=1
+        tree_string += line
+        labels_counter += 1
+    
     return tree_counter, labels_counter
