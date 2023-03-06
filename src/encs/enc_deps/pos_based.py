@@ -1,6 +1,7 @@
 from src.encs.abstract_encoding import ADEncoding
 from src.models.deps_label import D_Label
 from src.models.deps_tree import D_Tree
+from src.models.linearized_tree import LinearizedTree
 from src.utils.constants import D_POSROOT, D_NONE_LABEL
 
 POS_ROOT_LABEL = "0--ROOT"
@@ -8,6 +9,9 @@ POS_ROOT_LABEL = "0--ROOT"
 class D_PosBasedEncoding(ADEncoding):
     def __init__(self, separator):
         super().__init__(separator)
+
+    def __str__(self) -> str:
+        return "Dependency Part-of-Speech Based Encoding"
         
     def encode(self, dep_tree):
         encoded_labels = []
@@ -35,17 +39,17 @@ class D_PosBasedEncoding(ADEncoding):
             encoded_labels.append(current)
 
         dep_tree.remove_dummy()
-        return encoded_labels
+        return LinearizedTree(dep_tree.get_words(), dep_tree.get_postags(), dep_tree.get_feats(), encoded_labels, len(encoded_labels))
 
-    def decode(self, labels, postags, words):
-        dep_tree = D_Tree.empty_tree(len(labels)+1)
+    def decode(self, lin_tree):
+        dep_tree = D_Tree.empty_tree(len(lin_tree)+1)
 
-        for i in range(len(labels)):
-            label  = labels[i]
-            postag = postags[i]
-            word   = words[i]
+        i = 1
+        postags = lin_tree.postags
+        print(postags)
+        for word, postag, features, label in lin_tree.iterrows():
 
-            node_id = i+1
+            node_id = i
             if label.xi == D_NONE_LABEL:
                 label.xi = POS_ROOT_LABEL
             
@@ -68,14 +72,17 @@ class D_PosBasedEncoding(ADEncoding):
             stop_point = (len(postags)+1) if oi > 0 else 0
 
             for j in range (node_id+step, stop_point, step):
+                print(postags[j-1], pi)
                 if (pi == postags[j-1]):
                     target_oi -= step
                 
                 if (target_oi==0):
+                    print("found")
                     break
             
             head_id = j
             dep_tree.update_head(node_id, head_id)
+            i+=1
 
         dep_tree.remove_dummy()
         return dep_tree

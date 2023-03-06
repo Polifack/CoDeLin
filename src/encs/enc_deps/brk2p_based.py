@@ -12,7 +12,8 @@ class D_Brk2PBasedEncoding(ADEncoding):
         self.displacement = displacement
         self.planar_alg = planar_alg
 
-
+    def __str__(self):
+        return "Dependency 2-Planar Bracketing Based Encoding"
 
     def get_next_edge(self, dep_tree, idx_l, idx_r):
         next_arc=None

@@ -1,6 +1,7 @@
 from src.encs.abstract_encoding import ACEncoding
 from src.utils.constants import C_ABSOLUTE_ENCODING, C_ROOT_LABEL, C_CONFLICT_SEPARATOR, C_NONE_LABEL, C_DUMMY_END
-from src.models.const_label import C_Label, C_LinearizedTree
+from src.models.const_label import C_Label
+from src.models.linearized_tree import LinearizedTree
 from src.models.const_tree import C_Tree
 
 import re
@@ -46,7 +47,7 @@ class C_NaiveIncrementalEncoding(ACEncoding):
     def encode(self, constituent_tree):
         constituent_tree.reverse_tree()
         leaf_paths = constituent_tree.path_to_leaves(collapse_unary=True, unary_joiner=self.unary_joiner)
-        lc_tree = C_LinearizedTree.empty_tree()
+        lc_tree = LinearizedTree.empty_tree()
 
         for i in range(1, len(leaf_paths)):
             path_a = leaf_paths[i-1]
@@ -82,7 +83,7 @@ class C_NaiveIncrementalEncoding(ACEncoding):
                 last_common = a
         
         # reverse and return
-        lc_tree.reverse_tree()
+        lc_tree.reverse_tree(ignore_bos_eos=False)
         return lc_tree
 
     def decode(self, linearized_tree):

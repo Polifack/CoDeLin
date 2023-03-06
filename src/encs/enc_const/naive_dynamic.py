@@ -1,6 +1,7 @@
 from src.encs.abstract_encoding import ACEncoding
 from src.utils.constants import C_ABSOLUTE_ENCODING, C_RELATIVE_ENCODING, C_ROOT_LABEL, C_CONFLICT_SEPARATOR, C_NONE_LABEL
-from src.models.const_label import C_Label, C_LinearizedTree
+from src.models.const_label import C_Label
+from src.models.linearized_tree import LinearizedTree
 from src.models.const_tree import C_Tree
 
 import re
@@ -14,7 +15,7 @@ class C_NaiveDynamicEncoding(ACEncoding):
         return "Constituent Naive Dynamic Encoding"
 
     def encode(self, constituent_tree):
-        lc_tree = C_LinearizedTree.empty_tree()
+        lc_tree = LinearizedTree.empty_tree()
         leaf_paths = constituent_tree.path_to_leaves(collapse_unary=True, unary_joiner=self.unary_joiner)
 
         last_n_common=0
@@ -48,7 +49,7 @@ class C_NaiveDynamicEncoding(ACEncoding):
                     
                     # Clean the POS Tag and extract additional features
                     postag_split = postag.split("##")
-                    feats = None
+                    feats = [None]
 
                     if len(postag_split) > 1:
                         postag = re.sub(r'[0-9]+', '', postag_split[0])

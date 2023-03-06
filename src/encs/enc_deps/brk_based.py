@@ -2,12 +2,16 @@ from src.encs.abstract_encoding import ADEncoding
 from src.models.deps_label import D_Label
 from src.models.deps_tree import D_Tree
 from src.utils.constants import D_NONE_LABEL
+from src.models.linearized_tree import LinearizedTree
 
 class D_BrkBasedEncoding(ADEncoding):
     
     def __init__(self, separator, displacement):
         super().__init__(separator)
         self.displacement = displacement
+
+    def __str__(self):
+        return "Dependency Bracketing Based Encoding"
 
 
     def encode(self, dep_tree):
@@ -39,17 +43,17 @@ class D_BrkBasedEncoding(ADEncoding):
             current = D_Label(xi, li, self.separator)
             encoded_labels.append(current)
 
-        return encoded_labels
+        return LinearizedTree(dep_tree.get_words(), dep_tree.get_postags(), dep_tree.get_feats(), encoded_labels, len(encoded_labels))
 
-    def decode(self, labels, postags, words):
+    def decode(self, lin_tree):
         # Create an empty tree with n labels
-        decoded_tree = D_Tree.empty_tree(len(labels)+1)
+        decoded_tree = D_Tree.empty_tree(len(lin_tree)+1)
         
         l_stack = []
         r_stack = []
         
         current_node = 1
-        for label, postag, word in zip(labels, postags, words):
+        for word, postag, features, label in lin_tree.iterrows():
             
             # get the brackets
             brks = list(label.xi) if label.xi != D_NONE_LABEL else []

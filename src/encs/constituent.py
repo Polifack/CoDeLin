@@ -1,4 +1,4 @@
-from src.models.const_label import C_Label, C_LinearizedTree
+from src.models.const_label import C_Label, LinearizedTree
 from src.encs.enc_const import *
 from src.utils.extract_feats import extract_features_const
 from src.utils.constants import EOS, BOS
@@ -91,7 +91,7 @@ def decode_constituent(in_path, out_path, encoding_type, separator, unary_joiner
 
     for line in f_in:
         if line == "\n":
-            current_tree = C_LinearizedTree.from_string(tree_string, separator, unary_joiner)
+            current_tree = LinearizedTree.from_string(tree_string, separator, unary_joiner)
             if postags:
                 c_tags = nlp(current_tree.get_sentence())
                 current_tree.set_postags([word.pos for word in c_tags])

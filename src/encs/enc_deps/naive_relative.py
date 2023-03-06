@@ -1,5 +1,6 @@
 from src.encs.abstract_encoding import ADEncoding
 from src.models.deps_label import D_Label
+from src.models.linearized_tree import LinearizedTree
 from src.models.deps_tree import D_Tree
 from src.utils.constants import D_NONE_LABEL
 
@@ -7,6 +8,9 @@ class D_NaiveRelativeEncoding(ADEncoding):
     def __init__(self, separator, hang_from_root):
         super().__init__(separator)
         self.hfr = hang_from_root
+
+    def __str__(self):
+        return "Dependency Naive Relative Encoding"
 
     def encode(self, dep_tree):
         encoded_labels = []
@@ -21,26 +25,24 @@ class D_NaiveRelativeEncoding(ADEncoding):
             current = D_Label(xi, li, self.separator)
             encoded_labels.append(current)
 
-        return encoded_labels
+        return LinearizedTree(dep_tree.get_words(), dep_tree.get_postags(), dep_tree.get_feats(), encoded_labels, len(encoded_labels))
 
-    def decode(self, labels, postags, words):
-        dep_tree = D_Tree.empty_tree(len(labels)+1)
+    def decode(self, lin_tree):
+        dep_tree = D_Tree.empty_tree(len(lin_tree)+1)
 
-        for i in range(len(labels)):
-            label  = labels[i]
-            postag = postags[i]
-            word   = words[i]
-            
+        i = 1
+        for word, postag, features, label in lin_tree.iterrows():
             if label.xi == D_NONE_LABEL:
                 # set as root
-                dep_tree.update_head(i+1, 0)
+                dep_tree.update_head(i, 0)
             else:
-                dep_tree.update_head(i+1, int(label.xi)+(i+1))
+                dep_tree.update_head(i, int(label.xi)+(i))
                 
             
-            dep_tree.update_word(i+1, word)
-            dep_tree.update_upos(i+1, postag)
-            dep_tree.update_relation(i+1, label.li)
+            dep_tree.update_word(i, word)
+            dep_tree.update_upos(i, postag)
+            dep_tree.update_relation(i, label.li)
+            i+=1
 
         dep_tree.remove_dummy()
         return dep_tree

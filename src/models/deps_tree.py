@@ -24,9 +24,9 @@ class D_Node:
     
     def parse_feats(self, feats):
         if feats == '_':
-            return {}
+            return [None]
         else:
-            return dict([tuple(x.split('=')) for x in feats.split('|')])
+            return [x for x in feats.split('|')]
 
     def check_cross(self, other):
         if ((self.head == other.head) or (self.head==other.id)):
@@ -130,6 +130,12 @@ class D_Tree:
         Returns the heads of the tree
         '''
         return list(map((lambda x :x.head), self.nodes))
+    
+    def get_feats(self):
+        '''
+        Returns the morphological features of the tree
+        '''
+        return list(map((lambda x :x.feats), self.nodes))
 
 # update functions
     def append_node(self, node):
