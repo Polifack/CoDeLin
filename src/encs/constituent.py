@@ -1,9 +1,7 @@
-from src.models.const_label import C_Label, LinearizedTree
+from src.models.linearized_tree import LinearizedTree
 from src.encs.enc_const import *
 from src.utils.extract_feats import extract_features_const
-from src.utils.constants import EOS, BOS
 from src.utils.constants import C_INCREMENTAL_ENCODING, C_ABSOLUTE_ENCODING, C_RELATIVE_ENCODING, C_DYNAMIC_ENCODING
-from src.utils.constants import C_NO_POSTAG_LABEL, C_NONE_LABEL
 
 import stanza.pipeline
 from src.models.const_tree import C_Tree
@@ -31,11 +29,11 @@ def encode_constituent(in_path, out_path, encoding_type, separator, unary_joiner
     if encoding_type == C_INCREMENTAL_ENCODING:
             encoder = C_NaiveIncrementalEncoding(separator, unary_joiner)
 
-    if features == ["ALL"]:
-        features = extract_features_const(in_path)
-
+    # build feature index dictionary
+    f_idx_dict = {}
     if features:
-        f_idx_dict = {}
+        if features == ["ALL"]:
+            features = extract_features_const(in_path)
         i=0
         for f in features:
             f_idx_dict[f]=i
@@ -91,7 +89,9 @@ def decode_constituent(in_path, out_path, encoding_type, separator, unary_joiner
 
     for line in f_in:
         if line == "\n":
-            current_tree = LinearizedTree.from_string(tree_string, separator, unary_joiner)
+            tree_string = tree_string.rstrip()
+            current_tree = LinearizedTree.from_string(tree_string, mode="CONST", separator=separator, unary_joiner=unary_joiner)
+            
             if postags:
                 c_tags = nlp(current_tree.get_sentence())
                 current_tree.set_postags([word.pos for word in c_tags])

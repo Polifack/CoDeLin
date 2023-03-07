@@ -15,7 +15,7 @@ def extract_features_const(in_path):
 
     return sorted(feats_set)
 
-def extract_features_conll(in_path):
+def extract_features_deps(in_path):
     feats_list=set()
     trees = D_Tree.read_conllu_file(in_path, filter_projective=False)
     for t in trees:

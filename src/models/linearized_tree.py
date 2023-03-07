@@ -166,8 +166,11 @@ class LinearizedTree:
             postags.append(postag)
             if mode == "CONST":
                 labels.append(C_Label.from_string(label, separator, unary_joiner))
-            elif mode == "DEP":
+            elif mode == "DEPS":
                 labels.append(D_Label.from_string(label, separator))
+            else:
+                raise ValueError("[!] Unknown mode: %s" % mode)
+            
             additional_feats.append(feats)
 
         return linearized_tree
