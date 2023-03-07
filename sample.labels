@@ -1,0 +1,20 @@
+-BOS-	-BOS-	-BOS-
+Heavy	JJ	3*_NP
+selling	NN	-1*_NP
+of	IN	1*_PP
+Standard	NNP	3*_NP
+&	CC	0*_NP
+Poor	NNP	0*_NP
+'s	POS	-1*_NP
+500-stock	JJ	0*_NP
+index	NN	0*_NP
+futures	NNS	2_NP
+in	IN	1*_PP
+Chicago	NNP	1_S_NP
+relentlessly	RB	0*_S_ADVP
+beat	VBD	1*_VP
+stocks	NNS	0*_VP_NP
+downward	RB	-1*_S_ADVP
+.	.	0*_S
+-EOS-	-EOS-	-EOS-
+

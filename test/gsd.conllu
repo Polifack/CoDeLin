@@ -1,0 +1,153 @@
+# text = Der Hauptgang war in Ordnung, aber alles andere als umwerfend.
+1	Der	der	DET	ART	Case=Nom|Definite=Def|Gender=Masc|Number=Sing|PronType=Art	2	det	_	_
+2	Hauptgang	Hauptgang	NOUN	NN	Case=Nom|Gender=Masc|Number=Sing	11	nsubj	_	_
+3	war	sein	VERB	VAFIN	Mood=Ind|Number=Sing|Person=3|Tense=Past|VerbForm=Fin	11	cop	_	_
+4	in	in	ADP	APPR	_	5	case	_	_
+5	Ordnung	Ordnung	NOUN	NN	Case=Dat|Gender=Fem|Number=Sing	11	nmod	_	SpaceAfter=No
+6	,	,	PUNCT	$,	_	5	punct	_	_
+7	aber	aber	CCONJ	KON	_	11	cc	_	_
+8	alles	alle	PRON	PIS	Case=Nom|Gender=Neut|Number=Sing|PronType=Ind	11	nmod	_	_
+9	andere	ander	PRON	PIS	Case=Nom|Gender=Neut|Number=Sing|PronType=Ind	8	dep	_	_
+10	als	als	CCONJ	KOKOM	_	8	case	_	_
+11	umwerfend	umwerfend	ADJ	ADJD	Degree=Pos	0	root	_	SpaceAfter=No
+12	.	.	PUNCT	$.	_	11	punct	_	_
+
+# text = Ich habe dort 2007 meinen OWD gemacht und weil mir das Tauchen so gefiel hab ich dort noch im selben Jahr den AOWD und den Deep drangehängt.
+1	Ich	ich	PRON	PPER	Case=Nom|Number=Sing|Person=1|PronType=Prs	7	nsubj	_	_
+2	habe	haben	AUX	VAFIN	Mood=Ind|Number=Sing|Person=1|Tense=Pres|VerbForm=Fin	7	aux	_	_
+3	dort	dort	ADV	ADV	_	7	advmod	_	_
+4	2007	2007	NUM	CARD	NumType=Card	7	obl	_	_
+5	meinen	mein	DET	PPOSAT	Case=Acc|Gender=Masc|Number=Sing|Number[psor]=Sing|Person=1|Poss=Yes|PronType=Prs	6	det:poss	_	_
+6	OWD	OWD	PROPN	NN	Case=Acc|Gender=Masc|Number=Sing	7	obj	_	NamedEntity=Yes
+7	gemacht	machen	VERB	VVPP	VerbForm=Part	0	root	_	_
+8	und	und	CCONJ	KON	_	28	cc	_	_
+9	weil	weil	SCONJ	KOUS	_	14	mark	_	_
+10	mir	ich	PRON	PPER	Case=Dat|Number=Sing|Person=1|PronType=Prs	14	iobj	_	_
+11	das	der	DET	ART	Case=Nom|Definite=Def|Gender=Neut|Number=Sing|PronType=Art	12	det	_	_
+12	Tauchen	Tauchen	NOUN	NN	Case=Nom|Gender=Neut|Number=Sing	14	obj	_	_
+13	so	so	ADV	ADV	_	14	advmod	_	_
+14	gefiel	gefallen	VERB	VVPP	Mood=Ind|Number=Sing|Person=3|Tense=Past|VerbForm=Fin	28	advcl	_	_
+15	hab	haben	AUX	VAFIN	Mood=Ind|Number=Sing|Person=1|Tense=Pres|VerbForm=Fin	28	aux	_	_
+16	ich	ich	PRON	PPER	Case=Nom|Number=Sing|Person=1|PronType=Prs	28	nsubj	_	_
+17	dort	dort	ADV	ADV	_	28	advmod	_	_
+18	noch	noch	ADV	ADV	_	28	advmod	_	_
+19	in	in	ADP	APPR	_	22	case	_	_
+20	dem	der	DET	ART	Case=Dat|Definite=Def|Gender=Neut|Number=Sing|PronType=Art	22	det	_	_
+21	selben	selb	DET	PDAT	Case=Dat|Gender=Neut|Number=Sing|PronType=Dem	22	amod	_	_
+22	Jahr	Jahr	NOUN	NN	Case=Dat|Gender=Neut|Number=Sing	28	obl	_	_
+23	den	der	DET	ART	Case=Acc|Definite=Def|Gender=Masc|Number=Sing|PronType=Art	24	det	_	_
+24	AOWD	AOWD	PROPN	NE	Case=Acc|Gender=Masc|Number=Sing	28	obj	_	NamedEntity=Yes
+25	und	und	CCONJ	KON	_	27	cc	_	_
+26	den	der	DET	ART	Case=Acc|Definite=Def|Gender=Masc|Number=Sing|PronType=Art	27	det	_	_
+27	Deep	Deep	PROPN	NE	Case=Acc|Gender=Masc|Number=Sing	24	conj	_	NamedEntity=Yes
+28	drangehängt	drangehängen	VERB	VVPP	VerbForm=Part	7	conj	_	SpaceAfter=No
+29	.	.	PUNCT	$.	_	7	punct	_	_
+
+# text = Ist ja wohl ein Witz.
+1	Ist	sein	AUX	VAFIN	Mood=Ind|Number=Sing|Person=3|Tense=Pres|VerbForm=Fin	5	cop	_	_
+2	ja	ja	ADV	ADV	_	5	advmod	_	_
+3	wohl	wohl	ADV	ADV	_	5	advmod	_	_
+4	ein	ein	DET	ART	Case=Nom|Definite=Ind|Gender=Masc|Number=Sing|PronType=Art	5	det	_	_
+5	Witz	Witz	NOUN	NN	Case=Nom|Gender=Masc|Number=Sing	0	root	_	SpaceAfter=No
+6	.	.	PUNCT	$.	_	5	punct	_	_
+
+# text = "Bitte Termin im Internet machen."
+1	"	"	PUNCT	$(	_	7	punct	_	SpaceAfter=No
+2	Bitte	bitte	ADV	ADV	_	7	advmod	_	_
+3	Termin	Termin	NOUN	NN	Case=Acc|Gender=Masc|Number=Sing	7	obj	_	_
+4	in	in	ADP	APPR	_	6	case	_	_
+5	dem	der	DET	ART	Case=Dat|Definite=Def|Gender=Neut|Number=Sing|PronType=Art	6	det	_	_
+6	Internet	Internet	NOUN	NN	Case=Dat|Gender=Neut|Number=Sing	7	obl	_	_
+7	machen	machen	VERB	VVINF	VerbForm=Inf	0	root	_	SpaceAfter=No
+8	.	.	PUNCT	$.	_	7	punct	_	SpaceAfter=No
+9	"	"	PUNCT	$(	_	7	punct	_	_
+
+# text = "Welcher Kollege hat Ihnen denn 99 gesagt?"
+1	"	"	PUNCT	$(	_	8	punct	_	SpaceAfter=No
+2	Welcher	welch	PRON	PWAT	Case=Nom|Gender=Masc|Number=Sing|PronType=Dem	3	det	_	_
+3	Kollege	Kollege	NOUN	NN	Case=Nom|Gender=Masc|Number=Sing	8	nsubj	_	_
+4	hat	haben	AUX	VAFIN	Mood=Ind|Number=Sing|Person=3|Tense=Pres|VerbForm=Fin	8	aux	_	_
+5	Ihnen	Sie|sie	PRON	PPER	Case=Dat|Number=Plur|Person=3|PronType=Prs	8	iobj	_	_
+6	denn	denn	ADV	ADV	_	8	advmod	_	_
+7	99	99	NUM	CARD	NumType=Card	8	obj	_	_
+8	gesagt	sagen	VERB	VVPP	VerbForm=Part	0	root	_	SpaceAfter=No
+9	?	?	PUNCT	$.	_	8	punct	_	SpaceAfter=No
+10	"	"	PUNCT	$(	_	8	punct	_	_
+
+# text = (Bei den Damen und Herren des besagten Mobilfunkanbieters bin ich im Gegensatz dazu bisher ausschließlich auf arrogante Unkenntnis gestossen).
+1	(	(	PUNCT	$(	_	21	punct	_	SpaceAfter=No
+2	Bei	bei	ADP	APPR	_	4	case	_	_
+3	den	der	DET	ART	Case=Dat|Definite=Def|Gender=Fem|Number=Plur|PronType=Art	4	det	_	_
+4	Damen	Dame	NOUN	NN	Case=Dat|Gender=Fem|Number=Plur	21	obl	_	_
+5	und	und	CCONJ	KON	_	6	cc	_	_
+6	Herren	Herr	NOUN	NN	Case=Dat|Gender=Masc|Number=Plur	4	conj	_	_
+7	des	der	DET	ART	Case=Gen|Definite=Def|Gender=Masc|Number=Sing|PronType=Art	9	det	_	_
+8	besagten	besagt	ADJ	ADJA	Case=Gen|Degree=Pos|Gender=Masc|Number=Sing	9	amod	_	_
+9	Mobilfunkanbieters	Mobilfunkanbieter	NOUN	NN	Case=Gen|Gender=Masc|Number=Sing	4	nmod	_	_
+10	bin	sein	AUX	VAFIN	Mood=Ind|Number=Sing|Person=1|Tense=Pres|VerbForm=Fin	21	aux	_	_
+11	ich	ich	PRON	PPER	Case=Nom|Number=Sing|Person=1|PronType=Prs	21	nsubj	_	_
+12	in	in	ADP	APPR	_	14	case	_	_
+13	dem	der	DET	ART	Case=Dat|Definite=Def|Gender=Masc|Number=Sing|PronType=Art	14	det	_	_
+14	Gegensatz	Gegensatz	NOUN	NN	Case=Dat|Gender=Masc|Number=Sing	21	obl	_	_
+15	dazu	dazu	ADV	PAV	_	14	advmod	_	_
+16	bisher	bisher	ADV	ADV	_	21	advmod	_	_
+17	ausschließlich	ausschließlich	ADV	ADV	_	21	advmod	_	_
+18	auf	auf	ADP	APPR	_	20	case	_	_
+19	arrogante	arrogant	ADJ	ADJA	Case=Acc|Degree=Pos|Gender=Fem|Number=Sing	20	amod	_	_
+20	Unkenntnis	Unkenntnis	NOUN	NN	Case=Acc|Gender=Fem|Number=Sing	21	obl	_	_
+21	gestossen	stessen	VERB	VVPP	VerbForm=Part	0	root	_	SpaceAfter=No
+22	)	)	PUNCT	$(	_	21	punct	_	SpaceAfter=No
+23	.	.	PUNCT	$.	_	21	punct	_	_
+
+# text = 10 Euro günstiger selbst hätte kaufen können.
+1	10	10	NUM	CARD	NumType=Card	2	nummod	_	_
+2	Euro	Euro	PROPN	NN	Case=Acc|Gender=Fem|Number=Plur	3	obl	_	_
+3	günstiger	günstig	ADJ	ADJD	Degree=Pos	6	advmod	_	_
+4	selbst	selbst	ADV	ADV	_	6	advmod	_	_
+5	hätte	haben	AUX	VAFIN	Mood=Sub|Number=Sing|Person=3|Tense=Past|VerbForm=Fin	6	aux	_	_
+6	kaufen	kaufen	VERB	VVINF	VerbForm=Inf	0	root	_	_
+7	können	können	AUX	VMINF	VerbForm=Inf	6	aux	_	SpaceAfter=No
+8	.	.	PUNCT	$.	_	6	punct	_	_
+
+# text = Aber mal abwarten, was sich in näherer Zukunft abspielt....
+1	Aber	aber	CCONJ	KON	_	3	cc	_	_
+2	mal	mal	ADV	ADV	_	3	advmod	_	_
+3	abwarten	abwarten	VERB	VVINF	VerbForm=Inf	0	root	_	SpaceAfter=No
+4	,	,	PUNCT	$,	_	10	punct	_	_
+5	was	was	PRON	PRELS	Case=Nom|Gender=Neut|Number=Sing|PronType=Rel	10	nsubj	_	_
+6	sich	er|es|sie	PRON	PRF	Case=Acc|Number=Sing|Person=3|PronType=Prs|Reflex=Yes	10	obj	_	_
+7	in	in	ADP	APPR	_	9	case	_	_
+8	näherer	nah	ADJ	ADJA	Case=Dat|Degree=Cmp|Gender=Fem|Number=Sing	9	amod	_	_
+9	Zukunft	Zukunft	NOUN	NN	Case=Dat|Gender=Fem|Number=Sing	10	obl	_	_
+10	abspielt	abspielen	VERB	VVFIN	Mood=Ind|Number=Sing|Person=3|Tense=Pres|VerbForm=Fin	3	ccomp	_	SpaceAfter=No
+11	....	....	PUNCT	$(	_	3	punct	_	_
+
+# text = 
+1	Aber	aber	CCONJ	KON	_	16	cc	_	_
+2	über	über	ADP	APPR	_	4	case	_	_
+3	die	der	DET	ART	Case=Acc|Definite=Def|Gender=Fem|Number=Sing|PronType=Art	4	det	_	_
+4	Freundlichkeit	Freundlichkeit	NOUN	NN	Case=Acc|Gender=Fem|Number=Sing	16	obl	_	SpaceAfter=No
+5	,	,	PUNCT	$,	_	6	punct	_	_
+6	Zuverlässlichkeit	Zuverlässlichkeit	NOUN	NN	Case=Acc|Gender=Fem|Number=Sing	4	conj	_	_
+7	und	und	CCONJ	KON	_	8	cc	_	_
+8	Komptenz	Komptenz	NOUN	NN	Case=Acc|Gender=Fem|Number=Sing	4	conj	_	_
+9	des	der	DET	ART	Case=Gen|Definite=Def|Gender=Neut|Number=Sing|PronType=Art	11	det	_	_
+10	gesamten	gesamt	ADJ	ADJA	Case=Gen|Degree=Pos|Gender=Neut|Number=Sing	11	amod	_	_
+11	Team	Team	NOUN	NN	Case=Gen|Gender=Neut|Number=Sing	4	nmod	_	_
+12	kann	können	AUX	VMFIN	Mood=Ind|Number=Sing|Person=3|Tense=Pres|VerbForm=Fin	16	aux	_	_
+13	man	man	PRON	PIS	Case=Nom|Number=Sing|PronType=Ind	16	nsubj	_	_
+14	nur	nur	ADV	ADV	_	16	advmod	_	_
+15	eines	ein	DET	ART	Case=Gen|Definite=Ind|Gender=Masc|Number=Sing|PronType=Art	16	obj	_	_
+16	Sagen	Sagen	NOUN	NN	Case=Gen|Gender=Masc|Number=Sing	0	root	_	CorrectForm=sagen
+17	--	--	PUNCT	$(	_	18	punct	_	_
+18	PEFERKTION	PEFERKTION	PROPN	NN	Case=Nom|Gender=Fem|Number=Sing	15	appos	_	_
+
+# text = Absolut empfehlenswert ist auch der Service.
+1	Absolut	absolut	ADV	ADJD	_	2	advmod	_	_
+2	empfehlenswert	empfehlenswert	ADJ	ADJD	Degree=Pos	0	root	_	_
+3	ist	sein	AUX	VAFIN	Mood=Ind|Number=Sing|Person=3|Tense=Pres|VerbForm=Fin	2	cop	_	_
+4	auch	auch	ADV	ADV	_	2	advmod	_	_
+5	der	der	DET	ART	Case=Nom|Definite=Def|Gender=Masc|Number=Sing|PronType=Art	6	det	_	_
+6	Service	Service	NOUN	NN	Case=Nom|Gender=Masc|Number=Sing	2	nsubj	_	SpaceAfter=No
+7	.	.	PUNCT	$.	_	2	punct	_	_
+

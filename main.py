@@ -91,7 +91,7 @@ if __name__=="__main__":
         
         elif args.operation == OP_DEC:
             n_trees, n_labels = decode_dependencies(args.input, args.output, args.enc, args.sep, 
-                                                    args.disp, args.planar, args.rsingle, args.rsearch, 
+                                                    args.disp, args.rsingle, args.rsearch, 
                                                     args.hfr, args.postags, args.lang)
 
 

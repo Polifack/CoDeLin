@@ -7,7 +7,7 @@ from src.models.linearized_tree import LinearizedTree
 
 class D_Brk2PBasedEncoding(ADEncoding):
     def __init__(self, separator, displacement, planar_alg):
-        if planar_alg not in [D_2P_GREED, D_2P_PROP]:
+        if planar_alg and planar_alg not in [D_2P_GREED, D_2P_PROP]:
             print("[*] Error: Unknown planar separation algorithm")
             exit(1)
         super().__init__(separator)
@@ -107,9 +107,6 @@ class D_Brk2PBasedEncoding(ADEncoding):
         # create brackets array
         n_nodes = len(dep_tree)
         labels_brk     = [""] * (n_nodes + 1)
-        
-        # remove dummy root
-        # dep_tree.remove_dummy()
 
         # separate the planes
         if self.planar_alg==D_2P_GREED:
@@ -130,7 +127,6 @@ class D_Brk2PBasedEncoding(ADEncoding):
         return LinearizedTree(dep_tree.get_words(), dep_tree.get_postags(), dep_tree.get_feats(), lbls, len(lbls))
 
     def encode_step(self, p, lbl_brk, brk_chars):
-        p=(p[1:])
         for node in p:
             # skip root relations (optional?)
             if node.head==0:

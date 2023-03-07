@@ -151,5 +151,5 @@ class C_NaiveRelativeEncoding(ACEncoding):
             
             last_label=label
         
-        tree=tree.children[0]
+        tree.inherit_tree()
         return tree

@@ -22,14 +22,16 @@ def encode_dependencies(in_path, out_path, encoding_type, separator, displacemen
     # Create the encoder
     if encoding_type == D_ABSOLUTE_ENCODING:
             encoder = D_NaiveAbsoluteEncoding(separator)
-    if encoding_type == D_RELATIVE_ENCODING:
+    elif encoding_type == D_RELATIVE_ENCODING:
             encoder = D_NaiveRelativeEncoding(separator, root_enc)
-    if encoding_type == D_POS_ENCODING:
+    elif encoding_type == D_POS_ENCODING:
             encoder = D_PosBasedEncoding(separator)
-    if encoding_type == D_BRACKET_ENCODING:
+    elif encoding_type == D_BRACKET_ENCODING:
             encoder = D_BrkBasedEncoding(separator, displacement)
-    if encoding_type == D_BRACKET_ENCODING_2P:
+    elif encoding_type == D_BRACKET_ENCODING_2P:
             encoder = D_Brk2PBasedEncoding(separator, displacement, planar_alg)
+    else:
+        raise Exception("Unknown encoding type")
     
     # Read Features
     if features:
@@ -42,9 +44,9 @@ def encode_dependencies(in_path, out_path, encoding_type, separator, displacemen
     tree_counter = 0
     label_counter = 0
 
-
     trees = D_Tree.read_conllu_file(in_path, filter_projective=False)
-
+    
+    f_idx_dict = {}
     if features:
         if features == ["ALL"]:
             features = extract_features_deps(in_path)
@@ -55,12 +57,10 @@ def encode_dependencies(in_path, out_path, encoding_type, separator, displacemen
 
     file_out = open(out_path,"w+")
     label_set = set()
-    
+
     for t in trees:
         # encode labels
-        linearized_tree = encoder.encode(t)
-        f_idx_dict = {}
-        
+        linearized_tree = encoder.encode(t)        
         file_out.write(linearized_tree.to_string(f_idx_dict))
         file_out.write("\n")
     
@@ -68,7 +68,7 @@ def encode_dependencies(in_path, out_path, encoding_type, separator, displacemen
 
 # Decoding
 
-def decode_dependencies(in_path, out_path, encoding_type, separator, displacement, planar, multiroot, root_search, root_enc, postags, lang):
+def decode_dependencies(in_path, out_path, encoding_type, separator, displacement, multiroot, root_search, root_enc, postags, lang):
     '''
     Decodes the selected file according to the specified parameters:
     :param in_path: Path of the file to be encoded
@@ -82,14 +82,16 @@ def decode_dependencies(in_path, out_path, encoding_type, separator, displacemen
 
     if encoding_type == D_ABSOLUTE_ENCODING:
         decoder = D_NaiveAbsoluteEncoding(separator)
-    if encoding_type == D_RELATIVE_ENCODING:
+    elif encoding_type == D_RELATIVE_ENCODING:
         decoder = D_NaiveRelativeEncoding(separator, root_enc)
-    if encoding_type == D_POS_ENCODING:
+    elif encoding_type == D_POS_ENCODING:
         decoder = D_PosBasedEncoding(separator)
-    if encoding_type == D_BRACKET_ENCODING:
+    elif encoding_type == D_BRACKET_ENCODING:
         decoder = D_BrkBasedEncoding(separator, displacement)
-    if encoding_type == D_BRACKET_ENCODING_2P:
-        decoder = D_Brk2PBasedEncoding(separator, displacement, planar)
+    elif encoding_type == D_BRACKET_ENCODING_2P:
+        decoder = D_Brk2PBasedEncoding(separator, displacement, None)
+    else:
+        raise Exception("Unknown encoding type")
 
     f_in=open(in_path)
     f_out=open(out_path,"w+")

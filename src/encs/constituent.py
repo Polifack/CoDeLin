@@ -22,12 +22,14 @@ def encode_constituent(in_path, out_path, encoding_type, separator, unary_joiner
 
     if encoding_type == C_ABSOLUTE_ENCODING:
             encoder = C_NaiveAbsoluteEncoding(separator, unary_joiner)
-    if encoding_type == C_RELATIVE_ENCODING:
+    elif encoding_type == C_RELATIVE_ENCODING:
             encoder = C_NaiveRelativeEncoding(separator, unary_joiner)
-    if encoding_type == C_DYNAMIC_ENCODING:
+    elif encoding_type == C_DYNAMIC_ENCODING:
             encoder = C_NaiveDynamicEncoding(separator, unary_joiner)
-    if encoding_type == C_INCREMENTAL_ENCODING:
+    elif encoding_type == C_INCREMENTAL_ENCODING:
             encoder = C_NaiveIncrementalEncoding(separator, unary_joiner)
+    else:
+        raise Exception("Unknown encoding type")
 
     # build feature index dictionary
     f_idx_dict = {}
@@ -69,12 +71,14 @@ def decode_constituent(in_path, out_path, encoding_type, separator, unary_joiner
 
     if encoding_type == C_ABSOLUTE_ENCODING:
             decoder = C_NaiveAbsoluteEncoding(separator, unary_joiner)
-    if encoding_type == C_RELATIVE_ENCODING:
+    elif encoding_type == C_RELATIVE_ENCODING:
             decoder = C_NaiveRelativeEncoding(separator, unary_joiner)
-    if encoding_type == C_DYNAMIC_ENCODING:
+    elif encoding_type == C_DYNAMIC_ENCODING:
             decoder = C_NaiveDynamicEncoding(separator, unary_joiner)
-    if encoding_type == C_INCREMENTAL_ENCODING:
+    elif encoding_type == C_INCREMENTAL_ENCODING:
             decoder = C_NaiveIncrementalEncoding(separator, unary_joiner)
+    else:
+        raise Exception("Unknown encoding type")
 
     if postags:
         stanza.download(lang=lang)

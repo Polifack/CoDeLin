@@ -155,6 +155,6 @@ class C_NaiveIncrementalEncoding(ACEncoding):
             old_n_commons=label.n_commons
             old_level=current_level
 
-        tree=tree.children[0]
+        tree.inherit_tree()
         tree.reverse_tree()
         return tree

@@ -3,7 +3,7 @@ from src.utils.constants import C_CONFLICT_SEPARATOR, C_STRAT_MAX, C_STRAT_FIRST
 import copy
 
 class C_Tree:
-    def __init__(self, label, children, feats=None):
+    def __init__(self, label, children=[], feats=None):
         self.parent = None
         self.label = label
         self.children = children
@@ -175,6 +175,16 @@ class C_Tree:
             self.label += unary_joiner + self.children[0].label
             self.children = self.children[0].children
 
+    def inherit_tree(self):
+        '''
+        Removes the top node of the tree and delegates it
+        to its firstborn child. 
+        
+        (S (NP (NNP John)) (VP (VBD died))) => (NP (NNP John))
+        '''
+        self.label = self.children[0].label
+        self.children = self.children[0].children
+
     def add_end_node(self):
         '''
         Function that adds a dummy end node to the 
@@ -189,7 +199,6 @@ class C_Tree:
         '''
         self.add_left_child(C_Tree(C_START_LABEL, []))
         
-
     def path_to_leaves(self, collapse_unary=True, unary_joiner="+"):
         '''
         Function that given a Tree returns a list of paths
@@ -227,7 +236,7 @@ class C_Tree:
         if self.label == postag:
             # if the current level is already a postag level. This may happen on 
             # trees shaped as (NP tree) that exist on the SPMRL treebanks
-            self.children.append(word)
+            self.children.append(C_Tree(word, []))
             return
         
         if unary_chain:
@@ -250,27 +259,32 @@ class C_Tree:
         self.parent.children = self.l_siblings() + self.children + self.r_siblings()
         for child in self.children:
             child.parent = self.parent
- 
-    def postprocess_tree(self, conflict_strat, clean_nulls=True, default_root="S"):
-        '''
-        Apply heuristics to the reconstructed Constituent Trees
-        in order to ensure correctness
-        '''
-        
+
+    def remove_nulls(self, default_root = "S"):
+        """
+        Return a copy of the tree, eliminating all nodes which are in one of two categories:
+            they are a preterminal -NONE-, such as appears in PTB
+              *E* shows up in a VLSP dataset
+            they have been pruned to 0 children by the recursive call
+        """
+        if self.is_terminal():
+            return C_Tree(self.label)
+        if self.is_preterminal():
+            if self.label == C_NONE_LABEL:
+                return None
+            return C_Tree(self.label, C_Tree(self.children[0].label))
+        # must be internal node
+        new_children = [child.remove_nulls() for child in self.children]
+        new_children = [child for child in new_children if child is not None]
+        if len(new_children) == 0:
+            return None
+        return C_Tree(self.label, new_children)
+
+    def remove_conflicts(self, conflict_strat):
         # Postprocess Childs
         for c in self.children:
             if type(c) is C_Tree:
-                c.postprocess_tree(conflict_strat, clean_nulls)
-
-        if (clean_nulls):
-            # Clean Null Labels
-            if self.label == C_NONE_LABEL:
-                # Null label in children
-                if self.parent is not None:
-                    self.renounce_children()
-                # Null label in root
-                else:
-                    self.label = default_root
+                c.remove_conflicts(conflict_strat)
 
         # Clean conflicts
         if C_CONFLICT_SEPARATOR in self.label:
@@ -283,12 +297,24 @@ class C_Tree:
             if conflict_strat == C_STRAT_LAST:
                 self.label = labels[len(labels)-1]
 
+    def postprocess_tree(self, conflict_strat, clean_nulls=True, default_root="S"):
+        '''
+        Apply heuristics to the reconstructed Constituent Trees
+        in order to ensure correctness
+        '''
+        self.remove_conflicts(conflict_strat)
+        if clean_nulls:
+            fix_tree = self.remove_nulls(default_root)     
+        
+        print( fix_tree)
+        
     def reverse_tree(self):
         '''
         Reverses the order of all the tree children
         '''
         for c in self.children:
-            c.reverse_tree()
+            if type(c) is C_Tree:
+                c.reverse_tree()
         self.children.reverse()
 
 # Printing and python-related functions
