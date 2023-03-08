@@ -33,19 +33,6 @@ def encode_dependencies(in_path, out_path, encoding_type, separator, displacemen
     else:
         raise Exception("Unknown encoding type")
     
-    # Read Features
-    if features:
-        f_idx_dict = {}
-        i=0
-        for f in features:
-            f_idx_dict[f]=i
-            i+=1
-
-    tree_counter = 0
-    label_counter = 0
-
-    trees = D_Tree.read_conllu_file(in_path, filter_projective=False)
-    
     f_idx_dict = {}
     if features:
         if features == ["ALL"]:
@@ -57,12 +44,21 @@ def encode_dependencies(in_path, out_path, encoding_type, separator, displacemen
 
     file_out = open(out_path,"w+")
     label_set = set()
-
+    tree_counter = 0
+    label_counter = 0
+    trees = D_Tree.read_conllu_file(in_path, filter_projective=False)
+    
     for t in trees:
         # encode labels
         linearized_tree = encoder.encode(t)        
         file_out.write(linearized_tree.to_string(f_idx_dict))
         file_out.write("\n")
+        
+        tree_counter+=1
+        label_counter+=len(linearized_tree)
+        
+        for lbl in linearized_tree.get_labels():
+            label_set.add(str(lbl))      
     
     return tree_counter, label_counter, len(label_set)
 

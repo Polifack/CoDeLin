@@ -79,6 +79,7 @@ if __name__=="__main__":
                                                                   args.sep, args.ujoiner, args.feats)
         
         elif args.operation == OP_DEC:
+            n_diff_labels = None
             n_trees, n_labels = decode_constituent(args.input, args.output, args.enc, args.sep, 
                                                    args.ujoiner, args.conflict, args.nulls, 
                                                    args.postags, args.lang)
@@ -90,6 +91,7 @@ if __name__=="__main__":
                                                                    args.disp, args.planar, args.hfr, args.feats)
         
         elif args.operation == OP_DEC:
+            n_diff_labels = None
             n_trees, n_labels = decode_dependencies(args.input, args.output, args.enc, args.sep, 
                                                     args.disp, args.rsingle, args.rsearch, 
                                                     args.hfr, args.postags, args.lang)
@@ -99,13 +101,13 @@ if __name__=="__main__":
     if args.time:
         delta_time=time.time()-start_time
         fn_str=args.input.split("/")[-1]
-        t_str="{:.2f}".format(delta_time)
-        ts_str="{:2f}".format(delta_time/n_trees)
-        ls_str="{:2f}".format(delta_time/n_labels)
+        t_str="{:.5f}".format(delta_time)
+        ts_str="{:.5f}".format(delta_time/n_trees)
+        ls_str="{:.5f}".format(delta_time/n_labels)
 
 
         print("-----------------------------------------")
-        print(fn_str+'@'+args.enc+':')
+        print(fn_str+'@enc_'+args.enc+':')
         print("-----------------------------------------")
         print('%10s' % ('encoded trees'),n_trees)
         print('%10s' % ('total labels'),n_labels)

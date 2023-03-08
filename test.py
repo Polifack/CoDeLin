@@ -33,15 +33,16 @@ d_planalg = [D_2P_GREED, D_2P_PROP]
 c_encs    = [C_ABSOLUTE_ENCODING, C_RELATIVE_ENCODING, C_INCREMENTAL_ENCODING, C_DYNAMIC_ENCODING]
 
 
+print("["+bcolors.WARNING+"-->"+bcolors.ENDC+"] Testing encoding and decoding gives the same file...")
 # Evaluation for English-EWT
 for enc in d_encs:
     encode_dependencies(in_path = f_ewt+".conllu", out_path = f_ewt+"."+enc+".labels", 
                         encoding_type = enc, separator = "_", displacement = False, 
-                        planar_alg = D_2P_GREED, root_enc = D_ROOT_HEAD, features = None)
+                        planar_alg = D_2P_GREED, root_enc = True, features = None)
     
     decode_dependencies(in_path = f_ewt+"."+enc+".labels", out_path = f_ewt+"."+enc+".decoded.conllu",
                         encoding_type = enc, separator = "_", displacement = False,
-                        multiroot = False, root_search = D_ROOT_HEAD, root_enc = D_ROOT_HEAD, 
+                        multiroot = False, root_search = D_ROOT_HEAD, root_enc = True, 
                         postags = False, lang = "en")
     
     answ = system_call("python ./evalud/eval.py "+f_ewt+".conllu "+f_ewt+"."+enc+".decoded.conllu")
@@ -57,11 +58,11 @@ for enc in d_encs:
 for palg in d_planalg:
     encode_dependencies(in_path = f_ewt+".conllu", out_path = f_ewt+"."+palg+".labels", 
                         encoding_type = D_BRACKET_ENCODING_2P, separator = "_", displacement = False, 
-                        planar_alg = palg, root_enc = D_ROOT_HEAD, features = None)
+                        planar_alg = palg, root_enc = True, features = None)
     
     decode_dependencies(in_path = f_ewt+"."+palg+".labels", out_path = f_ewt+"."+palg+".decoded.conllu",
                         encoding_type = D_BRACKET_ENCODING_2P, separator = "_", displacement = False,
-                        multiroot = False, root_search = D_ROOT_HEAD, root_enc = D_ROOT_HEAD, 
+                        multiroot = False, root_search = D_ROOT_HEAD, root_enc = True, 
                         postags = False, lang = "en")
     
     answ = system_call("python ./evalud/eval.py "+f_ewt+".conllu "+f_ewt+"."+palg+".decoded.conllu")
@@ -78,7 +79,7 @@ for enc in d_encs:
     features = ["Case", "Number", "Mood"]
     encode_dependencies(in_path = f_gsd+".conllu", out_path = f_gsd+"."+enc+".labels", 
                         encoding_type = enc, separator = "_", displacement = False, 
-                        planar_alg = D_2P_GREED, root_enc = D_ROOT_HEAD, features = features)
+                        planar_alg = D_2P_GREED, root_enc = True, features = features)
     
     # Check number of columns in labels
     with open(f_gsd+"."+enc+".labels") as f:
@@ -93,7 +94,7 @@ for enc in d_encs:
 
     decode_dependencies(in_path = f_gsd+"."+enc+".labels", out_path = f_gsd+"."+enc+".decoded.conllu",
                         encoding_type = enc, separator = "_", displacement = False,
-                        multiroot = False, root_search = D_ROOT_HEAD, root_enc = D_ROOT_HEAD, 
+                        multiroot = False, root_search = D_ROOT_HEAD, root_enc = True, 
                         postags = False, lang = "en")
     
     answ = system_call("python ./evalud/eval.py "+f_gsd+".conllu "+f_gsd+"."+enc+".decoded.conllu")
@@ -152,28 +153,70 @@ for enc in c_encs:
     os.remove(f_spmrl+"."+enc+".labels")
     os.remove(f_spmrl+"."+enc+".decoded.trees")
 
-
-
 # Evaluation for predicted dependencies labels file
+print("["+bcolors.WARNING+"-->"+bcolors.ENDC+"] Testing decoding of predicted dependency labels file (oob heads and cycles)...")
+
+forbidden_strings = [C_CONFLICT_SEPARATOR, C_NONE_LABEL, D_POSROOT, D_NULLHEAD]
+for enc in d_encs:
+    pred_deps = "./test/pred.deps."+enc+".labels"
+    pred_deps_dec = "./test/pred.deps."+enc+".decoded.trees"
+
+    decode_dependencies(in_path = pred_deps, out_path = pred_deps_dec, encoding_type = enc, 
+                        separator = "_", multiroot = False, root_search = D_ROOT_HEAD, 
+                        displacement = False, root_enc = True,  postags = False, lang = "en")
+
+    dependency_trees = D_Tree.read_conllu_file(pred_deps_dec)
+    for tree in dependency_trees:
+        # remove root node
+        tree.remove_dummy()
+        
+        # check oob heads
+        for node in tree.nodes:
+            if node.head > len(tree.nodes):
+                print("[!] Error: oob head found in dependency decoded file: "+pred_deps_dec)
+                break
+        
+        # check cycles
+        tree_root = tree.root_search(D_ROOT_HEAD)
+        for node in tree.nodes:
+            visited = []    
+            while (node.id != tree_root) and (node.head !=D_NULLHEAD):
+                if node in visited:
+                    print("[!] Error: cycle found in dependency decoded file: "+pred_deps_dec)
+                    print("=>",node)
+                    print("=>",visited)
+                    print(tree)
+                    exit(1)
+                else:
+                    visited.append(node)
+                    next_node = min(max(node.head-1, 0), len(tree.nodes)-1)
+                    node = tree.nodes[next_node]
+
+    for line in open(pred_deps_dec):
+        if any(x in line for x in forbidden_strings):
+            print("[!] Error: forbidden string found in dependency decoded file: "+line)
+            break
+    os.remove(pred_deps_dec)
+
 
 
 
 # Evaluation for predicted constituent labels file
-
+print("["+bcolors.WARNING+"-->"+bcolors.ENDC+"] Testing decoding of predicted constituent labels file (nulls and conflicts)...")
 forbidden_strings = [C_CONFLICT_SEPARATOR, C_NONE_LABEL, D_POSROOT, D_NULLHEAD]
+for enc in c_encs:
+    pred_const = "./test/pred.const."+enc+".labels"
+    pred_const_dec = "./test/pred.const."+enc+".decoded.trees"
 
-pred_const_dyn = "./test/pred.const.dyn.labels"
-pred_const_dyn_dec = "./test/pred.const.dyn.decoded.trees"
+    decode_constituent(in_path = pred_const, out_path = pred_const_dec,
+                        encoding_type = enc, separator = "_", unary_joiner = "+", nulls = True,
+                        conflicts = C_STRAT_MAX, postags = False, lang = "en")
 
-decode_constituent(in_path = pred_const_dyn, out_path = pred_const_dyn_dec,
-                    encoding_type = C_DYNAMIC_ENCODING, separator = "_", unary_joiner = "+", nulls = True,
-                    conflicts = C_STRAT_MAX, postags = False, lang = "en")
-
-for line in open(pred_const_dyn_dec):
-    if any(x in line for x in forbidden_strings):
-        print("[!] Error: forbidden string found in decoded file: "+line)
-        break
-os.remove(pred_const_dyn_dec)
+    for line in open(pred_const_dec):
+        if any(x in line for x in forbidden_strings):
+            print("[!] Error: forbidden string found in constituent decoded file: "+line)
+            break
+    os.remove(pred_const_dec)
 
 
 print("Done!")

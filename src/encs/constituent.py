@@ -44,8 +44,8 @@ def encode_constituent(in_path, out_path, encoding_type, separator, unary_joiner
     file_out = open(out_path, "w")
     file_in = open(in_path, "r")
 
-    tree_counter=0
-    labels_counter=0
+    tree_counter = 0
+    labels_counter = 0
     label_set = set()
 
     for line in file_in:
@@ -54,7 +54,10 @@ def encode_constituent(in_path, out_path, encoding_type, separator, unary_joiner
         linearized_tree = encoder.encode(tree)
         file_out.write(linearized_tree.to_string(f_idx_dict))
         file_out.write("\n")
-        tree_counter+=1
+        tree_counter += 1
+        labels_counter += len(linearized_tree)
+        for lbl in linearized_tree.get_labels():
+            label_set.add(str(lbl))   
     
     return labels_counter, tree_counter, len(label_set)
 
@@ -101,7 +104,7 @@ def decode_constituent(in_path, out_path, encoding_type, separator, unary_joiner
                 current_tree.set_postags([word.pos for word in c_tags])
 
             decoded_tree = decoder.decode(current_tree)
-            decoded_tree.postprocess_tree(conflicts, nulls)
+            decoded_tree = decoded_tree.postprocess_tree(conflicts, nulls)
 
             f_out.write(str(decoded_tree).replace('\n','')+'\n')
             tree_string   = ""

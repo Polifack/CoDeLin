@@ -260,25 +260,15 @@ class C_Tree:
         for child in self.children:
             child.parent = self.parent
 
-    def remove_nulls(self, default_root = "S"):
+
+    def prune_nones(self, default_root):
         """
-        Return a copy of the tree, eliminating all nodes which are in one of two categories:
-            they are a preterminal -NONE-, such as appears in PTB
-              *E* shows up in a VLSP dataset
-            they have been pruned to 0 children by the recursive call
+        Return a copy of the tree without 
+        null nodes (nodes with label C_NONE_LABEL)
         """
-        if self.is_terminal():
-            return C_Tree(self.label)
-        if self.is_preterminal():
-            if self.label == C_NONE_LABEL:
-                return None
-            return C_Tree(self.label, C_Tree(self.children[0].label))
-        # must be internal node
-        new_children = [child.remove_nulls() for child in self.children]
-        new_children = [child for child in new_children if child is not None]
-        if len(new_children) == 0:
-            return None
-        return C_Tree(self.label, new_children)
+        childs = [child.prune_nones(default_root) for child in self.children if child.label is not C_NONE_LABEL]
+        self.label = self.label.replace(C_NONE_LABEL, default_root)
+        return C_Tree(self.label, childs)
 
     def remove_conflicts(self, conflict_strat):
         # Postprocess Childs
@@ -302,11 +292,12 @@ class C_Tree:
         Apply heuristics to the reconstructed Constituent Trees
         in order to ensure correctness
         '''
-        self.remove_conflicts(conflict_strat)
         if clean_nulls:
-            fix_tree = self.remove_nulls(default_root)     
+            t = self.prune_nones(default_root=default_root)
+        t.remove_conflicts(conflict_strat)
+        return t
         
-        print( fix_tree)
+        # print( fix_tree)
         
     def reverse_tree(self):
         '''
