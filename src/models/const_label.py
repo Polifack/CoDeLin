@@ -1,14 +1,14 @@
-from src.utils.constants import C_ABSOLUTE_ENCODING, C_RELATIVE_ENCODING, C_DYNAMIC_ENCODING, C_NONE_LABEL
+from src.utils.constants import C_ABSOLUTE_ENCODING, C_RELATIVE_ENCODING, C_NONE_LABEL
 
-class ConstituentLabel:
+class C_Label:
     def __init__(self, nc, lc, uc, et, sp, uj):
         self.encoding_type = et
 
-        self.n_commons=int(nc)
-        self.last_common=lc
-        self.unary_chain=uc if uc!=C_NONE_LABEL else None
-        self.separator=sp
-        self.unary_joiner=uj
+        self.n_commons = int(nc)
+        self.last_common = lc
+        self.unary_chain = uc if uc != C_NONE_LABEL else None
+        self.separator = sp
+        self.unary_joiner = uj
     
     def __repr__(self):
         unary_str = self.unary_joiner.join([self.unary_chain]) if self.unary_chain else ""
@@ -25,6 +25,7 @@ class ConstituentLabel:
     @staticmethod
     def from_string(l, sep, uj):
         label_components = l.split(sep)
+        
         if len(label_components)== 2:
             nc, lc = label_components
             uc = None
@@ -33,4 +34,5 @@ class ConstituentLabel:
         
         et = C_RELATIVE_ENCODING if '*' in nc else C_ABSOLUTE_ENCODING
         nc = nc.replace("*","")
-        return ConstituentLabel(nc, lc, uc, et, sep, uj)
+        return C_Label(nc, lc, uc, et, sep, uj)
+    

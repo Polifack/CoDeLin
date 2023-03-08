@@ -1,40 +1,48 @@
 from src.encs.abstract_encoding import ADEncoding
-
-from src.models.dependency_label import DependencyLabel
-from src.models.conll_node import ConllNode
+from src.models.deps_label import D_Label
+from src.models.linearized_tree import LinearizedTree
+from src.models.deps_tree import D_Tree
+from src.utils.constants import D_NONE_LABEL
 
 class D_NaiveRelativeEncoding(ADEncoding):
-    def __init__(self, separator):
+    def __init__(self, separator, hang_from_root):
         super().__init__(separator)
+        self.hfr = hang_from_root
 
-    def encode(self, nodes):
+    def __str__(self):
+        return "Dependency Naive Relative Encoding"
+
+    def encode(self, dep_tree):
         encoded_labels = []
-        for node in nodes:
-            if node.id == 0:
-                continue
+        dep_tree.remove_dummy()
+        for node in dep_tree:
+            li = node.relation 
+            xi = node.delta_head()
 
-            li = node.relation
-            xi = str(int(node.head)-int(node.id))
+            if node.relation == 'root' and self.hfr:
+                xi = D_NONE_LABEL
             
-            current = DependencyLabel(xi, li, self.separator)
+            current = D_Label(xi, li, self.separator)
             encoded_labels.append(current)
 
-        return encoded_labels
+        return LinearizedTree(dep_tree.get_words(), dep_tree.get_postags(), dep_tree.get_feats(), encoded_labels, len(encoded_labels))
 
-    def decode(self, labels, postags, words):
-        decoded_nodes = [ConllNode.dummy_root()]
-        
+    def decode(self, lin_tree):
+        dep_tree = D_Tree.empty_tree(len(lin_tree)+1)
+
         i = 1
-        for label, postag, word in zip(labels, postags, words):
-            node = ConllNode(i, word, None, postag, None, None, None, None, None, None)
-
-            if label.xi == "-NONE-":
-                label.xi = 0
-
-            node.relation = label.li
-            node.head = int(label.xi)+node.id
-
-            decoded_nodes.append(node)
+        for word, postag, features, label in lin_tree.iterrows():
+            if label.xi == D_NONE_LABEL:
+                # set as root
+                dep_tree.update_head(i, 0)
+            else:
+                dep_tree.update_head(i, int(label.xi)+(i))
+                
+            
+            dep_tree.update_word(i, word)
+            dep_tree.update_upos(i, postag)
+            dep_tree.update_relation(i, label.li)
             i+=1
-        
-        return decoded_nodes[1:]
+
+        dep_tree.remove_dummy()
+        return dep_tree

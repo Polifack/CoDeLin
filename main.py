@@ -7,7 +7,7 @@ import time
 
 if __name__=="__main__":
 
-    encodings = [C_ABSOLUTE_ENCODING, C_RELATIVE_ENCODING, C_DYNAMIC_ENCODING, 
+    encodings = [C_ABSOLUTE_ENCODING, C_RELATIVE_ENCODING, C_DYNAMIC_ENCODING, C_INCREMENTAL_ENCODING,
                 D_ABSOLUTE_ENCODING, D_RELATIVE_ENCODING, D_POS_ENCODING, D_BRACKET_ENCODING, D_BRACKET_ENCODING_2P]
 
     parser = argparse.ArgumentParser(description='Constituent and Dependencies Linearization System')
@@ -55,11 +55,14 @@ if __name__=="__main__":
     parser.add_argument('--conflict', choices = [C_STRAT_FIRST, C_STRAT_LAST, C_STRAT_MAX, C_STRAT_NONE], required = False, default=C_STRAT_MAX,
                         help='DECODE CONSTITUENT GRAMMARS ONLY: Method of conflict resolution for conflicting tree node labels.')
     
-    parser.add_argument('--nulls', required = False, action='store_true', default=False, 
-                        help='DECODE CONSTITUENT GRAMMARS ONLY: Allow null nodes in the decoded tree.')
+    parser.add_argument('--nulls', required = False, action='store_true', default=True, 
+                        help='DECODE CONSTITUENT GRAMMARS ONLY: Remove null nodes in the decoded tree.')
 
     parser.add_argument('--postags', required = False, action='store_true', default = False, 
                         help = 'Predict Part of Speech tags using Stanza tagger')
+    
+    parser.add_argument('--hfr', required=False, action='store_true', default=False,
+                        help = 'Encode "root" nodes as a special label in relative encoding (i.e. "0_ROOT" instead of "-3_ROOT" )')
     
     parser.add_argument('--lang', required=False, type=str, default='en', 
                         help = 'Language employed in part of speech predition')
@@ -72,31 +75,39 @@ if __name__=="__main__":
     if args.formalism == F_CONSTITUENT:
         
         if args.operation == OP_ENC:
-            n_labels, n_trees, n_diff_labels = encode_constituent(args.input, args.output, args.enc, args.sep, args.ujoiner, args.feats)
+            n_labels, n_trees, n_diff_labels = encode_constituent(args.input, args.output, args.enc, 
+                                                                  args.sep, args.ujoiner, args.feats)
         
         elif args.operation == OP_DEC:
-            n_trees, n_labels = decode_constituent(args.input, args.output, args.enc, args.sep, args.ujoiner, args.conflict, args.nulls, args.postags, args.lang)
+            n_diff_labels = None
+            n_trees, n_labels = decode_constituent(args.input, args.output, args.enc, args.sep, 
+                                                   args.ujoiner, args.conflict, args.nulls, 
+                                                   args.postags, args.lang)
     
     elif args.formalism == F_DEPENDENCY:
         
         if args.operation == OP_ENC:
-            n_trees, n_labels, n_diff_labels = encode_dependencies(args.input, args.output, args.sep, args.enc, args.disp, args.planar, args.feats)
+            n_trees, n_labels, n_diff_labels = encode_dependencies(args.input, args.output, args.enc, args.sep, 
+                                                                   args.disp, args.planar, args.hfr, args.feats)
         
         elif args.operation == OP_DEC:
-            n_trees, n_labels = decode_dependencies(args.input, args.output, args.sep, args.enc, args.disp, args.planar, args.rsingle, args.rsearch, args.postags, args.lang)
+            n_diff_labels = None
+            n_trees, n_labels = decode_dependencies(args.input, args.output, args.enc, args.sep, 
+                                                    args.disp, args.rsingle, args.rsearch, 
+                                                    args.hfr, args.postags, args.lang)
 
 
 
     if args.time:
         delta_time=time.time()-start_time
         fn_str=args.input.split("/")[-1]
-        t_str="{:.2f}".format(delta_time)
-        ts_str="{:2f}".format(delta_time/n_trees)
-        ls_str="{:2f}".format(delta_time/n_labels)
+        t_str="{:.5f}".format(delta_time)
+        ts_str="{:.5f}".format(delta_time/n_trees)
+        ls_str="{:.5f}".format(delta_time/n_labels)
 
 
         print("-----------------------------------------")
-        print(fn_str+'@'+args.enc+':')
+        print(fn_str+'@enc_'+args.enc+':')
         print("-----------------------------------------")
         print('%10s' % ('encoded trees'),n_trees)
         print('%10s' % ('total labels'),n_labels)

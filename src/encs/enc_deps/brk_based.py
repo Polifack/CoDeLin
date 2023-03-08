@@ -1,7 +1,8 @@
 from src.encs.abstract_encoding import ADEncoding
-
-from src.models.dependency_label import DependencyLabel
-from src.models.conll_node import ConllNode
+from src.models.deps_label import D_Label
+from src.models.deps_tree import D_Tree
+from src.utils.constants import D_NONE_LABEL
+from src.models.linearized_tree import LinearizedTree
 
 class D_BrkBasedEncoding(ADEncoding):
     
@@ -9,59 +10,58 @@ class D_BrkBasedEncoding(ADEncoding):
         super().__init__(separator)
         self.displacement = displacement
 
+    def __str__(self):
+        return "Dependency Bracketing Based Encoding"
 
-    def encode(self, nodes):
-        labels_brk=["" for e in nodes]
-        encoded_labels=[]
+
+    def encode(self, dep_tree):
+        n_nodes = len(dep_tree)
+        labels_brk     = [""] * (n_nodes + 1)
+        encoded_labels = []
         
         # compute brackets array
-        for node in nodes:
-            if int(node.id)==0 or int(node.head)==0:
+        # brackets array should be sorted ?
+        dep_tree.remove_dummy()
+        for node in dep_tree:
+            # skip root relations (optional?)
+            if node.head == 0:
                 continue
-
-            if int(node.id) < int(node.head):
-                labels_brk[int(node.id) + (1 if self.displacement else 0)]+='<'
-                labels_brk[int(node.head)]+='\\'
+            
+            if node.is_left_arc():
+                labels_brk[node.id + (1 if self.displacement else 0)]+='<'
+                labels_brk[node.head]+='\\'
             
             else:
-                labels_brk[int(node.head) + (1 if self.displacement else 0)]+='/'
-                labels_brk[int(node.id)]+='>'
+                labels_brk[node.head + (1 if self.displacement else 0)]+='/'
+                labels_brk[node.id]+='>'
         
-
-        for node in nodes:
-            # skip dummy root
-            if node.id == 0:
-                continue
-            
+        # encode labels
+        for node in dep_tree:
             li = node.relation
+            xi = labels_brk[node.id]
 
-            # xi computation
-            xi = labels_brk[int(node.id)]
-
-            current = DependencyLabel(xi, li, self.separator)
+            current = D_Label(xi, li, self.separator)
             encoded_labels.append(current)
 
-        return encoded_labels
+        return LinearizedTree(dep_tree.get_words(), dep_tree.get_postags(), dep_tree.get_feats(), encoded_labels, len(encoded_labels))
 
-    def decode(self, labels, postags, words):
-        decoded_nodes=[ConllNode.dummy_root()]
-        for l in labels:
-            decoded_nodes.append(ConllNode.empty_node())
-
+    def decode(self, lin_tree):
+        # Create an empty tree with n labels
+        decoded_tree = D_Tree.empty_tree(len(lin_tree)+1)
+        
         l_stack = []
         r_stack = []
         
         current_node = 1
-        for label, postag, word in zip(labels, postags, words):
-            if label.xi == "-NONE-":
-                label.xi = ""
-            brks=list(label.xi)
-                        
+        for word, postag, features, label in lin_tree.iterrows():
+            
+            # get the brackets
+            brks = list(label.xi) if label.xi != D_NONE_LABEL else []
+                       
             # set parameters to the node
-            decoded_nodes[current_node].id = current_node
-            decoded_nodes[current_node].form = word
-            decoded_nodes[current_node].upos = postag
-            decoded_nodes[current_node].relation = label.li
+            decoded_tree.update_word(current_node, word)
+            decoded_tree.update_upos(current_node, postag)
+            decoded_tree.update_relation(current_node, label.li)
 
             # fill the relation using brks
             for char in brks:
@@ -71,7 +71,7 @@ class D_BrkBasedEncoding(ADEncoding):
 
                 if char == "\\":
                     head_id = r_stack.pop() if len(r_stack) > 0 else 0
-                    decoded_nodes[head_id].head=current_node
+                    decoded_tree.update_head(head_id, current_node)
                 
                 if char =="/":
                     node_id = current_node + (-1 if self.displacement else 0)
@@ -79,8 +79,9 @@ class D_BrkBasedEncoding(ADEncoding):
 
                 if char == ">":
                     head_id = l_stack.pop() if len(l_stack) > 0 else 0
-                    decoded_nodes[current_node].head=head_id
+                    decoded_tree.update_head(current_node, head_id)
             
             current_node+=1
 
-        return decoded_nodes[1:]
+        decoded_tree.remove_dummy()
+        return decoded_tree

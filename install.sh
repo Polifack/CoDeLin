@@ -10,6 +10,5 @@ pip install allennlp==1.3
 pip install transformers==4.0.0
 pip install networkx
 pip install stanza
-pip install conllu
 
 echo "[*] All done"

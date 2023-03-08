@@ -1,4 +1,4 @@
-class DependencyLabel:
+class D_Label:
     def __init__(self, xi, li, sp):
         self.separator = sp
 
@@ -11,4 +11,8 @@ class DependencyLabel:
     @staticmethod
     def from_string(lbl_str, sep):
         xi, li = lbl_str.split(sep)
-        return DependencyLabel(xi, li, sep)
+        return D_Label(xi, li, sep)
+    
+    @staticmethod
+    def empty_label(separator):
+        return D_Label("", "", separator)
