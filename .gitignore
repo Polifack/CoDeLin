@@ -17,7 +17,14 @@
 /scripts
 /logs
 /default_cfgs
+/evalb
+/evalud
 
 .vscode/
 /src/models/__pycache__
 *.pyc
+*.ipynb
+
+# ceval script
+ceval.sh
+deval.sh
