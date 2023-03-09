@@ -266,8 +266,13 @@ class C_Tree:
         Return a copy of the tree without 
         null nodes (nodes with label C_NONE_LABEL)
         """
-        childs = [child.prune_nones(default_root) for child in self.children if child.label is not C_NONE_LABEL]
-        self.label = self.label.replace(C_NONE_LABEL, default_root)
+        childs = [child.prune_nones(default_root) for child in self.children]
+        if self.label == C_NONE_LABEL:
+            if len(childs) == 1:
+                return childs[0]
+            else:
+                return C_Tree(default_root, childs)
+        
         return C_Tree(self.label, childs)
 
     def remove_conflicts(self, conflict_strat):

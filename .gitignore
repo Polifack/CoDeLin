@@ -21,3 +21,4 @@
 .vscode/
 /src/models/__pycache__
 *.pyc
+test.ipynb
