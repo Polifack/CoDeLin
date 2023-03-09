@@ -297,6 +297,7 @@ class C_Tree:
         Apply heuristics to the reconstructed Constituent Trees
         in order to ensure correctness
         '''
+        t = self
         if clean_nulls:
             t = self.prune_nones(default_root=default_root)
         t.remove_conflicts(conflict_strat)
