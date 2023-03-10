@@ -1,4 +1,4 @@
-from src.utils.constants import C_END_LABEL, C_START_LABEL, C_NONE_LABEL
+from src.utils.constants import C_END_LABEL, C_START_LABEL, C_NONE_LABEL, C_ROOT_LABEL
 from src.utils.constants import C_CONFLICT_SEPARATOR, C_STRAT_MAX, C_STRAT_FIRST, C_STRAT_LAST, C_NONE_LABEL
 import copy
 
@@ -6,8 +6,11 @@ class C_Tree:
     def __init__(self, label, children=[], feats=None):
         self.parent = None
         self.label = label
-        self.children = children
+        self.children = []
         self.features = feats
+
+        self.add_child(children)
+
 
 # Adders and deleters
     def add_child(self, child):
@@ -66,6 +69,7 @@ class C_Tree:
         self.children.remove(child)
         child.parent = None
 
+
 # Getters
     def r_child(self):
         '''
@@ -100,6 +104,86 @@ class C_Tree:
         else:
             return self.parent.get_root()
 
+    def get_feature_names(self):
+        '''
+        Returns a set containing all feature names
+        for the tree
+        '''
+        feat_names = set()
+
+        for child in self.children:
+            feat_names = feat_names.union(child.get_feature_names())
+        if self.features is not None:
+            feat_names = feat_names.union(set(self.features.keys()))
+
+        return feat_names            
+
+    def get_terminals(self):
+        '''
+        Function that returns the terminal nodes of a tree
+        '''
+        if self.is_terminal():
+            return [self]
+        else:
+            return [node for child in self.children for node in child.get_terminals()]
+
+    def get_preterminals(self):
+        '''
+        Function that returns the terminal nodes of a tree
+        '''
+        if self.is_preterminal():
+            return [self]
+        else:
+            return [node for child in self.children for node in child.get_preterminals()]
+
+    def get_words(self):
+        '''
+        Function that returns the terminal nodes of a tree
+        '''
+        if self.is_terminal():
+            return [self.label]
+        else:
+            return [node for child in self.children for node in child.get_words()]
+
+    def get_postags(self):
+        '''
+        Function that returns the preterminal nodes of a tree
+        '''
+        if self.is_preterminal():
+            return [self.label]
+        else:
+            return [node for child in self.children for node in child.get_postags()]
+
+
+# Checkers
+    def is_right_child(self):
+        '''
+        Returns if a given subtree is the 
+        rightmost child of its parent
+        '''
+        return self.parent is not None and self.parent.children.index(self)==len(self.parent.children)-1
+
+    def is_left_child(self):
+        '''
+        Returns if a given subtree is the
+        leftmost child of its parent
+        '''
+        return self.parent is not None and self.parent.children.index(self)==0
+
+    def is_terminal(self):
+        '''
+        Function that checks if a tree is a terminal
+        '''
+        return len(self.children) == 0
+
+    def is_preterminal(self):
+        '''
+        Function that checks if a tree is a preterminal
+        '''
+        return len(self.children) == 1 and self.children[0].is_terminal()
+
+
+# Tree processing
     def extract_features(self, f_mark = "##", f_sep = "|"):
         # go through all pre-terminal nodes
         # of the tree
@@ -123,72 +207,6 @@ class C_Tree:
 
                     node.features[key]=value
 
-    def get_feature_names(self):
-        '''
-        Returns a set containing all feature names
-        for the tree
-        '''
-        feat_names = set()
-
-        for child in self.children:
-            feat_names = feat_names.union(child.get_feature_names())
-        if self.features is not None:
-            feat_names = feat_names.union(set(self.features.keys()))
-
-        return feat_names            
-
-# Word and Postags getters
-    def get_words(self):
-        '''
-        Function that returns the terminal nodes of a tree
-        '''
-        if self.is_terminal():
-            return [self.label]
-        else:
-            return [node for child in self.children for node in child.get_words()]
-
-    def get_postags(self):
-        '''
-        Function that returns the preterminal nodes of a tree
-        '''
-        if self.is_preterminal():
-            return [self.label]
-        else:
-            return [node for child in self.children for node in child.get_postags()]
-
-# Terminal checking
-    def is_terminal(self):
-        '''
-        Function that checks if a tree is a terminal
-        '''
-        return len(self.children) == 0
-
-    def is_preterminal(self):
-        '''
-        Function that checks if a tree is a preterminal
-        '''
-        return len(self.children) == 1 and self.children[0].is_terminal()
-
-# Terminal getters
-    def get_terminals(self):
-        '''
-        Function that returns the terminal nodes of a tree
-        '''
-        if self.is_terminal():
-            return [self]
-        else:
-            return [node for child in self.children for node in child.get_terminals()]
-
-    def get_preterminals(self):
-        '''
-        Function that returns the terminal nodes of a tree
-        '''
-        if self.is_preterminal():
-            return [self]
-        else:
-            return [node for child in self.children for node in child.get_preterminals()]
-
-# Tree processing
     def collapse_unary(self, unary_joiner="+"):
         '''
         Returns a new tree where the unary chains are replaced
@@ -229,6 +247,12 @@ class C_Tree:
         '''
         self.label = self.children[0].label
         self.children = self.children[0].children
+
+    def add_root_node(self):
+        copy_tree = copy.deepcopy(self)
+        self.label = C_ROOT_LABEL
+        self.children = [copy_tree]
+        copy_tree.parent = self
 
     def add_end_node(self):
         '''
@@ -345,6 +369,7 @@ class C_Tree:
                 c.reverse_tree()
         self.children.reverse()
 
+
 # Printing and python-related functions
     def __str__(self):
         if len(self.children) == 0:
@@ -384,6 +409,7 @@ class C_Tree:
 
     def __contains__(self, item):
         return item in self.label or item in self.children
+
 
 # Tree creation
     @staticmethod

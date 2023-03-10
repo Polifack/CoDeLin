@@ -23,7 +23,8 @@
 .vscode/
 /src/models/__pycache__
 *.pyc
-*.ipynb
+
+# *.ipynb
 
 # ceval script
 ceval.sh
