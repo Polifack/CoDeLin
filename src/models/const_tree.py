@@ -321,11 +321,6 @@ class C_Tree:
         Return a copy of the tree without 
         null nodes (nodes with label C_NONE_LABEL)
         """
-<<<<<<< Updated upstream
-        childs = [child.prune_nones(default_root) for child in self.children if child.label is not C_NONE_LABEL]
-        self.label = self.label.replace(C_NONE_LABEL, default_root)
-        return C_Tree(self.label, childs)
-=======
         for c in self.children:
             c.restore_from_binary()
         for c in self.children:
@@ -336,7 +331,6 @@ class C_Tree:
                 self.add_child_at_index(childs_copy, child_index)
         
         return self
->>>>>>> Stashed changes
 
     def remove_conflicts(self, conflict_strat):
         # Postprocess Childs
