@@ -191,14 +191,34 @@ class C_Tree:
 # Tree processing
     def collapse_unary(self, unary_joiner="+"):
         '''
-        Function that collapses unary chains
-        into single nodes using a unary_joiner as join character
+        Returns a new tree where the unary chains are replaced
+        by a new node where the label is formed by all the 
+        members in the unary chain separated by 'unary_joiner' string.
         '''
+        new_children = []
         for child in self.children:
-            child.collapse_unary(unary_joiner)
+            new_children.append(child.collapse_unary(unary_joiner))
+        
         if len(self.children)==1 and not self.is_preterminal():
-            self.label += unary_joiner + self.children[0].label
-            self.children = self.children[0].children
+            label = self.label + unary_joiner + self.children[0].label
+            children = self.children[0].children
+            return C_Tree(label, children)
+        else:
+            return C_Tree(self.label, new_children)
+
+    def remove_preterminals(self):
+        '''
+        Returns a new tree where the preterminal nodes from the 
+        constituent tree are removed.
+        '''
+        new_child = []
+        for child in self.children:
+            new_child.append(child.remove_preterminals())
+        
+        if self.is_preterminal():
+            return self.children[0]
+        else:
+            return C_Tree(self.label, new_child)
 
     def inherit_tree(self):
         '''
@@ -244,7 +264,7 @@ class C_Tree:
         
         self.add_end_node() 
         if collapse_unary:
-            self.collapse_unary(unary_joiner)
+            self = self.collapse_unary(unary_joiner)
 
         return path_to_leaves_rec(self, [], [], 0)
 
@@ -450,6 +470,7 @@ class C_Tree:
         
         bt.children = new_children
         return bt
+                   
 
 # Default trees
     @staticmethod
