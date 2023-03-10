@@ -16,8 +16,7 @@ class C_Tree:
         '''
         if type(child) is list:
             for c in child:
-                self.children.append(c)
-                c.parent = self
+                self.add_child(c)
         elif type(child) is C_Tree:
             self.children.append(child)
             child.parent = self
@@ -55,9 +54,6 @@ class C_Tree:
 
         else:
             raise TypeError("[!] Child must be a ConstituentTree or a list of Constituent Trees")
-
-
-
 
     def del_child(self, child):
         '''
@@ -227,66 +223,30 @@ class C_Tree:
         part of the tree
         '''
         self.add_left_child(C_Tree(C_START_LABEL, []))
-    
-    def to_binary(self):
-        '''
-        Function that transforms a tree into a binary tree
-        '''
-        for c in self.children:
-            c = c.to_binary()
-        if len(self.children) > 2:
-            r_child = self.children[0]
-            l_child = C_Tree(self.label+"_c", self.children[1:])
-            self.children = [r_child, l_child]
-        return self
-    
-    def restore_from_binary(self):
-        '''
-        Function that restores a binary tree into a tree
-        '''
-        for c in self.children:
-            c.restore_from_binary()
-        for c in self.children:
-            if c.label[-2:] == "_c":
-                childs_copy = copy.deepcopy(c.children)
-                self.children.remove(c)
-                self.add_child(childs_copy)
-        
-        return self
-            
-        
+                    
     def path_to_leaves(self, collapse_unary=True, unary_joiner="+"):
         '''
-        Function that given a Tree returns a list of paths
-        from the root to the leaves, encoding a level index into
-        nodes to make them unique.
+        Returns the list of paths from the root to the leaves, 
+        encoding a level index into nodes to make them unique.
         '''
-        self.add_end_node()
-                    
+        def path_to_leaves_rec(t, current_path, paths, idx):
+            path = copy.deepcopy(current_path)
+            
+            if (len(t.children)==0):
+                path.append(t.label)
+                paths.append(path)
+            else:
+                path.append(t.label+str(idx))
+                for child in t.children:
+                    path_to_leaves_rec(child, path, paths, idx)
+                    idx+=1
+            return paths
+        
+        self.add_end_node() 
         if collapse_unary:
             self.collapse_unary(unary_joiner)
 
-        paths = self.path_to_leaves_rec([],[],0)
-        return paths
-
-    def path_to_leaves_rec(self, current_path, paths, idx):
-        '''
-        Recursive step of the path_to_leaves function where we store
-        the common path based on the current node
-        '''
-        # pass by value
-        path = copy.deepcopy(current_path)
-        
-        if (len(self.children)==0):
-            # we are at a leaf. store the path in a new list
-            path.append(self.label)
-            paths.append(path)
-        else:
-            path.append(self.label+str(idx))
-            for child in self.children:
-                child.path_to_leaves_rec(path, paths, idx)
-                idx+=1
-        return paths
+        return path_to_leaves_rec(self, [], [], 0)
 
     def fill_pos_nodes(self, postag, word, unary_chain, unary_joiner):
         if self.label == postag:
@@ -306,39 +266,31 @@ class C_Tree:
             pos_tree = C_Tree(postag, [C_Tree(word, [])])
 
         self.add_child(pos_tree)
-
-    def renounce_children(self):
-        '''
-        Function that deletes current tree from its parent
-        and adds its children to the parent
-        '''
-        self.parent.children = self.l_siblings() + self.children + self.r_siblings()
-        for child in self.children:
-            child.parent = self.parent
     
-    def prune_nones(self, default_root=None):
-        """
-        Return a copy of the tree without 
-        null nodes (nodes with label C_NONE_LABEL)
-        """
-        for c in self.children:
-            c.prune_nones()
-        for c in self.children:
-            if c.label==C_NONE_LABEL:
-                childs_copy = copy.deepcopy(c.children)
-                child_index = self.children.index(c)
-                self.children.remove(c)
-                self.add_child_at_index(childs_copy, child_index)
+    def prune_nones(self):
+        '''
+        Returns a new C_Tree where all the nodes with
+        label -NONE- are removed. The removed nones will have their
+        children added to parent
+        '''
+        if self.label != C_NONE_LABEL:
+            t = C_Tree(self.label, [])
+            new_childs = [c.prune_nones() for c in self.children]
+            t.add_child(new_childs)
+            return t
         
-        return self
+        else:
+            return [c.prune_nones() for c in self.children]
 
     def remove_conflicts(self, conflict_strat):
-        # Postprocess Childs
+        '''
+        Removes all conflicts in the label of the tree generated
+        during the decoding process. Conflicts will be signaled by -||- 
+        string.
+        '''
         for c in self.children:
             if type(c) is C_Tree:
                 c.remove_conflicts(conflict_strat)
-
-        # Clean conflicts
         if C_CONFLICT_SEPARATOR in self.label:
             labels = self.label.split(C_CONFLICT_SEPARATOR)
             
@@ -351,11 +303,14 @@ class C_Tree:
 
     def postprocess_tree(self, conflict_strat, clean_nulls=True, default_root="S"):
         '''
-        Apply heuristics to the reconstructed Constituent Trees
-        in order to ensure correctness
+        Returns a C_Tree object with conflicts in node labels removed
+        and with NULL nodes cleaned.
         '''
         if clean_nulls:
-            t = self.prune_nones(default_root=default_root)
+            if self.label == C_NONE_LABEL:
+                self.label = default_root
+            t = self.prune_nones()
+        
         t.remove_conflicts(conflict_strat)
         return t
         
@@ -410,7 +365,6 @@ class C_Tree:
     def __contains__(self, item):
         return item in self.label or item in self.children
 
-
 # Tree creation
     @staticmethod
     def from_string(s):
@@ -454,6 +408,48 @@ class C_Tree:
 
             i+=1
         return t
+
+# Binarization
+    @staticmethod
+    def to_binary(t):
+        '''
+        Given a Constituent Tree returns its
+        binary form.
+        '''
+        if len(t.children) == 1:
+            return t
+        if len(t.children) == 2:
+            lc = C_Tree.to_binary(t.children[0])
+            rc = C_Tree.to_binary(t.children[1])
+            return C_Tree(t.label, [lc,rc])
+        else:
+            c1 = t.children[0]
+            if type(c1) is C_Tree:
+                c1 = C_Tree.to_binary(c1)
+            c2 = C_Tree(t.label+"*", t.children[1:])
+            c2 = C_Tree.to_binary(c2)
+            return C_Tree(t.label, [c1, c2])
+    
+    @staticmethod
+    def restore_from_binary(bt):
+        '''
+        Given a binarized Constituent Tree returns it to
+        its original form
+        '''
+        for c in bt.children:
+            if type(bt) is C_Tree:
+                c = C_Tree.restore_from_binary(c)
+        
+        new_children = []
+        for c in bt.children:
+            if c.label[-1] == "*":
+                for cc in c.children:
+                    new_children.append(cc)
+            else:
+                new_children.append(c)
+        
+        bt.children = new_children
+        return bt
 
 # Default trees
     @staticmethod

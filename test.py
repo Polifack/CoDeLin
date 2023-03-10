@@ -17,7 +17,6 @@ class bcolors:
     BOLD = '\033[1m'
     UNDERLINE = '\033[4m'
 
-
 def system_call(command):
     p = subprocess.Popen([command], stdout=subprocess.PIPE, shell=True)
     return str(p.stdout.read())
@@ -27,10 +26,10 @@ f_ptb   = "./test/ptb"
 f_gsd   = "./test/gsd"
 f_ewt   = "./test/ewt"
 
-d_encs    = [D_ABSOLUTE_ENCODING, D_RELATIVE_ENCODING, D_POS_ENCODING, D_BRACKET_ENCODING, D_BRACKET_ENCODING_2P]
+d_encs = [D_ABSOLUTE_ENCODING, D_RELATIVE_ENCODING, D_POS_ENCODING, D_BRACKET_ENCODING, D_BRACKET_ENCODING_2P]
 d_planalg = [D_2P_GREED, D_2P_PROP]
-
-c_encs    = [C_ABSOLUTE_ENCODING, C_RELATIVE_ENCODING, C_INCREMENTAL_ENCODING, C_DYNAMIC_ENCODING]
+forbidden_strings = [C_CONFLICT_SEPARATOR, C_NONE_LABEL, D_POSROOT, D_NULLHEAD]
+c_encs = [C_ABSOLUTE_ENCODING, C_RELATIVE_ENCODING, C_INCREMENTAL_ENCODING, C_DYNAMIC_ENCODING]
 
 
 print("["+bcolors.WARNING+"-->"+bcolors.ENDC+"] Testing encoding and decoding gives the same file...")
@@ -153,10 +152,26 @@ for enc in c_encs:
     os.remove(f_spmrl+"."+enc+".labels")
     os.remove(f_spmrl+"."+enc+".decoded.trees")
 
+# Evaluation of tree binarizer
+print("["+bcolors.WARNING+"-->"+bcolors.ENDC+"] Testing Binarization and de-binarization of constituent trees...")
+for enc in c_encs:
+    pred_const = "./test/pred.const."+enc+".labels"
+    pred_const_dec = "./test/pred.const."+enc+".decoded.trees"
+
+    decode_constituent(in_path = pred_const, out_path = pred_const_dec,
+                        encoding_type = enc, separator = "_", unary_joiner = "+", nulls = True,
+                        conflicts = C_STRAT_MAX, postags = False, lang = "en")
+
+    for line in open(pred_const_dec):
+        line = line.rstrip()
+        ct = C_Tree.from_string(line)
+        bt = C_Tree.to_binary(ct)
+        dt = C_Tree.restore_from_binary(bt)
+        assert ct == dt
+    os.remove(pred_const_dec)
+
 # Evaluation for predicted dependencies labels file
 print("["+bcolors.WARNING+"-->"+bcolors.ENDC+"] Testing decoding of predicted dependency labels file (oob heads and cycles)...")
-
-forbidden_strings = [C_CONFLICT_SEPARATOR, C_NONE_LABEL, D_POSROOT, D_NULLHEAD]
 for enc in d_encs:
     pred_deps = "./test/pred.deps."+enc+".labels"
     pred_deps_dec = "./test/pred.deps."+enc+".decoded.trees"
@@ -199,12 +214,8 @@ for enc in d_encs:
             break
     os.remove(pred_deps_dec)
 
-
-
-
 # Evaluation for predicted constituent labels file
 print("["+bcolors.WARNING+"-->"+bcolors.ENDC+"] Testing decoding of predicted constituent labels file (nulls and conflicts)...")
-forbidden_strings = [C_CONFLICT_SEPARATOR, C_NONE_LABEL, D_POSROOT, D_NULLHEAD]
 for enc in c_encs:
     pred_const = "./test/pred.const."+enc+".labels"
     pred_const_dec = "./test/pred.const."+enc+".decoded.trees"
