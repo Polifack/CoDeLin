@@ -194,7 +194,8 @@ for enc in d_encs:
 
     for line in open(pred_deps_dec):
         if any(x in line for x in forbidden_strings):
-            print("[!] Error: forbidden string found in dependency decoded file: "+line)
+            print("[!] Error: forbidden string found in dependency decoded file: "+pred_deps_dec)
+            print(line)
             break
     os.remove(pred_deps_dec)
 
@@ -214,7 +215,8 @@ for enc in c_encs:
 
     for line in open(pred_const_dec):
         if any(x in line for x in forbidden_strings):
-            print("[!] Error: forbidden string found in constituent decoded file: "+line)
+            print("[!] Error: forbidden string found in constituent decoded file: "+pred_const_dec)
+            print(line)
             break
     os.remove(pred_const_dec)
 

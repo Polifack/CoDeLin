@@ -14,21 +14,50 @@ class C_Tree:
         '''
         Function that adds a child to the current tree
         '''
-        if type(child) is not C_Tree:
-            raise TypeError("[!] Child must be a ConstituentTree")
+        if type(child) is list:
+            for c in child:
+                self.children.append(c)
+                c.parent = self
+        elif type(child) is C_Tree:
+            self.children.append(child)
+            child.parent = self
 
-        self.children.append(child)
-        child.parent = self
+        else:
+            raise TypeError("[!] Child must be a ConstituentTree or a list of Constituent Trees")
 
     def add_left_child(self, child):
         '''
         Function that adds a child to the left of the current tree
         '''
-        if type(child) is not C_Tree:
-            raise TypeError("[!] Child must be a ConstituentTree")
-        
-        self.children = [child] + self.children
-        child.parent = self
+        if type(child) is list:
+            for c in child:
+                self.children = [c] + self.children
+                c.parent = self
+        elif type(child) is C_Tree:
+            self.children = [child] + self.children
+            child.parent = self
+
+        else:
+            raise TypeError("[!] Child must be a ConstituentTree or a list of Constituent Trees")
+
+    def add_child_at_index(self, child, index):
+        '''
+        Function that adds a child to the left of the current tree
+        '''
+        if type(child) is list:
+            for c in child:
+                c.parent = self
+            self.children = self.children[:index] + child + self.children[len(self.children)-(index+1):]
+                
+        elif type(child) is C_Tree:
+            self.children = self.children[:index]+[child]+self.children[index+1:]
+            child.parent = self
+
+        else:
+            raise TypeError("[!] Child must be a ConstituentTree or a list of Constituent Trees")
+
+
+
 
     def del_child(self, child):
         '''
@@ -198,6 +227,33 @@ class C_Tree:
         part of the tree
         '''
         self.add_left_child(C_Tree(C_START_LABEL, []))
+    
+    def to_binary(self):
+        '''
+        Function that transforms a tree into a binary tree
+        '''
+        for c in self.children:
+            c = c.to_binary()
+        if len(self.children) > 2:
+            r_child = self.children[0]
+            l_child = C_Tree(self.label+"_c", self.children[1:])
+            self.children = [r_child, l_child]
+        return self
+    
+    def restore_from_binary(self):
+        '''
+        Function that restores a binary tree into a tree
+        '''
+        for c in self.children:
+            c.restore_from_binary()
+        for c in self.children:
+            if c.label[-2:] == "_c":
+                childs_copy = copy.deepcopy(c.children)
+                self.children.remove(c)
+                self.add_child(childs_copy)
+        
+        return self
+            
         
     def path_to_leaves(self, collapse_unary=True, unary_joiner="+"):
         '''
@@ -259,16 +315,28 @@ class C_Tree:
         self.parent.children = self.l_siblings() + self.children + self.r_siblings()
         for child in self.children:
             child.parent = self.parent
-
-
-    def prune_nones(self, default_root):
+    
+    def prune_nones(self, default_root=None):
         """
         Return a copy of the tree without 
         null nodes (nodes with label C_NONE_LABEL)
         """
+<<<<<<< Updated upstream
         childs = [child.prune_nones(default_root) for child in self.children if child.label is not C_NONE_LABEL]
         self.label = self.label.replace(C_NONE_LABEL, default_root)
         return C_Tree(self.label, childs)
+=======
+        for c in self.children:
+            c.restore_from_binary()
+        for c in self.children:
+            if c.label==C_NONE_LABEL:
+                childs_copy = copy.deepcopy(c.children)
+                child_index = self.children.index(c)
+                self.children.remove(c)
+                self.add_child_at_index(childs_copy, child_index)
+        
+        return self
+>>>>>>> Stashed changes
 
     def remove_conflicts(self, conflict_strat):
         # Postprocess Childs
