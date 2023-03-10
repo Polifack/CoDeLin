@@ -322,7 +322,7 @@ class C_Tree:
         null nodes (nodes with label C_NONE_LABEL)
         """
         for c in self.children:
-            c.restore_from_binary()
+            c.prune_nones()
         for c in self.children:
             if c.label==C_NONE_LABEL:
                 childs_copy = copy.deepcopy(c.children)
