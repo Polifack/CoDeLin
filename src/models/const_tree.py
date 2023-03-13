@@ -161,7 +161,7 @@ class C_Tree:
         Returns if a given subtree is the 
         rightmost child of its parent
         '''
-        return self.parent is not None and self.parent.children.index(self)==len(self.parent.children)-1
+        return self.parent is not None and len(self.parent.children)>1 and self.parent.children.index(self)==len(self.parent.children)-1
 
     def is_left_child(self):
         '''
@@ -169,6 +169,16 @@ class C_Tree:
         leftmost child of its parent
         '''
         return self.parent is not None and self.parent.children.index(self)==0
+    
+    def has_none_child(self):
+        '''
+        Returns true if a given son of the tree
+        has a C_NONE_LABEL as child
+        '''
+        for c in self.children:
+            if c.label == C_NONE_LABEL:
+                return True
+        return False
 
     def is_terminal(self):
         '''

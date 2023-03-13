@@ -56,7 +56,7 @@ def encode_constituent(in_path, out_path, encoding_type, separator, unary_joiner
         file_out.write("\n")
         tree_counter += 1
         labels_counter += len(linearized_tree)
-        for lbl in linearized_tree.get_labels():
+        for lbl in linearized_tree.labels:
             label_set.add(str(lbl))   
     
     return labels_counter, tree_counter, len(label_set)

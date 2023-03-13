@@ -12,9 +12,6 @@ class LinearizedTree:
         
     def get_sentence(self):
         return "".join(self.words)
-    
-    def get_labels(self):
-        return self.labels
 
     def get_word(self, index):
         return self.words[index]

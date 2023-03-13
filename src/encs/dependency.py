@@ -57,7 +57,7 @@ def encode_dependencies(in_path, out_path, encoding_type, separator, displacemen
         tree_counter+=1
         label_counter+=len(linearized_tree)
         
-        for lbl in linearized_tree.get_labels():
+        for lbl in linearized_tree.labels:
             label_set.add(str(lbl))      
     
     return tree_counter, label_counter, len(label_set)
