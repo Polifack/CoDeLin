@@ -7,7 +7,7 @@ import time
 
 if __name__=="__main__":
 
-    encodings = [C_ABSOLUTE_ENCODING, C_RELATIVE_ENCODING, C_DYNAMIC_ENCODING, C_INCREMENTAL_ENCODING,
+    encodings = [C_ABSOLUTE_ENCODING, C_RELATIVE_ENCODING, C_DYNAMIC_ENCODING,
                 D_ABSOLUTE_ENCODING, D_RELATIVE_ENCODING, D_POS_ENCODING, D_BRACKET_ENCODING, D_BRACKET_ENCODING_2P]
 
     parser = argparse.ArgumentParser(description='Constituent and Dependencies Linearization System')
@@ -64,6 +64,9 @@ if __name__=="__main__":
     parser.add_argument('--hfr', required=False, action='store_true', default=False,
                         help = 'Encode "root" nodes as a special label in relative encoding (i.e. "0_ROOT" instead of "-3_ROOT" )')
     
+    parser.add_argument('--incremental', required=False, action='store_true', default=False,
+                        help='Encode constituent trees in an incremental fashion')
+    
     parser.add_argument('--lang', required=False, type=str, default='en', 
                         help = 'Language employed in part of speech predition')
 
@@ -75,12 +78,12 @@ if __name__=="__main__":
     if args.formalism == F_CONSTITUENT:
         
         if args.operation == OP_ENC:
-            n_labels, n_trees, n_diff_labels = encode_constituent(args.input, args.output, args.enc, 
+            n_labels, n_trees, n_diff_labels = encode_constituent(args.input, args.output, args.enc, args.incremental,
                                                                   args.sep, args.ujoiner, args.feats)
         
         elif args.operation == OP_DEC:
             n_diff_labels = None
-            n_trees, n_labels = decode_constituent(args.input, args.output, args.enc, args.sep, 
+            n_trees, n_labels = decode_constituent(args.input, args.output, args.enc, args.incremental, args.sep, 
                                                    args.ujoiner, args.conflict, args.nulls, 
                                                    args.postags, args.lang)
     

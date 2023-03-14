@@ -335,6 +335,27 @@ class C_Tree:
         
         else:
             return [c.prune_nones() for c in self.children]
+        
+    def insert_postags(self, postags):
+        '''
+        Given a list of part of speech tags, inserts them
+        onto the tree as preterminal nodes
+        '''
+        # insert nodes in stack or recursion?
+        s = [self]
+        idx = 0
+        while len(s)>1:
+            ct = s.pop()
+            if not ct.is_terminal():
+                # non terminal
+                s.append(c for c in ct.children)
+            else:
+                # leaf
+                for c in ct.children:
+                    c_idx = ct.children.index(c)
+                    ct.children = C_Tree(postags[idx], )
+                    idx+=1
+
 
     def remove_conflicts(self, conflict_strat):
         '''

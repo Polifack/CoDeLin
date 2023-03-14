@@ -29,7 +29,7 @@ f_ewt   = "./test/ewt"
 d_encs = [D_ABSOLUTE_ENCODING, D_RELATIVE_ENCODING, D_POS_ENCODING, D_BRACKET_ENCODING, D_BRACKET_ENCODING_2P]
 d_planalg = [D_2P_GREED, D_2P_PROP]
 forbidden_strings = [C_CONFLICT_SEPARATOR, C_NONE_LABEL, D_POSROOT, D_NULLHEAD]
-c_encs = [C_ABSOLUTE_ENCODING, C_RELATIVE_ENCODING, C_INCREMENTAL_ENCODING, C_DYNAMIC_ENCODING]
+c_encs = [C_ABSOLUTE_ENCODING, C_RELATIVE_ENCODING, C_DYNAMIC_ENCODING]
 
 
 print("["+bcolors.WARNING+"-->"+bcolors.ENDC+"] Testing encoding and decoding gives the same file...")
@@ -107,10 +107,29 @@ for enc in d_encs:
 # Evaluation for Penn Treebank
 for enc in c_encs:
     encode_constituent(in_path = f_ptb+".trees", out_path = f_ptb+"."+enc+".labels", 
-                        encoding_type = enc, separator = "_", unary_joiner = "++", features = None)
+                        encoding_type = enc, reverse = False,
+                        separator = "_", unary_joiner = "++", features = None)
     
     decode_constituent(in_path = f_ptb+"."+enc+".labels", out_path = f_ptb+"."+enc+".decoded.trees",
-                        encoding_type = enc, separator = "_", unary_joiner = "++", nulls = True,
+                        encoding_type = enc, reverse = False, separator = "_", unary_joiner = "++", nulls = True,
+                        conflicts = C_STRAT_MAX, postags = False, lang = "en")
+    
+    answ = system_call("./evalb/evalb "+f_ptb+".trees "+f_ptb+"."+enc+".decoded.trees -p ./evalb/COLLINS.prm")
+    fmeasure = re.findall(r'\d+\.\d+', answ)[1]
+    fmeasure = fmeasure.split(".")[0]
+    fmeasure = bcolors.OKGREEN+fmeasure+bcolors.ENDC if int(fmeasure) == 100 else bcolors.FAIL+fmeasure+bcolors.ENDC
+    print("["+fmeasure+"] EvalB for "+f_ptb+"."+enc+".decoded.trees")
+    os.remove(f_ptb+"."+enc+".labels")
+    os.remove(f_ptb+"."+enc+".decoded.trees")
+
+# Evaluation for Penn Treebank Reversed
+for enc in c_encs:
+    encode_constituent(in_path = f_ptb+".trees", out_path = f_ptb+"."+enc+".labels", 
+                        encoding_type = enc, reverse = True,
+                        separator = "_", unary_joiner = "++", features = None)
+    
+    decode_constituent(in_path = f_ptb+"."+enc+".labels", out_path = f_ptb+"."+enc+".decoded.trees",
+                        encoding_type = enc, reverse = True, separator = "_", unary_joiner = "++", nulls = True,
                         conflicts = C_STRAT_MAX, postags = False, lang = "en")
     
     answ = system_call("./evalb/evalb "+f_ptb+".trees "+f_ptb+"."+enc+".decoded.trees -p ./evalb/COLLINS.prm")
@@ -124,8 +143,9 @@ for enc in c_encs:
 # Evaluation for German SPMRL
 for enc in c_encs:
     feats = ["lem", "case", "number", "gender"]
-    encode_constituent(in_path = f_spmrl+".trees", out_path = f_spmrl+"."+enc+".labels", 
-                        encoding_type = enc, separator = "_", unary_joiner = "++", features = feats)
+    encode_constituent(in_path = f_spmrl+".trees", out_path = f_spmrl+"."+enc+".labels",
+                        encoding_type = enc, reverse = False,
+                        separator = "_", unary_joiner = "++", features = feats)
     
     # Check number of columns in labels
     with open(f_spmrl+"."+enc+".labels") as f:
@@ -139,7 +159,7 @@ for enc in c_encs:
                 break
     
     decode_constituent(in_path = f_spmrl+"."+enc+".labels", out_path = f_spmrl+"."+enc+".decoded.trees",
-                        encoding_type = enc, separator = "_", unary_joiner = "++", nulls = True,
+                        encoding_type = enc, reverse = False, separator = "_", unary_joiner = "++", nulls = True,
                         conflicts=C_STRAT_MAX, postags = False, lang = "en")
     
 
@@ -159,7 +179,7 @@ for enc in c_encs:
     pred_const_dec = "./test/pred.const."+enc+".decoded.trees"
 
     decode_constituent(in_path = pred_const, out_path = pred_const_dec,
-                        encoding_type = enc, separator = "_", unary_joiner = "+", nulls = True,
+                        encoding_type = enc,reverse = False,separator = "_", unary_joiner = "+", nulls = True,
                         conflicts = C_STRAT_MAX, postags = False, lang = "en")
 
     for line in open(pred_const_dec):
@@ -221,7 +241,7 @@ for enc in c_encs:
     pred_const_dec = "./test/pred.const."+enc+".decoded.trees"
 
     decode_constituent(in_path = pred_const, out_path = pred_const_dec,
-                        encoding_type = enc, separator = "_", unary_joiner = "+", nulls = True,
+                        encoding_type = enc, reverse = False, separator = "_", unary_joiner = "+", nulls = True,
                         conflicts = C_STRAT_MAX, postags = False, lang = "en")
 
     for line in open(pred_const_dec):

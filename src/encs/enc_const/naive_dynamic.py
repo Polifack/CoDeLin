@@ -7,14 +7,18 @@ from src.models.const_tree import C_Tree
 import re
 
 class C_NaiveDynamicEncoding(ACEncoding):
-    def __init__(self, separator, unary_joiner):
+    def __init__(self, separator, unary_joiner, reverse):
         self.separator = separator
         self.unary_joiner = unary_joiner
+        self.reverse = reverse
 
     def __str__(self):
         return "Constituent Naive Dynamic Encoding"
 
     def encode(self, constituent_tree):
+        if self.reverse:
+            constituent_tree.reverse_tree()
+
         lc_tree = LinearizedTree.empty_tree()
         leaf_paths = constituent_tree.path_to_leaves(collapse_unary=True, unary_joiner=self.unary_joiner)
 
@@ -37,25 +41,10 @@ class C_NaiveDynamicEncoding(ACEncoding):
                     postag = path_a[-2]
                     
                     # Build the Leaf Unary Chain
-                    unary_chain = None
-                    leaf_unary_chain = postag.split(self.unary_joiner)
-                    if len(leaf_unary_chain)>1:
-                        unary_list = []
-                        for element in leaf_unary_chain[:-1]:
-                            unary_list.append(element.split("##")[0])
-
-                        unary_chain = self.unary_joiner.join(unary_list)
-                        postag = leaf_unary_chain[len(leaf_unary_chain)-1]
+                    unary_chain, postag = self.get_unary_chain(postag)
                     
                     # Clean the POS Tag and extract additional features
-                    postag_split = postag.split("##")
-                    feats = [None]
-
-                    if len(postag_split) > 1:
-                        postag = re.sub(r'[0-9]+', '', postag_split[0])
-                        feats = postag_split[1].split("|")
-                    else:
-                        postag = re.sub(r'[0-9]+', '', postag)
+                    postag, feats = self.get_features(postag)
 
                     # Compute the encoded value
                     abs_val=n_commons
@@ -76,8 +65,9 @@ class C_NaiveDynamicEncoding(ACEncoding):
                 n_commons += len(a.split(self.unary_joiner))
                 last_common = a
         
-        # n = max number of features of the tree
-        lc_tree.n = max([len(f) for f in lc_tree.additional_feats])
+        if self.reverse:
+            lc_tree.reverse_tree(ignore_bos_eos=False)
+        
         return lc_tree
 
     def decode(self, linearized_tree):
@@ -95,7 +85,9 @@ class C_NaiveDynamicEncoding(ACEncoding):
         old_level=None
         is_first = True
         last_label = None
-
+        
+        if self.reverse:
+            linearized_tree.reverse_tree(ignore_bos_eos=False)
         for word, postag, feats, label in linearized_tree.iterrows():
             
             # Convert the labels to absolute scale
@@ -158,5 +150,6 @@ class C_NaiveDynamicEncoding(ACEncoding):
             last_label=label
         
         tree.inherit_tree()
-        
+        if self.reverse:
+            tree.reverse_tree()
         return tree

@@ -1,7 +1,7 @@
 from src.models.linearized_tree import LinearizedTree
 from src.encs.enc_const import *
 from src.utils.extract_feats import extract_features_const
-from src.utils.constants import C_INCREMENTAL_ENCODING, C_ABSOLUTE_ENCODING, C_RELATIVE_ENCODING, C_DYNAMIC_ENCODING
+from src.utils.constants import C_ABSOLUTE_ENCODING, C_RELATIVE_ENCODING, C_DYNAMIC_ENCODING
 
 import stanza.pipeline
 from src.models.const_tree import C_Tree
@@ -9,7 +9,7 @@ from src.models.const_tree import C_Tree
 
 ## Encoding and decoding
 
-def encode_constituent(in_path, out_path, encoding_type, separator, unary_joiner, features):
+def encode_constituent(in_path, out_path, encoding_type, reverse, separator, unary_joiner, features):
     '''
     Encodes the selected file according to the specified parameters:
     :param in_path: Path of the file to be encoded
@@ -21,13 +21,11 @@ def encode_constituent(in_path, out_path, encoding_type, separator, unary_joiner
     '''
 
     if encoding_type == C_ABSOLUTE_ENCODING:
-            encoder = C_NaiveAbsoluteEncoding(separator, unary_joiner)
+            encoder = C_NaiveAbsoluteEncoding(separator, unary_joiner, reverse)
     elif encoding_type == C_RELATIVE_ENCODING:
-            encoder = C_NaiveRelativeEncoding(separator, unary_joiner)
+            encoder = C_NaiveRelativeEncoding(separator, unary_joiner, reverse)
     elif encoding_type == C_DYNAMIC_ENCODING:
-            encoder = C_NaiveDynamicEncoding(separator, unary_joiner)
-    elif encoding_type == C_INCREMENTAL_ENCODING:
-            encoder = C_NaiveIncrementalEncoding(separator, unary_joiner)
+            encoder = C_NaiveDynamicEncoding(separator, unary_joiner, reverse)
     else:
         raise Exception("Unknown encoding type")
 
@@ -61,7 +59,7 @@ def encode_constituent(in_path, out_path, encoding_type, separator, unary_joiner
     
     return labels_counter, tree_counter, len(label_set)
 
-def decode_constituent(in_path, out_path, encoding_type, separator, unary_joiner, conflicts, nulls, postags, lang):
+def decode_constituent(in_path, out_path, encoding_type, reverse, separator, unary_joiner, conflicts, nulls, postags, lang):
     '''
     Decodes the selected file according to the specified parameters:
     :param in_path: Path of the labels file to be decoded
@@ -73,13 +71,11 @@ def decode_constituent(in_path, out_path, encoding_type, separator, unary_joiner
     '''
 
     if encoding_type == C_ABSOLUTE_ENCODING:
-            decoder = C_NaiveAbsoluteEncoding(separator, unary_joiner)
+            decoder = C_NaiveAbsoluteEncoding(separator, unary_joiner, reverse)
     elif encoding_type == C_RELATIVE_ENCODING:
-            decoder = C_NaiveRelativeEncoding(separator, unary_joiner)
+            decoder = C_NaiveRelativeEncoding(separator, unary_joiner, reverse)
     elif encoding_type == C_DYNAMIC_ENCODING:
-            decoder = C_NaiveDynamicEncoding(separator, unary_joiner)
-    elif encoding_type == C_INCREMENTAL_ENCODING:
-            decoder = C_NaiveIncrementalEncoding(separator, unary_joiner)
+            decoder = C_NaiveDynamicEncoding(separator, unary_joiner, reverse)
     else:
         raise Exception("Unknown encoding type")
 
