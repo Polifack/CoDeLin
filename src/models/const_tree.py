@@ -87,6 +87,8 @@ class C_Tree:
         '''
         Function that returns the right siblings of a tree
         '''
+        if self.parent is None:
+            return []
         return self.parent.children[self.parent.children.index(self)+1:]
 
     def l_siblings(self):
@@ -353,7 +355,7 @@ class C_Tree:
                 # leaf
                 for c in ct.children:
                     c_idx = ct.children.index(c)
-                    ct.children = C_Tree(postags[idx], )
+                    ct.children[c_idx] = C_Tree(postags[idx], ct.children[c_idx])
                     idx+=1
 
 
@@ -487,8 +489,9 @@ class C_Tree:
         return t
 
 # Binarization
+
     @staticmethod
-    def to_binary(t):
+    def to_binary_left(t):
         '''
         Given a Constituent Tree returns its
         binary form.
@@ -496,17 +499,37 @@ class C_Tree:
         if len(t.children) == 1:
             return t
         if len(t.children) == 2:
-            lc = C_Tree.to_binary(t.children[0])
-            rc = C_Tree.to_binary(t.children[1])
+            lc = C_Tree.to_binary_left(t.children[0])
+            rc = C_Tree.to_binary_left(t.children[1])
+            return C_Tree(t.label, [lc,rc])
+        else:
+            c1 = C_Tree(t.label+"*", t.children[:-1])
+            c1 = C_Tree.to_binary_left(c1)
+            c2 = t.children[-1]
+            if type(c2) is C_Tree:
+                c2 = C_Tree.to_binary_left(c2)
+            return C_Tree(t.label, [c1, c2])
+        
+    @staticmethod
+    def to_binary_right(t):
+        '''
+        Given a Constituent Tree returns its
+        binary form.
+        '''
+        if len(t.children) == 1:
+            return t
+        if len(t.children) == 2:
+            lc = C_Tree.to_binary_right(t.children[0])
+            rc = C_Tree.to_binary_right(t.children[1])
             return C_Tree(t.label, [lc,rc])
         else:
             c1 = t.children[0]
             if type(c1) is C_Tree:
-                c1 = C_Tree.to_binary(c1)
+                c1 = C_Tree.to_binary_right(c1)
             c2 = C_Tree(t.label+"*", t.children[1:])
-            c2 = C_Tree.to_binary(c2)
-            return C_Tree(t.label, [c1, c2])
-    
+            c2 = C_Tree.to_binary_right(c2)
+            return C_Tree(t.label, [c1, c2])          
+
     @staticmethod
     def restore_from_binary(bt):
         '''
@@ -528,6 +551,53 @@ class C_Tree:
         bt.children = new_children
         return bt
                    
+# Traversals
+
+    @staticmethod
+    def preorder(node, fn):
+        if node == None:
+            return
+        
+        # Run on root
+        fn(node)
+        # Recurse on children from left to right
+        for i in range(len(node.children)):
+            C_Tree.preorder(node.children[i], fn)
+        return
+    
+    @staticmethod
+    def inorder(node, fn):
+        if node == None:
+            return
+
+        # If leaf, run in root
+        if len(node.children) == 0:
+            fn(node)
+            return
+
+        # Run in children from left to right up to the last one
+        for i in range(len(node.children)-1):
+            C_Tree.inorder(node.children[i], fn)
+        
+        # Run in Root
+        fn(node)
+
+        # Run in last one
+        C_Tree.inorder(node.children[len(node.children)-1], fn)
+
+    @staticmethod
+    def postorder(node, fn):
+        if node == None:
+            return
+        
+        # Recurse on children from left to right
+        for i in range(len(node.children)):
+            C_Tree.postorder(node.children[i], fn)
+        
+        # Run on root
+        fn(node)
+        return
+
 
 # Default trees
     @staticmethod

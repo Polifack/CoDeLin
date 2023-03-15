@@ -185,9 +185,11 @@ for enc in c_encs:
     for line in open(pred_const_dec):
         line = line.rstrip()
         ct = C_Tree.from_string(line)
-        bt = C_Tree.to_binary(ct)
+        bt = C_Tree.to_binary_right(ct)
         dt = C_Tree.restore_from_binary(bt)
         assert ct == dt
+        bt = C_Tree.to_binary_left(ct)
+        dt = C_Tree.restore_from_binary(bt)
     os.remove(pred_const_dec)
 
 # Evaluation for predicted dependencies labels file
