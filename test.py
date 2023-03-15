@@ -136,7 +136,7 @@ for enc in c_encs:
     fmeasure = re.findall(r'\d+\.\d+', answ)[1]
     fmeasure = fmeasure.split(".")[0]
     fmeasure = bcolors.OKGREEN+fmeasure+bcolors.ENDC if int(fmeasure) == 100 else bcolors.FAIL+fmeasure+bcolors.ENDC
-    print("["+fmeasure+"] EvalB for "+f_ptb+"."+enc+".decoded.trees")
+    print("["+fmeasure+"] EvalB for "+f_ptb+"."+enc+".decoded.trees with incremental encoding")
     os.remove(f_ptb+"."+enc+".labels")
     os.remove(f_ptb+"."+enc+".decoded.trees")
 

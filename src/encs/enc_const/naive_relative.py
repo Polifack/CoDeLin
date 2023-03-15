@@ -22,7 +22,6 @@ class C_NaiveRelativeEncoding(ACEncoding):
         leaf_paths = constituent_tree.path_to_leaves(collapse_unary=True, unary_joiner=self.unary_joiner)
         lc_tree = LinearizedTree.empty_tree()
 
-        last_n_common=0
         for i in range(0, len(leaf_paths)-1):
             path_a=leaf_paths[i]
             path_b=leaf_paths[i+1]
@@ -44,10 +43,9 @@ class C_NaiveRelativeEncoding(ACEncoding):
                     # Clean the POS Tag and extract additional features
                     postag, feats = self.get_features(postag)
 
-                    c_label = C_Label((n_commons-last_n_common), last_common, unary_chain, C_RELATIVE_ENCODING, self.separator, self.unary_joiner)
+                    c_label = C_Label(n_commons, last_common, unary_chain, C_RELATIVE_ENCODING, self.separator, self.unary_joiner)
                     lc_tree.add_row(word, postag, feats, c_label)
 
-                    last_n_common=n_commons
                     break
                 
                 # Store Last Common and increase n_commons 
@@ -56,6 +54,14 @@ class C_NaiveRelativeEncoding(ACEncoding):
         
         if self.reverse:
             lc_tree.reverse_tree(ignore_bos_eos=False)
+        
+        previous_n_commons = None
+        for label in lc_tree.labels:
+            current_n_commons = label.n_commons
+            if previous_n_commons is not None:
+                label.n_commons -= previous_n_commons
+            previous_n_commons = current_n_commons
+            
         
         return lc_tree
 
@@ -75,14 +81,20 @@ class C_NaiveRelativeEncoding(ACEncoding):
         is_first = True
         last_label = None
 
+        # convert labels to absolute
+        for label in linearized_tree.labels:
+            if last_label is not None:
+                label.to_absolute(last_label)
+            last_label = label
+
         if self.reverse:
             linearized_tree.reverse_tree(ignore_bos_eos=False)
 
         for word, postag, feats, label in linearized_tree.iterrows():
             
             # Convert the labels to absolute scale
-            if last_label!=None:
-                label.to_absolute(last_label)
+            #if last_label!=None:
+            #label.to_absolute(last_label)
             
             # First label must have a positive n_commons value
             if is_first and label.n_commons < 0:

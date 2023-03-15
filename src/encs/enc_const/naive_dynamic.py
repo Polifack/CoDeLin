@@ -22,7 +22,6 @@ class C_NaiveDynamicEncoding(ACEncoding):
         lc_tree = LinearizedTree.empty_tree()
         leaf_paths = constituent_tree.path_to_leaves(collapse_unary=True, unary_joiner=self.unary_joiner)
 
-        last_n_common=0
         for i in range(0, len(leaf_paths)-1):
             path_a=leaf_paths[i]
             path_b=leaf_paths[i+1]
@@ -33,8 +32,7 @@ class C_NaiveDynamicEncoding(ACEncoding):
 
                 if (a!=b):
                     # Remove the digits and aditional feats in the last common node
-                    last_common = re.sub(r'[0-9]+', '', last_common)
-                    last_common = last_common.split("##")[0]
+                    last_common = self.clean_last_common(last_common)
 
                     # Get word and POS tag
                     word = path_a[-1]
@@ -46,18 +44,9 @@ class C_NaiveDynamicEncoding(ACEncoding):
                     # Clean the POS Tag and extract additional features
                     postag, feats = self.get_features(postag)
 
-                    # Compute the encoded value
-                    abs_val=n_commons
-                    rel_val=(n_commons-last_n_common)
-
-                    if (abs_val<=3 and rel_val<=-2):
-                        c_label = (C_Label(abs_val, last_common, unary_chain, C_ABSOLUTE_ENCODING, self.separator, self.unary_joiner))
-                    else:
-                        c_label = (C_Label(rel_val, last_common, unary_chain, C_RELATIVE_ENCODING, self.separator, self.unary_joiner))
-                    
+                    c_label = C_Label(n_commons, last_common, unary_chain, C_ABSOLUTE_ENCODING, self.separator, self.unary_joiner)
                     lc_tree.add_row(word, postag, feats, c_label)
 
-                    last_n_common=n_commons
                     break
                 
                 # Store Last Common and increase n_commons 
@@ -67,6 +56,17 @@ class C_NaiveDynamicEncoding(ACEncoding):
         
         if self.reverse:
             lc_tree.reverse_tree(ignore_bos_eos=False)
+
+        previous_n_commons = None
+        for label in lc_tree.labels:
+            current_n_commons = label.n_commons
+            if previous_n_commons is not None:
+                abs_val=n_commons
+                rel_val=(n_commons-previous_n_commons)
+                if (abs_val<=3 and rel_val<=-2):
+                    label.n_commons -= previous_n_commons
+                    label.encoding_type = C_RELATIVE_ENCODING
+            previous_n_commons = current_n_commons
         
         return lc_tree
 
@@ -86,13 +86,15 @@ class C_NaiveDynamicEncoding(ACEncoding):
         is_first = True
         last_label = None
         
+        for label in linearized_tree.labels:
+            if last_label is not None and label.encoding_type==C_RELATIVE_ENCODING:
+                label.to_absolute(last_label)
+            last_label = label
+        
         if self.reverse:
             linearized_tree.reverse_tree(ignore_bos_eos=False)
+        
         for word, postag, feats, label in linearized_tree.iterrows():
-            
-            # Convert the labels to absolute scale
-            if last_label!=None and label.encoding_type==C_RELATIVE_ENCODING:
-                label.to_absolute(last_label)
             
             # First label must have a positive n_commons value
             if is_first and label.n_commons < 0:

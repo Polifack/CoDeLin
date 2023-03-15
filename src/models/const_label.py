@@ -25,6 +25,7 @@ class C_Label:
             self.n_commons = 1
         
         self.encoding_type=C_ABSOLUTE_ENCODING
+
     
     @staticmethod
     def from_string(l, sep, uj):
