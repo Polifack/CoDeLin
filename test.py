@@ -2,9 +2,9 @@ import os
 import subprocess
 import re
 
-from src.utils.constants import *
-from src.encs.dependency import *
-from src.encs.constituent import *
+from codelin.utils.constants import *
+from codelin.encs.dependency import *
+from codelin.encs.constituent import *
 
 class bcolors:
     HEADER = '\033[95m'
@@ -27,9 +27,10 @@ f_gsd   = "./test/gsd"
 f_ewt   = "./test/ewt"
 
 d_encs = [D_ABSOLUTE_ENCODING, D_RELATIVE_ENCODING, D_POS_ENCODING, D_BRACKET_ENCODING, D_BRACKET_ENCODING_2P]
+c_encs = [C_ABSOLUTE_ENCODING, C_RELATIVE_ENCODING, C_DYNAMIC_ENCODING, C_TETRA_ENCODING]
 d_planalg = [D_2P_GREED, D_2P_PROP]
 forbidden_strings = [C_CONFLICT_SEPARATOR, C_NONE_LABEL, D_POSROOT, D_NULLHEAD]
-c_encs = [C_ABSOLUTE_ENCODING, C_RELATIVE_ENCODING, C_DYNAMIC_ENCODING]
+
 
 
 print("["+bcolors.WARNING+"-->"+bcolors.ENDC+"] Testing encoding and decoding gives the same file...")
@@ -127,7 +128,6 @@ for enc in c_encs:
     encode_constituent(in_path = f_ptb+".trees", out_path = f_ptb+"."+enc+".labels", 
                         encoding_type = enc, reverse = True,
                         separator = "_", unary_joiner = "++", features = None)
-    
     decode_constituent(in_path = f_ptb+"."+enc+".labels", out_path = f_ptb+"."+enc+".decoded.trees",
                         encoding_type = enc, reverse = True, separator = "_", unary_joiner = "++", nulls = True,
                         conflicts = C_STRAT_MAX, postags = False, lang = "en")

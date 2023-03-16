@@ -1,4 +1,4 @@
-from src.utils.constants import C_ABSOLUTE_ENCODING, C_RELATIVE_ENCODING, C_NONE_LABEL, C_TETRA_ENCODING
+from codelin.utils.constants import C_ABSOLUTE_ENCODING, C_RELATIVE_ENCODING, C_NONE_LABEL, C_TETRA_ENCODING
 
 class C_Label:
     def __init__(self, nc, lc, uc, et, sp, uj):
@@ -37,7 +37,7 @@ class C_Label:
         else:
             nc, lc, uc = label_components
         
-        et = C_RELATIVE_ENCODING if '*' in nc else C_ABSOLUTE_ENCODING
+        et = C_RELATIVE_ENCODING if '*' in nc else C_ABSOLUTE_ENCODING if nc.isdigit() else C_TETRA_ENCODING
         nc = nc.replace("*","")
         return C_Label(nc, lc, uc, et, sep, uj)
     

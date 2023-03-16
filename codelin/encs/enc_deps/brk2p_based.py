@@ -1,8 +1,8 @@
-from src.encs.abstract_encoding import ADEncoding
-from src.utils.constants import D_2P_GREED, D_2P_PROP, D_NONE_LABEL
-from src.models.deps_label import D_Label
-from src.models.deps_tree import D_Tree
-from src.models.linearized_tree import LinearizedTree
+from codelin.encs.abstract_encoding import ADEncoding
+from codelin.utils.constants import D_2P_GREED, D_2P_PROP, D_NONE_LABEL
+from codelin.models.deps_label import D_Label
+from codelin.models.deps_tree import D_Tree
+from codelin.models.linearized_tree import LinearizedTree
 
 
 class D_Brk2PBasedEncoding(ADEncoding):

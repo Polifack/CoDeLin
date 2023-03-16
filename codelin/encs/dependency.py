@@ -1,10 +1,10 @@
 import stanza
-from src.models.linearized_tree import LinearizedTree
-from src.models.deps_label import D_Label
-from src.utils.extract_feats import extract_features_deps
-from src.encs.enc_deps import *
-from src.utils.constants import *
-from src.models.deps_tree import D_Tree
+from codelin.models.linearized_tree import LinearizedTree
+from codelin.models.deps_label import D_Label
+from codelin.utils.extract_feats import extract_features_deps
+from codelin.encs.enc_deps import *
+from codelin.utils.constants import *
+from codelin.models.deps_tree import D_Tree
 
 # Encoding
 def encode_dependencies(in_path, out_path, encoding_type, separator, displacement, planar_alg, root_enc, features):

@@ -1,8 +1,8 @@
-from src.encs.abstract_encoding import ACEncoding
-from src.utils.constants import C_ABSOLUTE_ENCODING, C_ROOT_LABEL, C_CONFLICT_SEPARATOR, C_NONE_LABEL
-from src.models.const_label import C_Label
-from src.models.linearized_tree import LinearizedTree
-from src.models.const_tree import C_Tree
+from codelin.encs.abstract_encoding import ACEncoding
+from codelin.utils.constants import C_ABSOLUTE_ENCODING, C_ROOT_LABEL, C_CONFLICT_SEPARATOR, C_NONE_LABEL
+from codelin.models.const_label import C_Label
+from codelin.models.linearized_tree import LinearizedTree
+from codelin.models.const_tree import C_Tree
 
 import re
 

@@ -1,6 +1,5 @@
-import argparse
-from src.models.const_tree import C_Tree
-from src.models.deps_tree import D_Tree
+from codelin.models.const_tree import C_Tree
+from codelin.models.deps_tree import D_Tree
 
 def extract_features_const(in_path):
     file_in = open(in_path, "r")

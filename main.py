@@ -1,13 +1,13 @@
-from src.encs.dependency import encode_dependencies, decode_dependencies
-from src.encs.constituent import encode_constituent, decode_constituent
-from src.utils.constants import *
+from codelin.encs.dependency import encode_dependencies, decode_dependencies
+from codelin.encs.constituent import encode_constituent, decode_constituent
+from codelin.utils.constants import *
 
 import argparse
 import time
 
 if __name__=="__main__":
 
-    encodings = [C_ABSOLUTE_ENCODING, C_RELATIVE_ENCODING, C_DYNAMIC_ENCODING,
+    encodings = [C_ABSOLUTE_ENCODING, C_RELATIVE_ENCODING, C_DYNAMIC_ENCODING, C_TETRA_ENCODING,
                 D_ABSOLUTE_ENCODING, D_RELATIVE_ENCODING, D_POS_ENCODING, D_BRACKET_ENCODING, D_BRACKET_ENCODING_2P]
 
     parser = argparse.ArgumentParser(description='Constituent and Dependencies Linearization System')

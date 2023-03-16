@@ -1,6 +1,6 @@
-from src.utils.constants import BOS, EOS, C_NO_POSTAG_LABEL
-from src.models.const_label import C_Label
-from src.models.deps_label import D_Label
+from codelin.utils.constants import BOS, EOS, C_NO_POSTAG_LABEL
+from codelin.models.const_label import C_Label
+from codelin.models.deps_label import D_Label
 
 class LinearizedTree:
     def __init__(self, words, postags, additional_feats, labels, n_feats):

@@ -1,10 +1,10 @@
-from src.models.linearized_tree import LinearizedTree
-from src.encs.enc_const import *
-from src.utils.extract_feats import extract_features_const
-from src.utils.constants import C_ABSOLUTE_ENCODING, C_RELATIVE_ENCODING, C_DYNAMIC_ENCODING
+from codelin.models.linearized_tree import LinearizedTree
+from codelin.encs.enc_const import *
+from codelin.utils.extract_feats import extract_features_const
+from codelin.utils.constants import C_ABSOLUTE_ENCODING, C_RELATIVE_ENCODING, C_DYNAMIC_ENCODING, C_TETRA_ENCODING
 
 import stanza.pipeline
-from src.models.const_tree import C_Tree
+from codelin.models.const_tree import C_Tree
 
 
 ## Encoding and decoding
@@ -26,6 +26,9 @@ def encode_constituent(in_path, out_path, encoding_type, reverse, separator, una
             encoder = C_NaiveRelativeEncoding(separator, unary_joiner, reverse)
     elif encoding_type == C_DYNAMIC_ENCODING:
             encoder = C_NaiveDynamicEncoding(separator, unary_joiner, reverse)
+    elif encoding_type == C_TETRA_ENCODING:
+            encoder = C_Tetratag(separator, unary_joiner, reverse)
+
     else:
         raise Exception("Unknown encoding type")
 
@@ -76,6 +79,8 @@ def decode_constituent(in_path, out_path, encoding_type, reverse, separator, una
             decoder = C_NaiveRelativeEncoding(separator, unary_joiner, reverse)
     elif encoding_type == C_DYNAMIC_ENCODING:
             decoder = C_NaiveDynamicEncoding(separator, unary_joiner, reverse)
+    elif encoding_type == C_TETRA_ENCODING:
+            decoder = C_Tetratag(separator, unary_joiner, reverse)
     else:
         raise Exception("Unknown encoding type")
 

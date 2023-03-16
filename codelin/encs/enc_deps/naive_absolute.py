@@ -1,8 +1,8 @@
-from src.encs.abstract_encoding import ADEncoding
-from src.models.deps_label import D_Label
-from src.models.linearized_tree import LinearizedTree
-from src.models.deps_tree import D_Tree
-from src.utils.constants import D_NONE_LABEL
+from codelin.encs.abstract_encoding import ADEncoding
+from codelin.models.deps_label import D_Label
+from codelin.models.linearized_tree import LinearizedTree
+from codelin.models.deps_tree import D_Tree
+from codelin.utils.constants import D_NONE_LABEL
 
 class D_NaiveAbsoluteEncoding(ADEncoding):
     def __init__(self, separator):
