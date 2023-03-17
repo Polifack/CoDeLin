@@ -437,11 +437,6 @@ class C_Tree:
     def __repr__(self):
         return self.__str__()
 
-    def __eq__(self, other):
-        if isinstance(other, C_Tree):
-            return self.label == other.label and self.children == other.children
-        return False
-
     def __hash__(self):
         return hash((self.label, tuple(self.children)))
 
