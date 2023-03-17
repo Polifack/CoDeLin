@@ -194,6 +194,14 @@ class C_Tree:
         '''
         return len(self.children) == 1 and self.children[0].is_terminal()
 
+    def is_unary_chain(self):
+        '''
+        Returns true if the tree is a unary chain
+        '''
+        if len(self.children)==1 and not (self.is_preterminal() or self.is_terminal()):
+            return True
+        else:
+            return False
 
 # Tree processing
     def extract_features(self, f_mark = "##", f_sep = "|"):
@@ -225,16 +233,42 @@ class C_Tree:
         by a new node where the label is formed by all the 
         members in the unary chain separated by 'unary_joiner' string.
         '''
-        new_children = []
-        for child in self.children:
-            new_children.append(child.collapse_unary(unary_joiner))
-        
-        if len(self.children)==1 and not self.is_preterminal():
-            label = self.label + unary_joiner + self.children[0].label
-            children = self.children[0].children
-            return C_Tree(label, children)
+
+        if len(self.children)==1 and not (self.children[0].is_preterminal() or self.children[0].is_terminal()):
+            
+            c = self.children[0]
+            label = c.label
+            
+            # get all unary chain nodes
+            while len(c.children)==1 and not (c.is_preterminal() or c.is_terminal()):
+                label += unary_joiner + c.children[0].label
+                c = c.children[0]
+            
+            label = self.label + unary_joiner + label
+            children = c.children
+            return C_Tree(label, [c.collapse_unary(unary_joiner) for c in children])
         else:
-            return C_Tree(self.label, new_children)
+            return C_Tree(self.label, [c.collapse_unary(unary_joiner) for c in self.children])
+
+    def uncollapse_unary(self, unary_joiner="+"):
+        '''
+        Returns a new tree where the unary chains are replaced
+        by a new node where the label is formed by all the
+        members in the unary chain separated by 'unary_joiner' string.
+        '''
+        if unary_joiner in self.label:
+            us = self.label.split(unary_joiner)
+            temp_tree = C_Tree(us[0])
+            pointer   = temp_tree
+            for i in range(1, len(us)):
+                pointer.add_child(C_Tree(us[i]))
+                pointer = pointer.children[0]
+                
+            
+            pointer.add_child([c.uncollapse_unary(unary_joiner) for c in self.children])
+            return temp_tree
+        else:
+            return C_Tree(self.label, [c.uncollapse_unary(unary_joiner) for c in self.children])
 
     def remove_preterminals(self):
         '''
@@ -495,6 +529,7 @@ class C_Tree:
         Given a Constituent Tree returns its
         binary form.
         '''
+        #print(t.label,"...")
         if len(t.children) == 1:
             return t
         if len(t.children) == 2:
@@ -502,6 +537,7 @@ class C_Tree:
             rc = C_Tree.to_binary_right(t.children[1])
             return C_Tree(t.label, [lc,rc])
         else:
+        #    print(t.label,"with",t.children[0].label)
             c1 = t.children[0]
             if type(c1) is C_Tree:
                 c1 = C_Tree.to_binary_right(c1)

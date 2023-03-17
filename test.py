@@ -175,6 +175,9 @@ for enc in c_encs:
 # Evaluation of tree binarizer
 print("["+bcolors.WARNING+"-->"+bcolors.ENDC+"] Testing Binarization and de-binarization of constituent trees...")
 for enc in c_encs:
+    if enc==C_TETRA_ENCODING:
+        print("["+bcolors.WARNING+"-->"+bcolors.ENDC+"] Skipping tetra encoding for constituent decoding (predicted labels file not available)...")
+        continue
     pred_const = "./test/pred.const."+enc+".labels"
     pred_const_dec = "./test/pred.const."+enc+".decoded.trees"
 
@@ -239,6 +242,9 @@ for enc in d_encs:
 # Evaluation for predicted constituent labels file
 print("["+bcolors.WARNING+"-->"+bcolors.ENDC+"] Testing decoding of predicted constituent labels file (nulls and conflicts)...")
 for enc in c_encs:
+    if enc==C_TETRA_ENCODING:
+        print("["+bcolors.WARNING+"-->"+bcolors.ENDC+"] Skipping tetra encoding for constituent decoding (predicted labels file not available)...")
+        continue
     pred_const = "./test/pred.const."+enc+".labels"
     pred_const_dec = "./test/pred.const."+enc+".decoded.trees"
 

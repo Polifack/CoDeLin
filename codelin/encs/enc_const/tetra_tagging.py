@@ -7,30 +7,6 @@ from codelin.models.const_tree import C_Tree
 import re
 import copy
 
-def get_child_directions(t):
-    # the parent should stop for the last one
-    labels = []
-    for node in t.children:
-        if node.is_terminal():
-            label_string = ""
-
-            if node.is_right_child():
-                label_string+="l"
-            elif node.is_left_child():
-                label_string+="r"
-            
-            if node.parent.is_right_child():
-                label_string+="L"
-            elif node.parent.is_left_child():
-                label_string+="R"
-            
-            labels.append(label_string)
-        child_labels = get_child_directions(node)
-        for label in child_labels if child_labels != [] else []:
-            labels.append(label)
-    
-    return labels
-
 def combine(tree, new_child):
     '''
     Replaces a C_NONE_LABEL inside 'tree'
@@ -74,68 +50,86 @@ class C_Tetratag(ACEncoding):
 
     directions_dir = {"lL":0,"lR":1,"rL":2,"rR":3}
 
-    def encode(self, constituent_tree):        
-        lc_tree = LinearizedTree.empty_tree()
+    def encode(self,constituent_tree):
+        nodes = []
+        labels = []
+        words = []
+        postags = []
+        unary_chains = []
+        non_terminals = []
+        features = []
+        # It is needed to collapse unary before binary
+        constituent_tree = constituent_tree.collapse_unary()
+        constituent_tree = C_Tree.to_binary_right(constituent_tree)
+        C_Tree.inorder(constituent_tree,  lambda x: nodes.append(x))
+        # Extract info from the tree
+        last_uc  = ""
+        last_pos = ""
+        for n in nodes:
+            label_string = ""
+            if n.is_unary_chain():
+                last_uc = n.label
+                continue
 
-        # Compute the Binary Tree and the arrows
-        binary_tree = C_Tree.to_binary_right(constituent_tree)
-        
-        binary_tree_collapsed = binary_tree.collapse_unary()
-        binary_tree_collapsed = binary_tree_collapsed.remove_preterminals()
-        binary_tree_collapsed = C_Tree(C_ROOT_LABEL, binary_tree_collapsed)
-        child_dirs = get_child_directions(binary_tree_collapsed)
+            if n.is_preterminal():
+                last_pos = n.label
+                continue
 
-        # Compute the number of commons
-        leaf_paths = binary_tree.path_to_leaves(collapse_unary=True, unary_joiner="+")
-        
-        for i in range(0, len(leaf_paths)-1):
-            path_a = leaf_paths[i]
-            path_b = leaf_paths[i+1]
-            
-            last_common = ""
-            for a,b in zip(path_a, path_b):
-                if (a!=b):
-                    # Remove the digits and aditional feats in the last common node
-                    last_common = re.sub(r'[0-9]+', '', last_common)
-                    last_common = last_common.split("##")[0]
+            if n.is_terminal():
+                # get the parent if the parent is a pos tag
+                if n.parent is not None and n.parent.is_preterminal():
+                    pn = n.parent
+                else:
+                    pn = n
 
-                    # Get word and POS tag
-                    word = path_a[-1]
-                    postag = path_a[-2]
-                    
-                    # Build the Leaf Unary Chain
-                    unary_chain = None
-                    leaf_unary_chain = postag.split("+")
-                    if len(leaf_unary_chain)>1:
-                        unary_list = []
-                        for element in leaf_unary_chain[:-1]:
-                            unary_list.append(element.split("##")[0])
+                # get the parent if the parent is a unary chain
+                if pn.parent is not None and pn.parent.is_unary_chain():
+                    pn = pn.parent
+                else:
+                    pn = pn
 
-                        unary_chain ="+".join(unary_list)
-                        postag = leaf_unary_chain[len(leaf_unary_chain)-1]
-                    
-                    # Clean the POS Tag and extract additional features
-                    postag_split = postag.split("##")
-                    feats = [None]
-
-                    if len(postag_split) > 1:
-                        postag = re.sub(r'[0-9]+', '', postag_split[0])
-                        feats = postag_split[1].split("|")
-                    else:
-                        postag = re.sub(r'[0-9]+', '', postag)
-
-                    direction = child_dirs[i]
-                    c_label = C_Label(direction, last_common, unary_chain, C_TETRA_ENCODING, "_", "+")
-                    
-                    # Append the data
-                    lc_tree.add_row(word, postag, feats, c_label)
+                # check if it is a right or left child
+                if pn.is_right_child():
+                    label_string+="l"
+                elif pn.is_left_child() or pn.parent is None:
+                    label_string+="r"
                 
-                    break            
-                last_common = a
+                unary_chains.append(last_uc)
+                postag, feats = self.get_features(last_pos)
+                postags.append(postag)
+                words.append(n.label)
+                features.append(feats)
+                
+                last_pos = ""
+                last_uc  = ""
             
-        # n = max number of features of the tree
-        lc_tree.n = max([len(f) for f in lc_tree.additional_feats])
-        return lc_tree
+            else:
+                if n.is_right_child():
+                    label_string+="L"
+                elif n.is_left_child() or n.parent is None:
+                    label_string+="R"
+                non_terminals.append(n.label)
+            labels.append(label_string)
+        
+        # Merge labels in tuples
+        labels_merged = []
+        for i in range(0, len(labels), 2):
+            if i == len(labels)-1:
+                labels_merged.append(labels[i])
+            else:
+                labels_merged.append(labels[i]+labels[i+1])
+        
+        # Add a final non terminal if needed
+        if len(non_terminals)<len(words):
+            non_terminals.append("NONE")
+        
+        # Create the labels and linearized tree
+        c_labels = []
+        for i in range(len(words)):
+            l_i = C_Label(labels_merged[i], non_terminals[i], unary_chains[i], C_TETRA_ENCODING, "_", "+")
+            c_labels.append(l_i)
+        lin_tree = LinearizedTree(words, postags, features, c_labels, None)
+        return lin_tree
 
     def decode(self, linearized_tree):
         stack = []
@@ -143,20 +137,23 @@ class C_Tetratag(ACEncoding):
         tree = None
         for word, postag, feats, label in linearized_tree.iterrows():
             a, t, uc = label.n_commons, label.last_common, label.unary_chain
-            a1, a2 = a[0], a[1]
+            a1= a[0]
+            
             if a1 == "r":
                 leaf = buffer.pop(0)
-                terminal_tree = build_unary_chain(leaf, postag, uc, "+")
+                terminal_tree = build_unary_chain(leaf, postag, uc, self.unary_joiner)
                 stack.append(terminal_tree)
             
             if a1 == "l":
                 leaf = buffer.pop(0)
-                terminal_tree = build_unary_chain(leaf, postag, uc, "+")
+                terminal_tree = build_unary_chain(leaf, postag, uc, self.unary_joiner)
                 stack[-1] = combine(stack[-1], terminal_tree)
+
             
             if len(buffer)==0:
                 break
-
+            
+            a2 = a[1]
             if a2 == "R":
                 tree = C_Tree(t, [stack[-1], C_Tree.empty_tree()])
                 stack[-1] = tree
@@ -165,7 +162,8 @@ class C_Tetratag(ACEncoding):
                 tree = stack.pop()
                 tree = C_Tree(t, [tree, C_Tree.empty_tree()])
                 stack[-1] = combine(stack[-1], tree)
-
+                
         final_tree = stack[0]
         final_tree = C_Tree.restore_from_binary(final_tree)
+        final_tree = final_tree.uncollapse_unary(self.unary_joiner)
         return final_tree
