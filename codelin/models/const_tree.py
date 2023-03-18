@@ -415,6 +415,11 @@ class C_Tree:
                 c.reverse_tree()
         self.children.reverse()
 
+    def shallow_equals(self, other):
+        '''
+        Returns true if the trees have the same label and the same number of children
+        '''
+        return self.label == other.label and len(self.children) == len(other.children) and all([c.shallow_equals(other.children[i]) for i,c in enumerate(self.children)])
 
 # Printing and python-related functions
     def __str__(self):
@@ -519,40 +524,45 @@ class C_Tree:
             return C_Tree(t.label, [c1, c2])
         
     @staticmethod
-    def to_binary_right(t):
+    def to_binary_right(t, binary_marker="*"):
         '''
         Given a Constituent Tree returns its
         binary form.
         '''
-        #print(t.label,"...")
         if len(t.children) == 1:
             return t
         if len(t.children) == 2:
-            lc = C_Tree.to_binary_right(t.children[0])
-            rc = C_Tree.to_binary_right(t.children[1])
+            lc = C_Tree.to_binary_right(t.children[0], binary_marker)
+            rc = C_Tree.to_binary_right(t.children[1], binary_marker)
             return C_Tree(t.label, [lc,rc])
         else:
-        #    print(t.label,"with",t.children[0].label)
             c1 = t.children[0]
             if type(c1) is C_Tree:
-                c1 = C_Tree.to_binary_right(c1)
-            c2 = C_Tree(t.label+"*", t.children[1:])
-            c2 = C_Tree.to_binary_right(c2)
+                c1 = C_Tree.to_binary_right(c1, binary_marker)
+
+            # add the binary marker to the label            
+            if binary_marker not in t.label:
+                c2_label = t.label+binary_marker
+            else:
+                c2_label = t.label
+
+            c2 = C_Tree(c2_label, t.children[1:])
+            c2 = C_Tree.to_binary_right(c2, binary_marker)
             return C_Tree(t.label, [c1, c2])          
 
     @staticmethod
-    def restore_from_binary(bt):
+    def restore_from_binary(bt, binary_marker="*"):
         '''
         Given a binarized Constituent Tree returns it to
         its original form
         '''
         for c in bt.children:
             if type(bt) is C_Tree:
-                c = C_Tree.restore_from_binary(c)
+                c = C_Tree.restore_from_binary(c, binary_marker)
         
         new_children = []
         for c in bt.children:
-            if c.label[-1] == "*":
+            if binary_marker in c.label:
                 for cc in c.children:
                     new_children.append(cc)
             else:

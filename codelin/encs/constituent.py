@@ -9,7 +9,7 @@ from codelin.models.const_tree import C_Tree
 
 ## Encoding and decoding
 
-def encode_constituent(in_path, out_path, encoding_type, reverse, separator, unary_joiner, features):
+def encode_constituent(in_path, out_path, encoding_type, reverse, separator, unary_joiner, features, binary_marker):
     '''
     Encodes the selected file according to the specified parameters:
     :param in_path: Path of the file to be encoded
@@ -27,7 +27,7 @@ def encode_constituent(in_path, out_path, encoding_type, reverse, separator, una
     elif encoding_type == C_DYNAMIC_ENCODING:
             encoder = C_NaiveDynamicEncoding(separator, unary_joiner, reverse)
     elif encoding_type == C_TETRA_ENCODING:
-            encoder = C_Tetratag(separator, unary_joiner, reverse)
+            encoder = C_Tetratag(separator, unary_joiner, reverse, binary_marker)
 
     else:
         raise Exception("Unknown encoding type")
@@ -62,7 +62,7 @@ def encode_constituent(in_path, out_path, encoding_type, reverse, separator, una
     
     return labels_counter, tree_counter, len(label_set)
 
-def decode_constituent(in_path, out_path, encoding_type, reverse, separator, unary_joiner, conflicts, nulls, postags, lang):
+def decode_constituent(in_path, out_path, encoding_type, reverse, separator, unary_joiner, conflicts, nulls, postags, lang, binary_marker):
     '''
     Decodes the selected file according to the specified parameters:
     :param in_path: Path of the labels file to be decoded
@@ -80,7 +80,7 @@ def decode_constituent(in_path, out_path, encoding_type, reverse, separator, una
     elif encoding_type == C_DYNAMIC_ENCODING:
             decoder = C_NaiveDynamicEncoding(separator, unary_joiner, reverse)
     elif encoding_type == C_TETRA_ENCODING:
-            decoder = C_Tetratag(separator, unary_joiner, reverse)
+            decoder = C_Tetratag(separator, unary_joiner, reverse, binary_marker)
     else:
         raise Exception("Unknown encoding type")
 

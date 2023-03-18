@@ -69,6 +69,9 @@ if __name__=="__main__":
     
     parser.add_argument('--lang', required=False, type=str, default='en', 
                         help = 'Language employed in part of speech predition')
+    
+    parser.add_argument("--binary_marker", required=False, type=str, default="*",
+                        help="Marker for binary nodes in the treebank")
 
     args = parser.parse_args()
 
@@ -79,13 +82,13 @@ if __name__=="__main__":
         
         if args.operation == OP_ENC:
             n_labels, n_trees, n_diff_labels = encode_constituent(args.input, args.output, args.enc, args.incremental,
-                                                                  args.sep, args.ujoiner, args.feats)
+                                                                  args.sep, args.ujoiner, args.feats, args.binary_marker)
         
         elif args.operation == OP_DEC:
             n_diff_labels = None
             n_trees, n_labels = decode_constituent(args.input, args.output, args.enc, args.incremental, args.sep, 
                                                    args.ujoiner, args.conflict, args.nulls, 
-                                                   args.postags, args.lang)
+                                                   args.postags, args.lang, args.binary_marker)
     
     elif args.formalism == F_DEPENDENCY:
         

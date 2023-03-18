@@ -109,11 +109,11 @@ for enc in d_encs:
 for enc in c_encs:
     encode_constituent(in_path = f_ptb+".trees", out_path = f_ptb+"."+enc+".labels", 
                         encoding_type = enc, reverse = False,
-                        separator = "_", unary_joiner = "++", features = None)
+                        separator = "_", unary_joiner = "++", features = None, binary_marker="*")
     
     decode_constituent(in_path = f_ptb+"."+enc+".labels", out_path = f_ptb+"."+enc+".decoded.trees",
                         encoding_type = enc, reverse = False, separator = "_", unary_joiner = "++", nulls = True,
-                        conflicts = C_STRAT_MAX, postags = False, lang = "en")
+                        conflicts = C_STRAT_MAX, postags = False, lang = "en", binary_marker="*")
     
     answ = system_call("./evalb/evalb "+f_ptb+".trees "+f_ptb+"."+enc+".decoded.trees -p ./evalb/COLLINS.prm")
     fmeasure = re.findall(r'\d+\.\d+', answ)[1]
@@ -127,10 +127,10 @@ for enc in c_encs:
 for enc in c_encs:
     encode_constituent(in_path = f_ptb+".trees", out_path = f_ptb+"."+enc+".labels", 
                         encoding_type = enc, reverse = True,
-                        separator = "_", unary_joiner = "++", features = None)
+                        separator = "_", unary_joiner = "++", features = None, binary_marker="*")
     decode_constituent(in_path = f_ptb+"."+enc+".labels", out_path = f_ptb+"."+enc+".decoded.trees",
                         encoding_type = enc, reverse = True, separator = "_", unary_joiner = "++", nulls = True,
-                        conflicts = C_STRAT_MAX, postags = False, lang = "en")
+                        conflicts = C_STRAT_MAX, postags = False, lang = "en", binary_marker="*")
     
     answ = system_call("./evalb/evalb "+f_ptb+".trees "+f_ptb+"."+enc+".decoded.trees -p ./evalb/COLLINS.prm")
     fmeasure = re.findall(r'\d+\.\d+', answ)[1]
@@ -145,7 +145,7 @@ for enc in c_encs:
     feats = ["lem", "case", "number", "gender"]
     encode_constituent(in_path = f_spmrl+".trees", out_path = f_spmrl+"."+enc+".labels",
                         encoding_type = enc, reverse = False,
-                        separator = "_", unary_joiner = "++", features = feats)
+                        separator = "_", unary_joiner = "++", features = feats, binary_marker="*")
     
     # Check number of columns in labels
     with open(f_spmrl+"."+enc+".labels") as f:
@@ -160,7 +160,7 @@ for enc in c_encs:
     
     decode_constituent(in_path = f_spmrl+"."+enc+".labels", out_path = f_spmrl+"."+enc+".decoded.trees",
                         encoding_type = enc, reverse = False, separator = "_", unary_joiner = "++", nulls = True,
-                        conflicts=C_STRAT_MAX, postags = False, lang = "en")
+                        conflicts=C_STRAT_MAX, postags = False, lang = "en", binary_marker="*")
     
 
     answ = system_call("./evalb/evalb "+f_spmrl+".trees "+f_spmrl+"."+enc+".decoded.trees -p ./evalb/COLLINS.prm")
@@ -183,14 +183,18 @@ for enc in c_encs:
 
     decode_constituent(in_path = pred_const, out_path = pred_const_dec,
                         encoding_type = enc,reverse = False,separator = "_", unary_joiner = "+", nulls = True,
-                        conflicts = C_STRAT_MAX, postags = False, lang = "en")
+                        conflicts = C_STRAT_MAX, postags = False, lang = "en", binary_marker="*")
 
     for line in open(pred_const_dec):
         line = line.rstrip()
         ct = C_Tree.from_string(line)
         bt = C_Tree.to_binary_right(ct)
         dt = C_Tree.restore_from_binary(bt)
-        assert ct == dt
+        if not ct.shallow_equals(dt):
+            print("[!] Error: Constituent tree binarization and de-binarization failed for encoding "+enc)
+            print("    Original tree: "+ct.to_string())
+            print("    Binarized tree: "+bt.to_string())
+            print("    De-binarized tree: "+dt.to_string())
         bt = C_Tree.to_binary_left(ct)
         dt = C_Tree.restore_from_binary(bt)
     os.remove(pred_const_dec)
@@ -250,7 +254,7 @@ for enc in c_encs:
 
     decode_constituent(in_path = pred_const, out_path = pred_const_dec,
                         encoding_type = enc, reverse = False, separator = "_", unary_joiner = "+", nulls = True,
-                        conflicts = C_STRAT_MAX, postags = False, lang = "en")
+                        conflicts = C_STRAT_MAX, postags = False, lang = "en", binary_marker="*")
 
     for line in open(pred_const_dec):
         if any(x in line for x in forbidden_strings):

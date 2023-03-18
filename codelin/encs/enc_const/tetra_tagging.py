@@ -40,16 +40,15 @@ def build_unary_chain(word, postag, unary_chain, unary_joiner):
     return pos_tree
 
 class C_Tetratag(ACEncoding):
-    def __init__(self, separator, unary_joiner, reverse):
+    def __init__(self, separator, unary_joiner, reverse, binary_marker="*"):
         self.separator = separator
         self.unary_joiner = unary_joiner
         self.reverse = reverse
+        self.binary_marker = binary_marker
 
     def __str__(self):
         return "Constituent Tetratagging"
-
-    directions_dir = {"lL":0,"lR":1,"rL":2,"rR":3}
-
+    
     def encode(self,constituent_tree):
         nodes = []
         labels = []
@@ -60,7 +59,7 @@ class C_Tetratag(ACEncoding):
         features = []
         # It is needed to collapse unary before binary
         constituent_tree = constituent_tree.collapse_unary()
-        constituent_tree = C_Tree.to_binary_right(constituent_tree)
+        constituent_tree = C_Tree.to_binary_right(constituent_tree, self.binary_marker)
         C_Tree.inorder(constituent_tree,  lambda x: nodes.append(x))
         # Extract info from the tree
         last_uc  = ""
@@ -164,6 +163,6 @@ class C_Tetratag(ACEncoding):
                 stack[-1] = combine(stack[-1], tree)
                 
         final_tree = stack[0]
-        final_tree = C_Tree.restore_from_binary(final_tree)
+        final_tree = C_Tree.restore_from_binary(final_tree, self.binary_marker)
         final_tree = final_tree.uncollapse_unary(self.unary_joiner)
         return final_tree
