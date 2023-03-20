@@ -19,8 +19,11 @@ def combine(tree, new_child):
     current_level = tree
     
     while(not current_level.has_none_child()):
+        if (len(current_level.children) < 1):
+            print("[MERGE ERROR] No children found")
+            return tree
         current_level = current_level.r_child()
-
+    
     if current_level.children[0].label == C_NONE_LABEL:
         current_level.children[0] = new_child
     elif current_level.children[1].label == C_NONE_LABEL:
@@ -62,13 +65,9 @@ class C_Tetratag(ACEncoding):
         constituent_tree = C_Tree.to_binary_right(constituent_tree, self.binary_marker)
         C_Tree.inorder(constituent_tree,  lambda x: nodes.append(x))
         # Extract info from the tree
-        last_uc  = ""
         last_pos = ""
         for n in nodes:
             label_string = ""
-            if n.is_unary_chain():
-                last_uc = n.label
-                continue
 
             if n.is_preterminal():
                 last_pos = n.label
@@ -93,14 +92,20 @@ class C_Tetratag(ACEncoding):
                 elif pn.is_left_child() or pn.parent is None:
                     label_string+="r"
                 
-                unary_chains.append(last_uc)
+                if self.unary_joiner in last_pos:
+                    uc = "+".join(last_pos.split(self.unary_joiner)[:-1])
+                    last_pos = last_pos.split(self.unary_joiner)[-1]
+                else:
+                    uc = ""
+
                 postag, feats = self.get_features(last_pos)
+                
                 postags.append(postag)
+                unary_chains.append(uc)
                 words.append(n.label)
                 features.append(feats)
                 
                 last_pos = ""
-                last_uc  = ""
             
             else:
                 if n.is_right_child():
@@ -146,7 +151,11 @@ class C_Tetratag(ACEncoding):
             if a1 == "l":
                 leaf = buffer.pop(0)
                 terminal_tree = build_unary_chain(leaf, postag, uc, self.unary_joiner)
-                stack[-1] = combine(stack[-1], terminal_tree)
+                
+                if len(stack)==0:
+                    stack.append(terminal_tree)
+                else:
+                    stack[-1] = combine(stack[-1], terminal_tree)
 
             
             if len(buffer)==0:
@@ -155,14 +164,26 @@ class C_Tetratag(ACEncoding):
             a2 = a[1]
             if a2 == "R":
                 tree = C_Tree(t, [stack[-1], C_Tree.empty_tree()])
-                stack[-1] = tree
+                
+                if len(stack)==0:
+                    stack.append(tree)
+                else:
+                    stack[-1] = tree
                 
             if a2 == "L":
                 tree = stack.pop()
                 tree = C_Tree(t, [tree, C_Tree.empty_tree()])
-                stack[-1] = combine(stack[-1], tree)
                 
-        final_tree = stack[0]
+                if len(stack)==0:
+                    stack.append(tree)
+                else:
+                    stack[-1] = combine(stack[-1], tree)
+                
+        # If there are more than one tree in the stack, combine them   
+        final_tree = stack.pop()
+        while(len(stack)>=1):
+            final_tree = combine(stack.pop(), final_tree)
+        
         final_tree = C_Tree.restore_from_binary(final_tree, self.binary_marker)
         final_tree = final_tree.uncollapse_unary(self.unary_joiner)
         return final_tree

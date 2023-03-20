@@ -29,7 +29,6 @@ class C_NaiveAbsoluteEncoding(ACEncoding):
             last_common = ""
             n_commons   = 0
             for a,b in zip(path_a, path_b):
-
                 if (a!=b):
                     # Remove the digits and aditional feats in the last common node
                     last_common = self.clean_last_common(last_common)

@@ -227,28 +227,28 @@ class C_Tree:
 
                     node.features[key]=value
 
-    def collapse_unary(self, unary_joiner="+"):
+    def collapse_unary(self, unary_joiner="+", collapse_postags=False):
         '''
         Returns a new tree where the unary chains are replaced
         by a new node where the label is formed by all the 
         members in the unary chain separated by 'unary_joiner' string.
         '''
 
-        if len(self.children)==1 and not (self.children[0].is_preterminal() or self.children[0].is_terminal()):
+        if self.is_unary_chain():
             
             c = self.children[0]
             label = c.label
             
             # get all unary chain nodes
-            while len(c.children)==1 and not (c.is_preterminal() or c.is_terminal()):
+            while c.is_unary_chain():
                 label += unary_joiner + c.children[0].label
                 c = c.children[0]
             
             label = self.label + unary_joiner + label
             children = c.children
-            return C_Tree(label, [c.collapse_unary(unary_joiner) for c in children])
+            return C_Tree(label, [c.collapse_unary(unary_joiner, collapse_postags) for c in children])
         else:
-            return C_Tree(self.label, [c.collapse_unary(unary_joiner) for c in self.children])
+            return C_Tree(self.label, [c.collapse_unary(unary_joiner,collapse_postags) for c in self.children])
 
     def uncollapse_unary(self, unary_joiner="+"):
         '''
