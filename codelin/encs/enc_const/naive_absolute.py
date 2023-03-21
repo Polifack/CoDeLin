@@ -7,10 +7,12 @@ from codelin.models.const_tree import C_Tree
 import re
 
 class C_NaiveAbsoluteEncoding(ACEncoding):
-    def __init__(self, separator, unary_joiner, reverse):
+    def __init__(self, separator, unary_joiner, reverse, binary, binary_marker):
         self.separator = separator
         self.unary_joiner = unary_joiner
         self.reverse = reverse
+        self.binary = binary
+        self.binary_marker = binary_marker
 
     def __str__(self):
         return "Constituent Naive Absolute Encoding"
@@ -18,6 +20,8 @@ class C_NaiveAbsoluteEncoding(ACEncoding):
     def encode(self, constituent_tree):
         if self.reverse:
             constituent_tree.reverse_tree()
+        if self.binary:
+            constituent_tree = C_Tree.to_binary_right(constituent_tree, self.binary_marker)
         
         lc_tree = LinearizedTree.empty_tree()
         leaf_paths = constituent_tree.path_to_leaves(collapse_unary=True, unary_joiner=self.unary_joiner)
@@ -132,4 +136,6 @@ class C_NaiveAbsoluteEncoding(ACEncoding):
         tree.inherit_tree()
         if self.reverse:
             tree.reverse_tree()
+        if self.binary:
+            tree = C_Tree.restore_from_binary(tree, self.binary_marker)
         return tree

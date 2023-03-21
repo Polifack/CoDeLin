@@ -7,10 +7,12 @@ from codelin.models.const_tree import C_Tree
 import re
 
 class C_NaiveRelativeEncoding(ACEncoding):
-    def __init__(self, separator, unary_joiner, reverse):
+    def __init__(self, separator, unary_joiner, reverse, binary, binary_marker):
         self.separator = separator
         self.unary_joiner = unary_joiner
         self.reverse = reverse
+        self.binary = binary
+        self.binary_marker = binary_marker
 
     def __str__(self):
         return "Constituent Naive Relative Encoding"
@@ -18,6 +20,8 @@ class C_NaiveRelativeEncoding(ACEncoding):
     def encode(self, constituent_tree):
         if self.reverse:
             constituent_tree.reverse_tree()
+        if self.binary:
+            constituent_tree = C_Tree.to_binary_right(constituent_tree, self.binary_marker)
 
         leaf_paths = constituent_tree.path_to_leaves(collapse_unary=True, unary_joiner=self.unary_joiner)
         lc_tree = LinearizedTree.empty_tree()
@@ -91,11 +95,6 @@ class C_NaiveRelativeEncoding(ACEncoding):
             linearized_tree.reverse_tree(ignore_bos_eos=False)
 
         for word, postag, feats, label in linearized_tree.iterrows():
-            
-            # Convert the labels to absolute scale
-            #if last_label!=None:
-            #label.to_absolute(last_label)
-            
             # First label must have a positive n_commons value
             if is_first and label.n_commons < 0:
                 label.n_commons = 0
@@ -158,4 +157,6 @@ class C_NaiveRelativeEncoding(ACEncoding):
         tree.inherit_tree()
         if self.reverse:
             tree.reverse_tree()
+        if self.binary:
+            tree = C_Tree.restore_from_binary(tree, self.binary_marker)
         return tree
