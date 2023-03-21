@@ -108,12 +108,12 @@ for enc in d_encs:
 # Evaluation for Penn Treebank
 for enc in c_encs:
     encode_constituent(in_path = f_ptb+".trees", out_path = f_ptb+"."+enc+".labels", 
-                        encoding_type = enc, reverse = False,
+                        encoding_type = enc, reverse = False, binary=False, binary_direction="R",
                         separator = "_", unary_joiner = "++", features = None, binary_marker="*")
     
     decode_constituent(in_path = f_ptb+"."+enc+".labels", out_path = f_ptb+"."+enc+".decoded.trees",
                         encoding_type = enc, reverse = False, separator = "_", unary_joiner = "++", nulls = True,
-                        conflicts = C_STRAT_MAX, postags = False, lang = "en", binary_marker="*")
+                        conflicts = C_STRAT_MAX, postags = False, lang = "en", binary=False, binary_marker="*")
     
     answ = system_call("./evalb/evalb "+f_ptb+".trees "+f_ptb+"."+enc+".decoded.trees -p ./evalb/COLLINS.prm")
     fmeasure = re.findall(r'\d+\.\d+', answ)[1]
@@ -123,20 +123,90 @@ for enc in c_encs:
     os.remove(f_ptb+"."+enc+".labels")
     os.remove(f_ptb+"."+enc+".decoded.trees")
 
-# Evaluation for Penn Treebank Reversed
+# Evaluation for Penn Treebank Binary (RIGHT)
 for enc in c_encs:
     encode_constituent(in_path = f_ptb+".trees", out_path = f_ptb+"."+enc+".labels", 
-                        encoding_type = enc, reverse = True,
+                        encoding_type = enc, reverse = False, binary=True, binary_direction="R",
                         separator = "_", unary_joiner = "++", features = None, binary_marker="*")
+    
     decode_constituent(in_path = f_ptb+"."+enc+".labels", out_path = f_ptb+"."+enc+".decoded.trees",
-                        encoding_type = enc, reverse = True, separator = "_", unary_joiner = "++", nulls = True,
-                        conflicts = C_STRAT_MAX, postags = False, lang = "en", binary_marker="*")
+                        encoding_type = enc, reverse = False, separator = "_", unary_joiner = "++", nulls = True,
+                        conflicts = C_STRAT_MAX, postags = False, lang = "en", binary=True, binary_marker="*")
     
     answ = system_call("./evalb/evalb "+f_ptb+".trees "+f_ptb+"."+enc+".decoded.trees -p ./evalb/COLLINS.prm")
     fmeasure = re.findall(r'\d+\.\d+', answ)[1]
     fmeasure = fmeasure.split(".")[0]
     fmeasure = bcolors.OKGREEN+fmeasure+bcolors.ENDC if int(fmeasure) == 100 else bcolors.FAIL+fmeasure+bcolors.ENDC
-    print("["+fmeasure+"] EvalB for "+f_ptb+"."+enc+".decoded.trees with incremental encoding")
+    print("["+fmeasure+"] EvalB for "+f_ptb+"."+enc+".decoded.trees (binary-right)")
+    os.remove(f_ptb+"."+enc+".labels")
+    os.remove(f_ptb+"."+enc+".decoded.trees")
+
+# Evaluation for Penn Treebank Binary (LEFT)
+for enc in c_encs:
+    encode_constituent(in_path = f_ptb+".trees", out_path = f_ptb+"."+enc+".labels", 
+                        encoding_type = enc, reverse = False, binary=True, binary_direction="L",
+                        separator = "_", unary_joiner = "++", features = None, binary_marker="*")
+    
+    decode_constituent(in_path = f_ptb+"."+enc+".labels", out_path = f_ptb+"."+enc+".decoded.trees",
+                        encoding_type = enc, reverse = False, separator = "_", unary_joiner = "++", nulls = True,
+                        conflicts = C_STRAT_MAX, postags = False, lang = "en", binary=True, binary_marker="*")
+    
+    answ = system_call("./evalb/evalb "+f_ptb+".trees "+f_ptb+"."+enc+".decoded.trees -p ./evalb/COLLINS.prm")
+    fmeasure = re.findall(r'\d+\.\d+', answ)[1]
+    fmeasure = fmeasure.split(".")[0]
+    fmeasure = bcolors.OKGREEN+fmeasure+bcolors.ENDC if int(fmeasure) == 100 else bcolors.FAIL+fmeasure+bcolors.ENDC
+    print("["+fmeasure+"] EvalB for "+f_ptb+"."+enc+".decoded.trees (binary-left)")
+    os.remove(f_ptb+"."+enc+".labels")
+    os.remove(f_ptb+"."+enc+".decoded.trees")
+
+# Evaluation for Penn Treebank Reversed
+for enc in c_encs:
+    encode_constituent(in_path = f_ptb+".trees", out_path = f_ptb+"."+enc+".labels", 
+                        encoding_type = enc, reverse = True, binary=False, binary_direction="R",
+                        separator = "_", unary_joiner = "++", features = None, binary_marker="*")
+    decode_constituent(in_path = f_ptb+"."+enc+".labels", out_path = f_ptb+"."+enc+".decoded.trees",
+                        encoding_type = enc, reverse = True, separator = "_", unary_joiner = "++", nulls = True,
+                        conflicts = C_STRAT_MAX, postags = False, binary=False, lang = "en", binary_marker="*")
+    
+    answ = system_call("./evalb/evalb "+f_ptb+".trees "+f_ptb+"."+enc+".decoded.trees -p ./evalb/COLLINS.prm")
+    fmeasure = re.findall(r'\d+\.\d+', answ)[1]
+    fmeasure = fmeasure.split(".")[0]
+    fmeasure = bcolors.OKGREEN+fmeasure+bcolors.ENDC if int(fmeasure) == 100 else bcolors.FAIL+fmeasure+bcolors.ENDC
+    print("["+fmeasure+"] EvalB for "+f_ptb+"."+enc+".decoded.trees (reversed)")
+    os.remove(f_ptb+"."+enc+".labels")
+    os.remove(f_ptb+"."+enc+".decoded.trees")
+
+# Evaluation for Penn Treebank Reversed Binary (RIGHT)
+for enc in c_encs:
+    encode_constituent(in_path = f_ptb+".trees", out_path = f_ptb+"."+enc+".labels", 
+                        encoding_type = enc, reverse = True, binary=True, binary_direction="R",
+                        separator = "_", unary_joiner = "++", features = None, binary_marker="*")
+    decode_constituent(in_path = f_ptb+"."+enc+".labels", out_path = f_ptb+"."+enc+".decoded.trees",
+                        encoding_type = enc, reverse = True, separator = "_", unary_joiner = "++", nulls = True,
+                        conflicts = C_STRAT_MAX, postags = False, binary=True, lang = "en", binary_marker="*")
+    
+    answ = system_call("./evalb/evalb "+f_ptb+".trees "+f_ptb+"."+enc+".decoded.trees -p ./evalb/COLLINS.prm")
+    fmeasure = re.findall(r'\d+\.\d+', answ)[1]
+    fmeasure = fmeasure.split(".")[0]
+    fmeasure = bcolors.OKGREEN+fmeasure+bcolors.ENDC if int(fmeasure) == 100 else bcolors.FAIL+fmeasure+bcolors.ENDC
+    print("["+fmeasure+"] EvalB for "+f_ptb+"."+enc+".decoded.trees (reversed) (binary-right)")
+    os.remove(f_ptb+"."+enc+".labels")
+    os.remove(f_ptb+"."+enc+".decoded.trees")
+
+# Evaluation for Penn Treebank Reversed Binary (LEFT)
+for enc in c_encs:
+    encode_constituent(in_path = f_ptb+".trees", out_path = f_ptb+"."+enc+".labels", 
+                        encoding_type = enc, reverse = True, binary=True, binary_direction="L",
+                        separator = "_", unary_joiner = "++", features = None, binary_marker="*")
+    decode_constituent(in_path = f_ptb+"."+enc+".labels", out_path = f_ptb+"."+enc+".decoded.trees",
+                        encoding_type = enc, reverse = True, separator = "_", unary_joiner = "++", nulls = True,
+                        conflicts = C_STRAT_MAX, postags = False, binary=True, lang = "en", binary_marker="*")
+    
+    answ = system_call("./evalb/evalb "+f_ptb+".trees "+f_ptb+"."+enc+".decoded.trees -p ./evalb/COLLINS.prm")
+    fmeasure = re.findall(r'\d+\.\d+', answ)[1]
+    fmeasure = fmeasure.split(".")[0]
+    fmeasure = bcolors.OKGREEN+fmeasure+bcolors.ENDC if int(fmeasure) == 100 else bcolors.FAIL+fmeasure+bcolors.ENDC
+    print("["+fmeasure+"] EvalB for "+f_ptb+"."+enc+".decoded.trees (reversed) (binary-left)")
     os.remove(f_ptb+"."+enc+".labels")
     os.remove(f_ptb+"."+enc+".decoded.trees")
 
@@ -144,7 +214,7 @@ for enc in c_encs:
 for enc in c_encs:
     feats = ["lem", "case", "number", "gender"]
     encode_constituent(in_path = f_spmrl+".trees", out_path = f_spmrl+"."+enc+".labels",
-                        encoding_type = enc, reverse = False,
+                        encoding_type = enc, reverse = False, binary=False, binary_direction="R",
                         separator = "_", unary_joiner = "++", features = feats, binary_marker="*")
     
     # Check number of columns in labels
@@ -160,7 +230,7 @@ for enc in c_encs:
     
     decode_constituent(in_path = f_spmrl+"."+enc+".labels", out_path = f_spmrl+"."+enc+".decoded.trees",
                         encoding_type = enc, reverse = False, separator = "_", unary_joiner = "++", nulls = True,
-                        conflicts=C_STRAT_MAX, postags = False, lang = "en", binary_marker="*")
+                        conflicts=C_STRAT_MAX, postags = False, lang = "en",binary=False, binary_marker="*")
     
 
     answ = system_call("./evalb/evalb "+f_spmrl+".trees "+f_spmrl+"."+enc+".decoded.trees -p ./evalb/COLLINS.prm")
@@ -171,33 +241,6 @@ for enc in c_encs:
     
     os.remove(f_spmrl+"."+enc+".labels")
     os.remove(f_spmrl+"."+enc+".decoded.trees")
-
-# Evaluation of tree binarizer
-print("["+bcolors.WARNING+"-->"+bcolors.ENDC+"] Testing Binarization and de-binarization of constituent trees...")
-for enc in c_encs:
-    if enc==C_TETRA_ENCODING:
-        print("["+bcolors.WARNING+"-->"+bcolors.ENDC+"] Skipping tetra encoding for constituent decoding (predicted labels file not available)...")
-        continue
-    pred_const = "./test/pred.const."+enc+".labels"
-    pred_const_dec = "./test/pred.const."+enc+".decoded.trees"
-
-    decode_constituent(in_path = pred_const, out_path = pred_const_dec,
-                        encoding_type = enc,reverse = False,separator = "_", unary_joiner = "+", nulls = True,
-                        conflicts = C_STRAT_MAX, postags = False, lang = "en", binary_marker="*")
-
-    for line in open(pred_const_dec):
-        line = line.rstrip()
-        ct = C_Tree.from_string(line)
-        bt = C_Tree.to_binary_right(ct)
-        dt = C_Tree.restore_from_binary(bt)
-        if not ct.shallow_equals(dt):
-            print("[!] Error: Constituent tree binarization and de-binarization failed for encoding "+enc)
-            print("    Original tree: "+ct.to_string())
-            print("    Binarized tree: "+bt.to_string())
-            print("    De-binarized tree: "+dt.to_string())
-        bt = C_Tree.to_binary_left(ct)
-        dt = C_Tree.restore_from_binary(bt)
-    os.remove(pred_const_dec)
 
 # Evaluation for predicted dependencies labels file
 print("["+bcolors.WARNING+"-->"+bcolors.ENDC+"] Testing decoding of predicted dependency labels file (oob heads and cycles)...")
@@ -246,13 +289,10 @@ for enc in d_encs:
 # Evaluation for predicted constituent labels file
 print("["+bcolors.WARNING+"-->"+bcolors.ENDC+"] Testing decoding of predicted constituent labels file (nulls and conflicts)...")
 for enc in c_encs:
-    if enc==C_TETRA_ENCODING:
-        print("["+bcolors.WARNING+"-->"+bcolors.ENDC+"] Skipping tetra encoding for constituent decoding (predicted labels file not available)...")
-        continue
     pred_const = "./test/pred.const."+enc+".labels"
     pred_const_dec = "./test/pred.const."+enc+".decoded.trees"
 
-    decode_constituent(in_path = pred_const, out_path = pred_const_dec,
+    decode_constituent(in_path = pred_const, out_path = pred_const_dec, binary=False,
                         encoding_type = enc, reverse = False, separator = "_", unary_joiner = "+", nulls = True,
                         conflicts = C_STRAT_MAX, postags = False, lang = "en", binary_marker="*")
 

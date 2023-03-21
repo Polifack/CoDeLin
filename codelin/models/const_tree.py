@@ -504,7 +504,7 @@ class C_Tree:
 # Binarization
 
     @staticmethod
-    def to_binary_left(t):
+    def to_binary_left(t, binary_marker="*"):
         '''
         Given a Constituent Tree returns its
         binary form.
@@ -512,15 +512,20 @@ class C_Tree:
         if len(t.children) == 1:
             return t
         if len(t.children) == 2:
-            lc = C_Tree.to_binary_left(t.children[0])
-            rc = C_Tree.to_binary_left(t.children[1])
+            lc = C_Tree.to_binary_left(t.children[0], binary_marker)
+            rc = C_Tree.to_binary_left(t.children[1], binary_marker)
             return C_Tree(t.label, [lc,rc])
         else:
-            c1 = C_Tree(t.label+"*", t.children[:-1])
-            c1 = C_Tree.to_binary_left(c1)
+            if binary_marker not in t.label:
+                c1_label=t.label+binary_marker
+            else:
+                c1_label=t.label
+
+            c1 = C_Tree(c1_label, t.children[:-1])
+            c1 = C_Tree.to_binary_left(c1, binary_marker)
             c2 = t.children[-1]
             if type(c2) is C_Tree:
-                c2 = C_Tree.to_binary_left(c2)
+                c2 = C_Tree.to_binary_left(c2, binary_marker)
             return C_Tree(t.label, [c1, c2])
         
     @staticmethod

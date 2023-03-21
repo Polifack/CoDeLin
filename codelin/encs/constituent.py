@@ -9,7 +9,7 @@ from codelin.models.const_tree import C_Tree
 
 ## Encoding and decoding
 
-def encode_constituent(in_path, out_path, encoding_type, reverse, separator, unary_joiner, features, binary, binary_marker):
+def encode_constituent(in_path, out_path, encoding_type, reverse, separator, unary_joiner, features, binary, binary_direction, binary_marker):
     '''
     Encodes the selected file according to the specified parameters:
     :param in_path: Path of the file to be encoded
@@ -21,13 +21,13 @@ def encode_constituent(in_path, out_path, encoding_type, reverse, separator, una
     '''
 
     if encoding_type == C_ABSOLUTE_ENCODING:
-            encoder = C_NaiveAbsoluteEncoding(separator, unary_joiner, reverse, binary, binary_marker)
+            encoder = C_NaiveAbsoluteEncoding(separator, unary_joiner, reverse, binary,  binary_direction, binary_marker)
     elif encoding_type == C_RELATIVE_ENCODING:
-            encoder = C_NaiveRelativeEncoding(separator, unary_joiner, reverse, binary, binary_marker)
+            encoder = C_NaiveRelativeEncoding(separator, unary_joiner, reverse, binary,  binary_direction, binary_marker)
     elif encoding_type == C_DYNAMIC_ENCODING:
-            encoder = C_NaiveDynamicEncoding(separator, unary_joiner, reverse, binary, binary_marker)
+            encoder = C_NaiveDynamicEncoding(separator, unary_joiner, reverse, binary,  binary_direction, binary_marker)
     elif encoding_type == C_TETRA_ENCODING:
-            encoder = C_Tetratag(separator, unary_joiner, reverse, binary_marker)
+            encoder = C_Tetratag(separator, unary_joiner, reverse, binary_direction, binary_marker)
 
     else:
         raise Exception("Unknown encoding type")
@@ -74,13 +74,13 @@ def decode_constituent(in_path, out_path, encoding_type, reverse, separator, una
     '''
 
     if encoding_type == C_ABSOLUTE_ENCODING:
-            decoder = C_NaiveAbsoluteEncoding(separator, unary_joiner, reverse, binary, binary_marker)
+            decoder = C_NaiveAbsoluteEncoding(separator, unary_joiner, reverse, binary, None, binary_marker)
     elif encoding_type == C_RELATIVE_ENCODING:
-            decoder = C_NaiveRelativeEncoding(separator, unary_joiner, reverse, binary, binary_marker)
+            decoder = C_NaiveRelativeEncoding(separator, unary_joiner, reverse, binary, None, binary_marker)
     elif encoding_type == C_DYNAMIC_ENCODING:
-            decoder = C_NaiveDynamicEncoding(separator, unary_joiner, reverse, binary, binary_marker)
+            decoder = C_NaiveDynamicEncoding(separator, unary_joiner, reverse, binary, None, binary_marker)
     elif encoding_type == C_TETRA_ENCODING:
-            decoder = C_Tetratag(separator, unary_joiner, reverse, binary_marker)
+            decoder = C_Tetratag(separator, unary_joiner, reverse, None, binary_marker)
     else:
         raise Exception("Unknown encoding type")
 

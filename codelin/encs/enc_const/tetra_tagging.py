@@ -43,11 +43,12 @@ def build_unary_chain(word, postag, unary_chain, unary_joiner):
     return pos_tree
 
 class C_Tetratag(ACEncoding):
-    def __init__(self, separator, unary_joiner, reverse, binary_marker="*"):
+    def __init__(self, separator, unary_joiner, reverse, binary_direction, binary_marker="*"):
         self.separator = separator
         self.unary_joiner = unary_joiner
         self.reverse = reverse
         self.binary_marker = binary_marker
+        self.binary_direction = binary_direction
 
     def __str__(self):
         return "Constituent Tetratagging"
@@ -62,7 +63,14 @@ class C_Tetratag(ACEncoding):
         features = []
         # It is needed to collapse unary before binary
         constituent_tree = constituent_tree.collapse_unary()
-        constituent_tree = C_Tree.to_binary_right(constituent_tree, self.binary_marker)
+        
+        if self.binary_direction == "R":
+            constituent_tree = C_Tree.to_binary_right(constituent_tree, self.binary_marker)
+        elif self.binary_direction == "L":
+            constituent_tree = C_Tree.to_binary_left(constituent_tree, self.binary_marker)
+        else:
+            raise Exception("Binary direction not supported")
+        
         C_Tree.inorder(constituent_tree,  lambda x: nodes.append(x))
         # Extract info from the tree
         last_pos = ""

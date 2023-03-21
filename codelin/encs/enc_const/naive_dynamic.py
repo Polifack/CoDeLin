@@ -7,12 +7,13 @@ from codelin.models.const_tree import C_Tree
 import re
 
 class C_NaiveDynamicEncoding(ACEncoding):
-    def __init__(self, separator, unary_joiner, reverse, binary, binary_marker):
+    def __init__(self, separator, unary_joiner, reverse, binary, binary_direction, binary_marker):
         self.separator = separator
         self.unary_joiner = unary_joiner
         self.reverse = reverse
         self.binary = binary
         self.binary_marker = binary_marker
+        self.binary_direction = binary_direction
 
     def __str__(self):
         return "Constituent Naive Dynamic Encoding"
@@ -21,7 +22,12 @@ class C_NaiveDynamicEncoding(ACEncoding):
         if self.reverse:
             constituent_tree.reverse_tree()
         if self.binary:
-            constituent_tree = C_Tree.to_binary_right(constituent_tree, self.binary_marker)
+            if self.binary_direction == "R":
+                constituent_tree = C_Tree.to_binary_right(constituent_tree, self.binary_marker)
+            elif self.binary_direction == "L":
+                constituent_tree = C_Tree.to_binary_left(constituent_tree, self.binary_marker)
+            else:
+                raise Exception("Binary direction not supported")
 
         lc_tree = LinearizedTree.empty_tree()
         leaf_paths = constituent_tree.path_to_leaves(collapse_unary=True, unary_joiner=self.unary_joiner)

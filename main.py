@@ -73,7 +73,10 @@ if __name__=="__main__":
     parser.add_argument('--binary', required=False, action='store_true', default=False,
                         help = 'Convert the trees to binary trees before encoding (only for constituent trees)')
     
-    parser.add_argument("--binary_marker", required=False, type=str, default="*",
+    parser.add_argument('--b_direction', required=False, type=str, default='L', choices=['L','R'],
+                        help = 'Direction of the binary conversion (only for constituent trees encoding)')
+    
+    parser.add_argument("--b_marker", required=False, type=str, default="*",
                         help='Character to use as a marker for binary nodes (only for constituent trees)')
 
     args = parser.parse_args()
@@ -85,13 +88,15 @@ if __name__=="__main__":
         
         if args.operation == OP_ENC:
             n_labels, n_trees, n_diff_labels = encode_constituent(args.input, args.output, args.enc, args.incremental,
-                                                                  args.sep, args.ujoiner, args.feats, args.binary, args.binary_marker)
+                                                                  args.sep, args.ujoiner, args.feats, 
+                                                                  args.binary, args.b_direction, args.b_marker)
         
         elif args.operation == OP_DEC:
             n_diff_labels = None
             n_trees, n_labels = decode_constituent(args.input, args.output, args.enc, args.incremental, args.sep, 
                                                    args.ujoiner, args.conflict, args.nulls, 
-                                                   args.postags, args.lang, args.binary, args.binary_marker)
+                                                   args.postags, args.lang, 
+                                                   args.binary, args.b_marker)
     
     elif args.formalism == F_DEPENDENCY:
         
