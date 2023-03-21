@@ -133,7 +133,7 @@ class C_Tetratag(ACEncoding):
         
         # Add a final non terminal if needed
         if len(non_terminals)<len(words):
-            non_terminals.append("NONE")
+            non_terminals.append("L")
         
         # Create the labels and linearized tree
         c_labels = []
