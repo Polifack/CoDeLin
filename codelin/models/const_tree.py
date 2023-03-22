@@ -156,7 +156,14 @@ class C_Tree:
         else:
             return [node for child in self.children for node in child.get_postags()]
 
-
+    def depth(self):
+        '''
+        Function that returns the maximum depth of a tree
+        '''
+        if self.is_terminal():
+            return 0
+        else:
+            return 1 + max([child.depth() for child in self.children])
 # Checkers
     def is_right_child(self):
         '''
