@@ -62,7 +62,7 @@ class C_Tetratag(ACEncoding):
         non_terminals = []
         features = []
         # It is needed to collapse unary before binary
-        constituent_tree = constituent_tree.collapse_unary()
+        constituent_tree = constituent_tree.collapse_unary(unary_joiner=self.unary_joiner)
         
         if self.binary_direction == "R":
             constituent_tree = C_Tree.to_binary_right(constituent_tree, self.binary_marker)
