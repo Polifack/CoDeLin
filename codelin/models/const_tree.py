@@ -69,7 +69,6 @@ class C_Tree:
         self.children.remove(child)
         child.parent = None
 
-
 # Getters
     def r_child(self):
         '''
@@ -164,6 +163,7 @@ class C_Tree:
             return 0
         else:
             return 1 + max([child.depth() for child in self.children])
+
 # Checkers
     def is_right_child(self):
         '''
@@ -201,10 +201,8 @@ class C_Tree:
         '''
         return len(self.children) == 1 and self.children[0].is_terminal()
 
-    def is_unary_chain(self):
-        '''
-        Returns true if the tree is a unary chain
-        '''
+    def is_unary_chain(self, collapse_postags = False):
+        # Returns true if the tree is an intermediate unary chain
         if len(self.children)==1 and not (self.is_preterminal() or self.is_terminal()):
             return True
         else:
@@ -215,7 +213,6 @@ class C_Tree:
         # go through all pre-terminal nodes
         # of the tree
         for node in self.get_preterminals():
-            
             if f_mark in node.label:
                 node.features = {}
                 label = node.label.split(f_mark)[0]
@@ -240,22 +237,20 @@ class C_Tree:
         by a new node where the label is formed by all the 
         members in the unary chain separated by 'unary_joiner' string.
         '''
-
         if self.is_unary_chain():
-            
             c = self.children[0]
             label = c.label
             
             # get all unary chain nodes
-            while c.is_unary_chain():
+            while c.is_unary_chain() and not (c.is_preterminal() and collapse_postags):
                 label += unary_joiner + c.children[0].label
                 c = c.children[0]
-            
+
             label = self.label + unary_joiner + label
             children = c.children
             return C_Tree(label, [c.collapse_unary(unary_joiner, collapse_postags) for c in children])
         else:
-            return C_Tree(self.label, [c.collapse_unary(unary_joiner,collapse_postags) for c in self.children])
+            return C_Tree(self.label, [c.collapse_unary(unary_joiner, collapse_postags) for c in self.children])
 
     def uncollapse_unary(self, unary_joiner="+"):
         '''
@@ -333,7 +328,7 @@ class C_Tree:
                 path.append(t.label)
                 paths.append(path)
             else:
-                path.append(t.label+str(idx))
+                path.append(t.label+'['+str(idx)+']')
                 for child in t.children:
                     path_to_leaves_rec(child, path, paths, idx)
                     idx+=1
@@ -438,6 +433,7 @@ class C_Tree:
             
             label_str = label_str.replace("(","-LRB-")
             label_str = label_str.replace(")","-RRB-")
+            label_str = label_str.replace(" ","-BLK-")
         else:
             label_str =  "(" + self.label + " "
             if self.features is not None:
@@ -516,7 +512,7 @@ class C_Tree:
         Given a Constituent Tree returns its
         binary form.
         '''
-        if len(t.children) == 1:
+        if len(t.children) == 1 or len(t.children) == 0:
             return t
         if len(t.children) == 2:
             lc = C_Tree.to_binary_left(t.children[0], binary_marker)
@@ -527,7 +523,6 @@ class C_Tree:
                 c1_label=t.label+binary_marker
             else:
                 c1_label=t.label
-
             c1 = C_Tree(c1_label, t.children[:-1])
             c1 = C_Tree.to_binary_left(c1, binary_marker)
             c2 = t.children[-1]
@@ -541,7 +536,7 @@ class C_Tree:
         Given a Constituent Tree returns its
         binary form.
         '''
-        if len(t.children) == 1:
+        if len(t.children) == 1 or len(t.children) == 0:
             return t
         if len(t.children) == 2:
             lc = C_Tree.to_binary_right(t.children[0], binary_marker)

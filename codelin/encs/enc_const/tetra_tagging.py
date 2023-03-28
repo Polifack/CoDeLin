@@ -53,7 +53,7 @@ class C_Tetratag(ACEncoding):
     def __str__(self):
         return "Constituent Tetratagging"
     
-    def encode(self,constituent_tree):
+    def encode(self, constituent_tree):
         nodes = []
         labels = []
         words = []
@@ -61,8 +61,9 @@ class C_Tetratag(ACEncoding):
         unary_chains = []
         non_terminals = []
         features = []
+    
         # It is needed to collapse unary before binary
-        constituent_tree = constituent_tree.collapse_unary()
+        constituent_tree = constituent_tree.collapse_unary(self.unary_joiner)
         
         if self.binary_direction == "R":
             constituent_tree = C_Tree.to_binary_right(constituent_tree, self.binary_marker)
@@ -101,7 +102,7 @@ class C_Tetratag(ACEncoding):
                     label_string+="r"
                 
                 if self.unary_joiner in last_pos:
-                    uc = "+".join(last_pos.split(self.unary_joiner)[:-1])
+                    uc = self.unary_joiner.join(last_pos.split(self.unary_joiner)[:-1])
                     last_pos = last_pos.split(self.unary_joiner)[-1]
                 else:
                     uc = ""

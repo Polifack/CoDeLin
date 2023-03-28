@@ -47,19 +47,21 @@ class ACEncoding(ABC):
         return unary_chain, postag
 
     def clean_last_common(self, node, feature_marker="##"):
-        node = re.sub(r'[0-9]+', '', node)
+        node = re.sub(r'\[\d+\]', '', node)
         last_common = node.split(feature_marker)[0]
         return last_common
     
     def get_features(self, node, feature_marker="##", feature_splitter="|"):
-        postag_split = node.split(feature_marker)
-        feats = None
-
-        if len(postag_split) > 1:
-            postag = re.sub(r'[0-9]+', '', postag_split[0])
-            feats = postag_split[1].split(feature_splitter)
+        # create regex to remove characters between feature_marker
+        pattern = fr"^(.*){feature_marker}(.*){feature_marker}(.*)$"
+        match = re.match(pattern, node)
+        if match:
+            postag = match.group(1)
+            feats = match.group(2).split(feature_splitter) if match.group(2) else None
         else:
-            postag = re.sub(r'[0-9]+', '', node)
+            postag = re.sub(r'\[\d+\]', '', node)
+            feats = None
+        
         return postag, feats
     
     def encode(self, constituent_tree):

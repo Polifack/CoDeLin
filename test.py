@@ -238,7 +238,6 @@ for enc in c_encs:
     fmeasure = fmeasure.split(".")[0]
     fmeasure = bcolors.OKGREEN+fmeasure+bcolors.ENDC if int(fmeasure) == 100 else bcolors.FAIL+fmeasure+bcolors.ENDC
     print("["+fmeasure+"] EvalB for "+f_spmrl+"."+enc+".decoded.trees")
-    
     os.remove(f_spmrl+"."+enc+".labels")
     os.remove(f_spmrl+"."+enc+".decoded.trees")
 

@@ -73,7 +73,7 @@ if __name__=="__main__":
     parser.add_argument('--binary', required=False, action='store_true', default=False,
                         help = 'Convert the trees to binary trees before encoding (only for constituent trees)')
     
-    parser.add_argument('--b_direction', required=False, type=str, default='L', choices=['L','R'],
+    parser.add_argument('--b_direction', required=False, type=str, default='R', choices=['L','R'],
                         help = 'Direction of the binary conversion (only for constituent trees encoding)')
     
     parser.add_argument("--b_marker", required=False, type=str, default="*",

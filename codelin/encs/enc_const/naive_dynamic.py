@@ -21,6 +21,7 @@ class C_NaiveDynamicEncoding(ACEncoding):
     def encode(self, constituent_tree):
         if self.reverse:
             constituent_tree.reverse_tree()
+        constituent_tree = constituent_tree.collapse_unary(self.unary_joiner)
         if self.binary:
             if self.binary_direction == "R":
                 constituent_tree = C_Tree.to_binary_right(constituent_tree, self.binary_marker)
@@ -28,18 +29,15 @@ class C_NaiveDynamicEncoding(ACEncoding):
                 constituent_tree = C_Tree.to_binary_left(constituent_tree, self.binary_marker)
             else:
                 raise Exception("Binary direction not supported")
-
+        leaf_paths = constituent_tree.path_to_leaves(collapse_unary=False, unary_joiner=self.unary_joiner)
         lc_tree = LinearizedTree.empty_tree()
-        leaf_paths = constituent_tree.path_to_leaves(collapse_unary=True, unary_joiner=self.unary_joiner)
-
         for i in range(0, len(leaf_paths)-1):
-            path_a=leaf_paths[i]
-            path_b=leaf_paths[i+1]
+            path_a = leaf_paths[i]
+            path_b = leaf_paths[i+1]
             
-            last_common=""
-            n_commons=0
+            last_common = ""
+            n_commons   = 0
             for a,b in zip(path_a, path_b):
-
                 if (a!=b):
                     # Remove the digits and aditional feats in the last common node
                     last_common = self.clean_last_common(last_common)
@@ -54,7 +52,8 @@ class C_NaiveDynamicEncoding(ACEncoding):
                     # Clean the POS Tag and extract additional features
                     postag, feats = self.get_features(postag)
 
-                    c_label = C_Label(n_commons, last_common, unary_chain, C_ABSOLUTE_ENCODING, self.separator, self.unary_joiner)
+                    c_label = C_Label(n_commons, last_common, unary_chain, C_ABSOLUTE_ENCODING, 
+                                                self.separator, self.unary_joiner)
                     lc_tree.add_row(word, postag, feats, c_label)
 
                     break
@@ -105,7 +104,6 @@ class C_NaiveDynamicEncoding(ACEncoding):
             linearized_tree.reverse_tree(ignore_bos_eos=False)
         
         for word, postag, feats, label in linearized_tree.iterrows():
-            
             # First label must have a positive n_commons value
             if is_first and label.n_commons < 0:
                 label.n_commons = 0

@@ -21,6 +21,7 @@ class C_NaiveRelativeEncoding(ACEncoding):
     def encode(self, constituent_tree):
         if self.reverse:
             constituent_tree.reverse_tree()
+        constituent_tree = constituent_tree.collapse_unary(self.unary_joiner)
         if self.binary:
             if self.binary_direction == "R":
                 constituent_tree = C_Tree.to_binary_right(constituent_tree, self.binary_marker)
@@ -28,10 +29,8 @@ class C_NaiveRelativeEncoding(ACEncoding):
                 constituent_tree = C_Tree.to_binary_left(constituent_tree, self.binary_marker)
             else:
                 raise Exception("Binary direction not supported")
-
-        leaf_paths = constituent_tree.path_to_leaves(collapse_unary=True, unary_joiner=self.unary_joiner)
+        leaf_paths = constituent_tree.path_to_leaves(collapse_unary=False, unary_joiner=self.unary_joiner)
         lc_tree = LinearizedTree.empty_tree()
-
         for i in range(0, len(leaf_paths)-1):
             path_a=leaf_paths[i]
             path_b=leaf_paths[i+1]
