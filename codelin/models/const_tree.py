@@ -155,11 +155,13 @@ class C_Tree:
         else:
             return [node for child in self.children for node in child.get_postags()]
 
-    def depth(self):
+    def depth(self, ignore_postags=True):
         '''
         Function that returns the maximum depth of a tree
         '''
         if self.is_terminal():
+            return 0
+        if ignore_postags and self.is_preterminal():
             return 0
         else:
             return 1 + max([child.depth() for child in self.children])
@@ -201,7 +203,7 @@ class C_Tree:
         '''
         return len(self.children) == 1 and self.children[0].is_terminal()
 
-    def is_unary_chain(self, collapse_postags = False):
+    def is_unary_chain(self):
         # Returns true if the tree is an intermediate unary chain
         if len(self.children)==1 and not (self.is_preterminal() or self.is_terminal()):
             return True
@@ -316,7 +318,7 @@ class C_Tree:
         '''
         self.add_left_child(C_Tree(C_START_LABEL, []))
                     
-    def path_to_leaves(self, collapse_unary=True, unary_joiner="+"):
+    def path_to_leaves(self):
         '''
         Returns the list of paths from the root to the leaves, 
         encoding a level index into nodes to make them unique.
@@ -335,9 +337,6 @@ class C_Tree:
             return paths
         
         self.add_end_node() 
-        if collapse_unary:
-            self = self.collapse_unary(unary_joiner)
-
         return path_to_leaves_rec(self, [], [], 0)
 
     def fill_pos_nodes(self, postag, word, unary_chain, unary_joiner):
