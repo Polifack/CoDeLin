@@ -7,6 +7,7 @@ from codelin.models.const_tree import C_Tree
 import re
 import copy
 
+
 def combine(tree, new_child):
     '''
     Replaces a C_NONE_LABEL inside 'tree'
@@ -53,7 +54,7 @@ class C_Tetratag(ACEncoding):
     def __str__(self):
         return "Constituent Tetratagging"
     
-    def encode(self, constituent_tree):
+    def encode(self, constituent_tree, mode="inorder"):
         nodes = []
         labels = []
         words = []
@@ -72,7 +73,15 @@ class C_Tetratag(ACEncoding):
         else:
             raise Exception("Binary direction not supported")
         
-        C_Tree.inorder(constituent_tree,  lambda x: nodes.append(x))
+        if mode == "inorder":
+            C_Tree.inorder(constituent_tree,  lambda x: nodes.append(x))
+        elif mode == "preorder":
+            C_Tree.preorder(constituent_tree,  lambda x: nodes.append(x))
+        elif mode == "postorder":
+            C_Tree.postorder(constituent_tree,  lambda x: nodes.append(x))
+        else:
+            raise Exception("Mode not supported")
+        
         # Extract info from the tree
         last_pos = ""
         for n in nodes:

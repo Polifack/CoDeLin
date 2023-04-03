@@ -179,7 +179,7 @@ class C_Tree:
         Returns if a given subtree is the
         leftmost child of its parent
         '''
-        return self.parent is not None and self.parent.children.index(self)==0
+        return self.parent is None or self.parent.children.index(self)==0
     
     def has_none_child(self):
         '''
@@ -232,6 +232,16 @@ class C_Tree:
                     value = feature.split("=")[1]
 
                     node.features[key]=value
+
+    def clean_tree(self, idx_marker="##"):
+        '''
+        Removes the index markers from the tree
+        '''
+        if idx_marker in self.label:
+            self.label = self.label.split(idx_marker)[0]
+
+        for child in self.children:
+            child.clean_tree(idx_marker)
 
     def collapse_unary(self, unary_joiner="+", collapse_postags=False):
         '''
@@ -421,6 +431,15 @@ class C_Tree:
         Returns true if the trees have the same label and the same number of children
         '''
         return self.label == other.label and len(self.children) == len(other.children) and all([c.shallow_equals(other.children[i]) for i,c in enumerate(self.children)])
+
+    def update_custody(self):
+        '''
+        Updates the custody of all the nodes in the tree
+        '''
+        for c in self.children:
+            c.parent = self
+            if type(c) is C_Tree:
+                c.update_custody()
 
 # Printing and python-related functions
     def __str__(self):

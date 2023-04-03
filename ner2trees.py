@@ -15,7 +15,6 @@ def entities_to_tree(words, tags, entities):
         e = entities[i]
 
         terminal_tree = C_Tree(p, C_Tree(w))
-
         # No Entity
         if e == "NONE":
             t.add_child(terminal_tree)
@@ -29,21 +28,25 @@ def entities_to_tree(words, tags, entities):
                 cl = t
                 idx = 0
                 while cl.children and cl.children[-1].label == e[idx]:
+                    # check if we reached the end of the entity
                     cl = cl.children[-1]
                     idx += 1
-                    
-                    # check if we reached the end of the entity
-                    if idx == (len(e)-1):
-                        break
 
+                    if idx == (len(e)):
+                        cl = cl.children[-1]
+                        idx += 1
+
+                        break
+                                        
                 # add the rest of the entities as children
-                t1 = C_Tree(e[idx])
-                cl.add_child(t1)
-                cl = t1
-                for j in range(idx+1, len(e)):
-                    t1 = C_Tree(e[j])
+                if idx < len(e):
+                    t1 = C_Tree(e[idx])
                     cl.add_child(t1)
                     cl = t1
+                    for j in range(idx+1, len(e)):
+                        t1 = C_Tree(e[j])
+                        cl.add_child(t1)
+                        cl = t1
                 
                 cl.add_child(terminal_tree)
             
@@ -168,15 +171,17 @@ def parse_entities(es, l, extractor=None):
         raise ValueError("Extractor function not provided")
     
     entities = ["NONE"]*l
+    idx = 0
     for e in es:
         entity_range, name = extractor(e)
         for j in entity_range:
-            e_r = (name, len(entity_range))
+            e_r = (name+"##"+str(idx)+"##", len(entity_range))
             if "NONE" in entities[j]:
                 entities[j] = e_r
             else:
                 entities[j] = [entities[j], e_r] if type(entities[j]) is not list else [*entities[j], e_r]
                 entities[j] = sorted(entities[j], key=lambda x: x[1], reverse=True)
+        idx += 1
     
     # return only the entity name
     for i in range(len(entities)):
@@ -236,6 +241,7 @@ if __name__=="__main__":
             if out == 'tree':
                 words, postags, entities = s['tokens'], ["NONE"]*len(s['tokens']), parse_entities(s['entity_mentions'], len(s['tokens']),  extractor=parse_genia)
                 t = entities_to_tree(words, postags, entities)
+                t.clean_tree()
                 output_file.write(str(t) + '\n')
             
             if out == 'bio':
