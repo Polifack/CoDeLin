@@ -30,3 +30,55 @@ Durante el decodificado se ha necesitado cambiar los operadores 'combine' y 'mak
     - $R-(NT)$: Crear un nuevo subarbol $nt$ con label $NT$ y dos hijos vacios, insertarlo como hijo izquierdo del top del stack y pushear $nt$ en el stack para que las siguientes inserciones se hagan sobre el
     - $L-(NT)$: Crear un nuevo subarbol $nt$ con label $NT$ y dos hijos vacios, insertarlo como hijo derecho del top del stack y pushear $nt$ en el stack para que las siguientes inserciones se hagan sobre el
 
+- In-Order traversal:
+    - See tetratagging paper
+
+
+### Gaps Encoding
+
+- Similitude with [In-Order Transition-based Constituent Parsing](https://aclanthology.org/Q17-1029.pdf)
+- Check the number of gaps that each node closes
+
+![Gaps](pics/sev_gaps.png)
+
+- Encoding: Collapse unary chains, binarize to the right and encode the number of right child parents that a node has. Use an in-order traversal to get the non-terminals.<br>
+    ```python
+    n_gaps = 0
+    while node.parent.is_right_child():
+        n_gaps+=1
+    ```
+
+- Decoding: Given the labels, for each gap, merge or insert the new node<br>
+    ``` python
+    for i in range(gaps):
+        if C_NONE_LABEL in [c.label for c in current_level.children]:
+            current_level.children["right"] = new_node
+        else:
+            current_level = Tree(non_terminal, children=[current_level, new_node])
+    ```
+
+### Attach and Juxtapose
+
+Transitions:
+- <b>Attach(target_node, parent_label)</b>: 
+    - Attach the token as a descendant of target_node. 
+    - The parameter parent_label is optional; when provided, we create an internal node labeled parent_label (green) as the parent of the new token. 
+    - Parent_label then becomes the rightmost child of target_node (as in Fig. 2 Top). 
+    - When parent_label is not provided, the new token itself becomes the rightmost child of target_node
+- <b>Juxtapose(target_node, parent_label, new_label)</b>: 
+    - Create an internal node labeled new_label (gray) as the shared parent of target_node and the new token. 
+    - It then replaces target_node in the tree. 
+    - Similar to attach, we can optionally create a parent for the new token via the parent_label parameter
+
+Transitions2Labels:
+- <b>Encoding</b>: Usage of partial trees and assign the action needed to get back to the original tree.In order to get the partial trees we remove the leftmost node of the tree and compute the necesary transition to get to it:<br><br>
+
+    ![Attach Encoding](pics/att_jux.png)
+
+    - One of the problems found during the encoding implementation was that the encoding only works with trees without unary chains. As we were removing nodes from the tree during the obtention of the actions performed, new unary chains appeared that need to be dealt with. This caused a mayor delay in the encoding
+
+- <b>Decoding</b>: Perform the actions specified by the label using the stored information about the parent (for attach) or the parent's parent (for juxtapose)
+
+    - The collapsing of part of speech tags, during the decoding caused problem as nodes were not storing information about their 'parent' node such as in the following example<br>
+
+    ![Decode Problem](pics/collapse.png)
