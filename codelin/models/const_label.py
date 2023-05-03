@@ -1,4 +1,4 @@
-from codelin.utils.constants import C_ABSOLUTE_ENCODING, C_RELATIVE_ENCODING, C_NONE_LABEL, C_TETRA_ENCODING
+from codelin.utils.constants import C_ABSOLUTE_ENCODING, C_RELATIVE_ENCODING, C_NONE_LABEL, C_TETRA_ENCODING, C_JUXTAPOSED_ENCODING
 
 class C_Label:
     def __init__(self, nc, lc, uc, et, sp, uj):

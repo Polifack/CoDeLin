@@ -1,5 +1,5 @@
 from codelin.encs.abstract_encoding import ACEncoding
-from codelin.utils.constants import C_GAPS_ENCODING, C_RELATIVE_ENCODING, C_ROOT_LABEL, C_CONFLICT_SEPARATOR, C_NONE_LABEL
+from codelin.utils.constants import C_JUXTAPOSED_ENCODING, C_RELATIVE_ENCODING, C_ROOT_LABEL, C_CONFLICT_SEPARATOR, C_NONE_LABEL
 from codelin.models.const_label import C_Label
 from codelin.models.linearized_tree import LinearizedTree
 from codelin.models.const_tree import C_Tree
@@ -45,13 +45,15 @@ def _get_action_list(tree):
         last_subtree = last_postag.parent
         
         if last_subtree is None:
-            return last_word, last_postag, Action(name="attach", target_node=1, parent_label=None, new_label=None), None
+            return last_word.label, last_postag.label, \
+                Action(name="attach", target_node=1, parent_label=None, new_label=None), None
         
         last_subtree_siblings = last_subtree.parent.children[:-1] if last_subtree.parent is not None else []
         parent_label = last_subtree.label
 
     if last_subtree.parent is None:
-        return last_word, last_postag, Action(name="attach", target_node=1, parent_label=parent_label, new_label=None), None 
+        return last_word.label, last_postag.label, \
+            Action(name="attach", target_node=1, parent_label=parent_label, new_label=None), None 
 
     elif len(last_subtree_siblings)==1 and not last_subtree_siblings[0].is_preterminal():
         target_node_depth = get_level_of_subtree(tree, last_subtree)
@@ -65,27 +67,45 @@ def _get_action_list(tree):
         else:
             grand_parent.children = [target_node if c == last_subtree.parent else c for c in grand_parent.children]
             target_node.parent = grand_parent
-        return last_word, last_postag, Action(name="juxtapose", target_node = target_node_depth, parent_label = parent_label, new_label = new_label), tree
+        
+        return last_word.label, last_postag.label, \
+            Action(name="juxtapose", target_node = target_node_depth, parent_label = parent_label, new_label = new_label), tree
     
     else:
         target_node_depth = get_level_of_subtree(tree, last_subtree)
 
         target_node = last_subtree.parent
         target_node.children.remove(last_subtree)
-        return last_word, last_postag, Action(name="attach", target_node = target_node_depth, parent_label = parent_label, new_label = None), tree
+        
+        return last_word.label, last_postag.label, \
+            Action(name="attach", target_node = target_node_depth, parent_label = parent_label, new_label = None), tree
 
 def oracle_action_sequence(t):
     if t is None:
         return []
     
     if len(t.children)==0 or (len(t.children)==1 and t.children[0].is_preterminal()):
-        return [Action(name="attach", target_node=0, parent_label=t.label, new_label=None)]
+        p = t.children[0].label
+        w = t.children[0].children[0].label
+    
+        a = Action(name="attach", target_node=0, parent_label=t.label, new_label=None)
+        
+        action_string = a.name + ">>" + str(a.parent_label) + (">>" + str(a.new_label) if a.new_label is not None else "")
+        l = C_Label(nc = a.target_node, lc = action_string, uc = None, sp="_", et = C_JUXTAPOSED_ENCODING, uj="+")
+        lin_tree_row = (w, p, l)
+
+        return [lin_tree_row]
     
     else:
         w, p, a, t = _get_action_list(t)
-        return oracle_action_sequence(t) + [a]
 
-class C_GapsEncoding(ACEncoding):
+        action_string = a.name + ">>" + str(a.parent_label) + (">>" + str(a.new_label) if a.new_label is not None else "")
+        l = C_Label(nc = a.target_node, lc = action_string, uc = None, sp="_", et = C_JUXTAPOSED_ENCODING, uj="+")
+        lin_tree_row = (w, p, l)
+        
+        return oracle_action_sequence(t) + [lin_tree_row]
+
+class C_JuxtaposedEncoding(ACEncoding):
     def __init__(self, separator, unary_joiner, reverse, binary, binary_direction, binary_marker):        
         self.separator = separator
         self.unary_joiner = unary_joiner
@@ -99,9 +119,10 @@ class C_GapsEncoding(ACEncoding):
 
     def encode(self, constituent_tree):
         lc_tree = LinearizedTree.empty_tree()
-        t = t.collapse_unary(self.unary_joiner)
-
-        actions = oracle_action_sequence(t)
+        constituent_tree = constituent_tree.collapse_unary(self.unary_joiner)
+        labels = oracle_action_sequence(constituent_tree)
+        for l in labels:
+            print(l)
         pass
 
     def decode(self, linearized_tree):
