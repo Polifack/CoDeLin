@@ -82,3 +82,6 @@ Transitions2Labels:
     - The collapsing of part of speech tags, during the decoding caused problem as nodes were not storing information about their 'parent' node such as in the following example<br>
 
     ![Decode Problem](pics/collapse.png)
+
+- Para encodear necesitamos guardar el 'numero de niveles' que el current subtree (el rightmost) baja en el arbol; esto puede tener alguna equivalencia con los gaps?
+- Los gaps 'storean' el numero de niveles que un nodo sube, esto storea el numero de niveles que un nodo baja?
