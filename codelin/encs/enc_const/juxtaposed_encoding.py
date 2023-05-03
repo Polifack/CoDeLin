@@ -90,7 +90,7 @@ def oracle_action_sequence(t):
     
         a = Action(name="attach", target_node=0, parent_label=t.label, new_label=None)
         
-        action_string = a.name + ">>" + str(a.parent_label) + (">>" + str(a.new_label) if a.new_label is not None else "")
+        action_string = a.name + ("_PARENT->" + str(a.parent_label) if a.parent_label is not None else "") + ("_NEWLABEL->" + str(a.new_label) if a.new_label is not None else "")
         l = C_Label(nc = a.target_node, lc = action_string, uc = None, sp="_", et = C_JUXTAPOSED_ENCODING, uj="+")
         lin_tree_row = (w, p, l)
 
@@ -99,7 +99,7 @@ def oracle_action_sequence(t):
     else:
         w, p, a, t = _get_action_list(t)
 
-        action_string = a.name + ">>" + str(a.parent_label) + (">>" + str(a.new_label) if a.new_label is not None else "")
+        action_string = a.name + ("_PARENT->" + str(a.parent_label) if a.parent_label is not None else "") + ("_NEWLABEL->" + str(a.new_label) if a.new_label is not None else "")
         l = C_Label(nc = a.target_node, lc = action_string, uc = None, sp="_", et = C_JUXTAPOSED_ENCODING, uj="+")
         lin_tree_row = (w, p, l)
         
