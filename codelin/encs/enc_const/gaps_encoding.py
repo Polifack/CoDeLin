@@ -35,10 +35,7 @@ class C_GapsEncoding(ACEncoding):
     def __str__(self):
         return "Constituent Gaps Based Encoding"
 
-    def encode(self, constituent_tree):
-        if self.reverse:
-            constituent_tree.reverse_tree()
-        
+    def encode(self, constituent_tree):        
         constituent_tree = constituent_tree.collapse_unary(self.unary_joiner)
         
         if self.binary:
@@ -116,8 +113,6 @@ class C_GapsEncoding(ACEncoding):
             nodes_stack.append(node)
 
         final_tree = node
-        if self.reverse:
-            final_tree.reverse_tree()
         if self.binary:
             final_tree = C_Tree.restore_from_binary(final_tree, self.binary_marker)
         final_tree = final_tree.uncollapse_unary(self.unary_joiner)

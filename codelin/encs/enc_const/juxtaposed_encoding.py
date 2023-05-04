@@ -4,8 +4,7 @@ from codelin.models.const_label import C_Label
 from codelin.models.linearized_tree import LinearizedTree
 from codelin.models.const_tree import C_Tree
 from dataclasses import dataclass
-
-
+import copy
 import re
 
 @dataclass
@@ -16,6 +15,42 @@ class Action:
     new_label: str|None
 
 empty_tree = C_Tree(C_NONE_LABEL)
+
+def attach(new_rightmost_subtree, target_node, parent_label):
+    '''
+    Given a target node, a input token and (optionally) a parent label
+    this function will create a new subtree as (parent_label(current_token))
+    and attach it as the new rightmost subtree of the target node.
+    '''
+    if parent_label is not None:
+        new_rightmost_subtree = C_Tree(parent_label, children=[new_rightmost_subtree])
+        target_node.add_child(new_rightmost_subtree)
+        return new_rightmost_subtree
+    
+    target_node.add_child(new_rightmost_subtree)
+
+def juxtapose(new_subtree, target_node, parent_label, new_label):
+    '''
+    Given a target node, a parent label (optionally) and a new label this function 
+    will create a new subtree as (parent_label(target_node)) and a new node with label
+    new_label and children as the target node and the newly created subtree. This new 
+    node will replace the target node in the tree.
+    '''
+    if parent_label is not None:
+        new_subtree = C_Tree(parent_label, children=[new_subtree])
+
+    if target_node.parent is not None:
+        cpy_target_node = copy.deepcopy(target_node)
+        new_node = C_Tree(new_label, children=[cpy_target_node, new_subtree])
+        parent_node = target_node.parent
+        parent_node.children[parent_node.children.index(target_node)] = new_node
+    
+    else:
+        # we are at the root node
+        cpy_target_node = copy.deepcopy(target_node)
+        new_node = C_Tree(new_label, children=[cpy_target_node, new_subtree])
+        target_node.label = new_node.label
+        target_node.children = new_node.children
 
 def get_level_of_subtree(t, st):
     '''
@@ -89,19 +124,13 @@ def oracle_action_sequence(t):
         w = t.children[0].children[0].label
     
         a = Action(name="attach", target_node=0, parent_label=t.label, new_label=None)
-        
-        action_string = a.name + ("_PARENT->" + str(a.parent_label) if a.parent_label is not None else "") + ("_NEWLABEL->" + str(a.new_label) if a.new_label is not None else "")
-        l = C_Label(nc = a.target_node, lc = action_string, uc = None, sp="_", et = C_JUXTAPOSED_ENCODING, uj="+")
-        lin_tree_row = (w, p, l)
+        lin_tree_row = (w, p, a)
 
         return [lin_tree_row]
     
     else:
         w, p, a, t = _get_action_list(t)
-
-        action_string = a.name + ("_PARENT->" + str(a.parent_label) if a.parent_label is not None else "") + ("_NEWLABEL->" + str(a.new_label) if a.new_label is not None else "")
-        l = C_Label(nc = a.target_node, lc = action_string, uc = None, sp="_", et = C_JUXTAPOSED_ENCODING, uj="+")
-        lin_tree_row = (w, p, l)
+        lin_tree_row = (w, p, a)
         
         return oracle_action_sequence(t) + [lin_tree_row]
 
@@ -117,13 +146,81 @@ class C_JuxtaposedEncoding(ACEncoding):
     def __str__(self):
         return "Juxtaposed Encoding"
 
-    def encode(self, constituent_tree):
+    def encode(self, constituent_tree):        
+        constituent_tree = constituent_tree.collapse_unary(self.unary_joiner)
+        
+        if self.binary:
+            if self.binary_direction == "R":
+                constituent_tree = C_Tree.to_binary_right(constituent_tree, self.binary_marker)
+            elif self.binary_direction == "L":
+                constituent_tree = C_Tree.to_binary_left(constituent_tree, self.binary_marker)
+            else:
+                raise Exception("Binary direction not supported")
+        
         lc_tree = LinearizedTree.empty_tree()
         constituent_tree = constituent_tree.collapse_unary(self.unary_joiner)
-        labels = oracle_action_sequence(constituent_tree)
-        for l in labels:
-            print(l)
-        pass
+        seq = oracle_action_sequence(constituent_tree)
+
+        for w,p,a in seq:
+            uc, p = self.get_unary_chain(p)
+            p, f = self.get_features(p)
+            
+            lc_str = "an="+str(a.name)+\
+                ("[;]"+"pl="+str(a.parent_label) if a.parent_label is not None else "")+\
+                    ("[;]"+"nl="+str(a.new_label) if a.new_label is not None else "")
+            l = C_Label(nc=a.target_node, lc=lc_str, uc=uc, et=C_JUXTAPOSED_ENCODING, sp=self.separator, uj=self.unary_joiner)
+            
+            lc_tree.add_row(w, p, f, l)
+        
+        return lc_tree
 
     def decode(self, linearized_tree):
-        pass
+        t = C_Tree(C_NONE_LABEL)
+        st = t
+        for word, postag, feats, label in linearized_tree.iterrows():
+            # reset level
+            t = st
+            
+            # extract action info from label
+            target_node = label.n_commons
+            action  = label.last_common.split("[;]")
+            action_name = None
+            parent_label = None
+            new_label = None
+            for element in action:
+                n, v = element.split("=")
+                if n == "an":
+                    action_name = v
+                elif n == "pl":
+                    parent_label = v
+                elif n == "nl":
+                    new_label = v
+            
+            action = Action(name=action_name, target_node=target_node, parent_label=parent_label, new_label=new_label)
+
+            # build terminal
+            term_tree = C_Tree(postag,[C_Tree(word)])
+            if label.unary_chain is not None:
+                for uc in reversed(label.unary_chain.split(self.unary_joiner)):
+                    term_tree = C_Tree(uc, [term_tree])
+            
+            # take action
+            target_level = action.target_node
+            
+            # descend
+            while target_level > 0 and len(t.children) > 0:
+                t = t.children[-1]
+                target_level -= 1
+            
+            if action.name == "attach":
+                attach(term_tree, t, action.parent_label)
+            
+            elif action.name == "juxtapose":
+                t = juxtapose(term_tree, t, action.parent_label, action.new_label)
+
+        final_tree = st.children[0]
+        if self.binary:
+            final_tree = C_Tree.restore_from_binary(final_tree, self.binary_marker)
+        final_tree = final_tree.uncollapse_unary(self.unary_joiner)
+        
+        return final_tree
