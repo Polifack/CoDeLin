@@ -19,6 +19,7 @@
 /default_cfgs
 /evalb
 /evalud
+/hfmtl
 
 .vscode/
 /src/models/__pycache__
@@ -29,3 +30,4 @@
 # ceval script
 ceval.sh
 deval.sh
+train_models.ipynb

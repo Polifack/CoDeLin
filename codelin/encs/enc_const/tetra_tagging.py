@@ -108,7 +108,6 @@ def encode_inorder(tree, sep, ujoiner):
     lintree.add_row(w_i, p_i, None, lbl)
 
     return lintree
-
 def decode_inorder(l_in, ujoiner):
     stack = []
     for word, postag, feats, label in l_in.iterrows():
@@ -209,7 +208,6 @@ def encode_preorder(tree, sep, ujoiner):
             cl.append(lbl)
     
     return lintree
-
 def decode_preorder(l_in, ujoiner):
     stack = []
     for word, postag, feats, label in l_in.iterrows():
@@ -289,14 +287,149 @@ def decode_preorder(l_in, ujoiner):
 
 ## Postorder functions
 
+def encode_postorder(tree, sep, ujoiner):
+    tags    = [n.label for n in tree.get_preterminals()]
+    words   = [n.label for n in tree.get_terminals()]
+
+    tree = tree.remove_preterminals()
+    nodes = []
+    
+    C_Tree.postorder(tree, lambda x: nodes.append(x))
+    lintree = LinearizedTree.empty_tree()
+    cl = []
+    lc = None
+    i = 0
+    for node in nodes:
+        if node.is_terminal():
+            lbl = shift_action(node)
+            cl.append(lbl)
+            
+            ### POSTORDER  => Append in terminals (but binarized to the left)
+            w_i = words[i]
+            p_i = tags[i]
+            
+            # p_i = extract feats
+            nc_i = "".join(cl)
+            lc_i = lc
+            uc_i = None
+
+            # p_i = extract unary 
+            if ujoiner in p_i:
+                uc_i = ujoiner.join(p_i.split(ujoiner)[:-1])
+                p_i = p_i.split(ujoiner)[-1]
+
+            if lc_i is None:
+                lc_i = C_NONE_LABEL
+            
+            lbl = C_Label(nc=nc_i, lc=lc_i, uc=uc_i, et=C_TETRA_ENCODING, sp=sep, uj=ujoiner)
+            lintree.add_row(w_i, p_i, None, lbl)
+            i += 1
+
+            
+            lc = None
+            cl = []
+        else:
+            lbl, lc_i = reduce_action(node)
+            if lc is None:
+                lc = lc_i
+            else:
+                lc = lc + ">" + lc_i
+            cl.append(lbl)
+    
+    
+    # last non-terminal node (postorder will end in a non-terminal node)
+    nc_i = "".join(cl)
+    lintree.labels[-1].n_commons += nc_i
+    lintree.labels[-1].last_common+=">"+lc if lc is not None else ""
+    return lintree
+def decode_postorder(l_in, ujoiner):
+    stack = []
+    for word, postag, feats, label in l_in.iterrows():
+        operators = list(label.n_commons)
+        for op in operators:
+            if op == 'r':
+                # build terminal tree
+                terminal_tree = C_Tree(postag, children=[C_Tree(word)])
+                if label.unary_chain is not None:
+                    for uc in reversed(label.unary_chain.split(ujoiner)):
+                        terminal_tree = C_Tree(uc, [terminal_tree])
+                
+                # r => insert the node in the stack
+                stack.append(terminal_tree)
+            
+            elif op == 'l':
+                # build terminal tree
+                terminal_tree = C_Tree(postag, children=[C_Tree(word)])
+                
+                if label.unary_chain is not None:
+                    for uc in reversed(label.unary_chain.split(ujoiner)):
+                        terminal_tree = C_Tree(uc, [terminal_tree])
+
+                # remove from the non-terminal list the associate -none- (if exists)
+                if C_NONE_LABEL == label.last_common.split(">")[0]:
+                    label.last_common = ">".join(label.last_common.split(">")[1:])
+
+                # See if we can close this node
+                if not stack[-1].has_none_child():
+                    stack.append(terminal_tree)    
+                    continue
+                else:
+                    parent_tree = stack.pop()
+                    parent_tree.children[1] = terminal_tree
+
+                # moving up the tree until we find a node with a right child
+                while not parent_tree.has_none_child() and len(stack)>0:
+                    parent_tree = stack.pop()
+                    parent_tree.update_custody()
+                
+                stack.append(parent_tree)
+
+            elif op.startswith("R"):
+                # get the non terminal
+                if ">" in label.last_common:
+                    nt = label.last_common.split(">")[0]
+                    label.last_common = ">".join(label.last_common.split(">")[1:])
+                else:
+                    nt = label.last_common
+
+                # node is a left non terminal child, combine it with the top of the stack
+                if len(stack)>0:
+                    r_child = stack.pop()
+                    l_child = stack.pop()
+                    p_tree  = C_Tree(nt, children=[l_child, r_child])
+                    p_tree.update_custody()
+                    
+                    stack.append(p_tree)
+                else:
+                    stack.append(C_Tree(nt, [C_Tree.empty_tree(), C_Tree.empty_tree()]))
+
+            elif op.startswith("L"):
+                # L => node is a right non terminal child, combine it with the top of the stack
+                
+                # get the non terminal (or non terminals)
+                if ">" in label.last_common:
+                    nt = label.last_common.split(">")[0]
+                    label.last_common = ">".join(label.last_common.split(">")[1:])
+                else:
+                    nt = label.last_common
+
+                if len(stack)>0:
+                    r_child = stack.pop()
+                    l_child = stack.pop()
+                    p_tree  = C_Tree(nt, children=[l_child, r_child])
+                    p_tree.update_custody()
+
+                    stack.append(p_tree)
+
+    final_tree = stack.pop()
+    return final_tree
+
 class C_Tetratag(ACEncoding):
-    def __init__(self, separator, unary_joiner, reverse, mode, binary_direction, binary_marker="*"):
+    def __init__(self, separator, unary_joiner, mode, binary_marker="*"):
         self.separator = separator
         self.unary_joiner = unary_joiner
-        self.reverse = reverse
         self.mode = mode
         self.binary_marker = binary_marker
-        self.binary_direction = binary_direction
 
     def __str__(self):
         return "Constituent Tetratagging"
@@ -306,23 +439,28 @@ class C_Tetratag(ACEncoding):
         # It is needed to collapse unary before binary
         constituent_tree = constituent_tree.collapse_unary(self.unary_joiner)
         
-        if self.binary_direction == "R":
-            constituent_tree = C_Tree.to_binary_right(constituent_tree, self.binary_marker)
-        elif self.binary_direction == "L":
-            constituent_tree = C_Tree.to_binary_left(constituent_tree, self.binary_marker)
-        else:
-            raise Exception("Binary direction not supported")
-        
         if self.mode == "inorder":
+            # Inorder must be linearized to the right
+            constituent_tree = C_Tree.to_binary_right(constituent_tree, self.binary_marker)
             return encode_inorder(constituent_tree, self.separator, self.unary_joiner)
         elif self.mode == "preorder":
+            # Preorder must be linearized to the right
+            constituent_tree = C_Tree.to_binary_right(constituent_tree, self.binary_marker)
             return encode_preorder(constituent_tree, self.separator, self.unary_joiner)
+        elif self.mode == "postorder":
+            # Postorder must be linearized to the left
+            constituent_tree = C_Tree.to_binary_left(constituent_tree, self.binary_marker)
+            return encode_postorder(constituent_tree, self.separator, self.unary_joiner)
+        else:
+            raise Exception("Mode not supported")
 
     def decode(self, linearized_tree):
         if self.mode == "inorder":
             final_tree = decode_inorder(linearized_tree, self.unary_joiner)
         elif self.mode == "preorder":
             final_tree = decode_preorder(linearized_tree, self.unary_joiner)
+        elif self.mode == "postorder":
+            final_tree = decode_postorder(linearized_tree, self.unary_joiner)
 
         C_Tree.restore_from_binary(final_tree, binary_marker=self.binary_marker)
         final_tree = final_tree.uncollapse_unary(self.unary_joiner)
