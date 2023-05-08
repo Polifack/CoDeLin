@@ -21,14 +21,10 @@ def merge_if_free(nt, parent, children):
 
 
 class C_GapsEncoding(ACEncoding):
-    def __init__(self, separator, unary_joiner, reverse, binary, binary_direction, binary_marker):
-        if not binary:
-            raise Exception("Gaps encoding only works with binary trees")
+    def __init__(self, separator, unary_joiner, binary_direction, binary_marker):
         
         self.separator = separator
         self.unary_joiner = unary_joiner
-        self.reverse = reverse
-        self.binary = binary
         self.binary_marker = binary_marker
         self.binary_direction = binary_direction
 
@@ -38,13 +34,12 @@ class C_GapsEncoding(ACEncoding):
     def encode(self, constituent_tree):        
         constituent_tree = constituent_tree.collapse_unary(self.unary_joiner)
         
-        if self.binary:
-            if self.binary_direction == "R":
-                constituent_tree = C_Tree.to_binary_right(constituent_tree, self.binary_marker)
-            elif self.binary_direction == "L":
-                constituent_tree = C_Tree.to_binary_left(constituent_tree, self.binary_marker)
-            else:
-                raise Exception("Binary direction not supported")
+        if self.binary_direction == "R":
+            constituent_tree = C_Tree.to_binary_right(constituent_tree, self.binary_marker)
+        elif self.binary_direction == "L":
+            constituent_tree = C_Tree.to_binary_left(constituent_tree, self.binary_marker)
+        else:
+            raise Exception("Binary direction not supported")
         
         
         lc_tree = LinearizedTree.empty_tree()
@@ -76,9 +71,6 @@ class C_GapsEncoding(ACEncoding):
         # last label
         label = C_Label(n_right, "$$", unary_chain, C_GAPS_ENCODING, self.separator, self.unary_joiner)
         lc_tree.add_row(word, postag, features, label)
-        
-        if self.reverse:
-            lc_tree.reverse_tree(ignore_bos_eos=False)
 
         return lc_tree
 
@@ -113,8 +105,7 @@ class C_GapsEncoding(ACEncoding):
             nodes_stack.append(node)
 
         final_tree = node
-        if self.binary:
-            final_tree = C_Tree.restore_from_binary(final_tree, self.binary_marker)
+        final_tree = C_Tree.restore_from_binary(final_tree, self.binary_marker)
         final_tree = final_tree.uncollapse_unary(self.unary_joiner)
         
         return final_tree

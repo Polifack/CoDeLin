@@ -135,10 +135,9 @@ def oracle_action_sequence(t):
         return oracle_action_sequence(t) + [lin_tree_row]
 
 class C_JuxtaposedEncoding(ACEncoding):
-    def __init__(self, separator, unary_joiner, reverse, binary, binary_direction, binary_marker):        
+    def __init__(self, separator, unary_joiner, binary, binary_direction, binary_marker):        
         self.separator = separator
         self.unary_joiner = unary_joiner
-        self.reverse = reverse
         self.binary = binary
         self.binary_marker = binary_marker
         self.binary_direction = binary_direction

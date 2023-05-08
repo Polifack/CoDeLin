@@ -19,7 +19,11 @@
 /default_cfgs
 /evalb
 /evalud
+
+# models
 /hfmtl
+/models
+/saved
 
 .vscode/
 /src/models/__pycache__

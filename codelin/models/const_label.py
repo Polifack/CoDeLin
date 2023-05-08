@@ -17,7 +17,7 @@ class C_Label:
     def __repr__(self):
         unary_str = self.unary_joiner.join([self.unary_chain]) if self.unary_chain else ""
         return (str(self.n_commons) + ("*" if self.encoding_type==C_RELATIVE_ENCODING else "")
-        + self.separator + self.last_common + (self.separator + unary_str if self.unary_chain else ""))
+        + self.separator + str(self.last_common) + (self.separator + unary_str if self.unary_chain else ""))
     
     def to_absolute(self, last_label):
         self.n_commons+=last_label.n_commons
