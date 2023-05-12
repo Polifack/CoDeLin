@@ -85,3 +85,22 @@ Transitions2Labels:
 
 - Para encodear necesitamos guardar el 'numero de niveles' que el current subtree (el rightmost) baja en el arbol; esto puede tener alguna equivalencia con los gaps?
 - Los gaps 'storean' el numero de niveles que un nodo sube, esto storea el numero de niveles que un nodo baja?
+
+
+### Multi-task Learning
+
+- During evaluation, the batch size of the outputs is half of the inputs
+	* The evaluation will use all GPUs like the training, so the effective batch size will be the per_device_batch_size multiplied by the number of GPUs (it’s logged at the beginning of the evaluation).
+	* During evaluation, take [:n_gpu] and [n_gpu:]?
+
+- CUDA out of memory ==> https://huggingface.co/docs/transformers/v4.19.2/en/performance
+	* Control the gradient accumulation with gradient_accumulation_steps=n in training arguments
+	* Gradient checkpoints: https://medium.com/tensorflow/fitting-larger-networks-into-memory-583e3c758ff9
+	* Use floating point 16 bits activation
+	* Change train optimizer to Adafactor
+	* Use predict_with_generate = True in training args
+	* Change train optimizer to 8-bit Adam
+	* Use Accelerator to create a custom training function (see https://huggingface.co/docs/transformers/v4.19.2/en/performance#using-accelerate). This is also used to create quantified models!
+	
+	
+	
