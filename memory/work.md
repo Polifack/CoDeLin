@@ -86,6 +86,12 @@ Transitions2Labels:
 - Para encodear necesitamos guardar el 'numero de niveles' que el current subtree (el rightmost) baja en el arbol; esto puede tener alguna equivalencia con los gaps?
 - Los gaps 'storean' el numero de niveles que un nodo sube, esto storea el numero de niveles que un nodo baja?
 
+Branching:
+
+![Branching](pics/branching.png)
+
+- For the given tree we will say that it is right-branching, as most of the non-terminal nodes appear as right children of the tree.
+
 
 ### Multi-task Learning
 

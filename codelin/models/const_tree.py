@@ -155,6 +155,8 @@ class C_Tree:
         else:
             return [node for child in self.children for node in child.get_postags()]
 
+# Tree stats
+
     def depth(self, ignore_postags=True):
         '''
         Function that returns the maximum depth of a tree
@@ -165,7 +167,80 @@ class C_Tree:
             return 0
         else:
             return 1 + max([child.depth() for child in self.children])
+        
+    def width(self):
+        '''
+        Function that returns an array of the width of each
+        level of a tree
+        '''
+        nodes = {}
+        def fill_dict(node, level):
+            if level not in nodes:
+                nodes[level] = []
+            nodes[level].append(node)
+            for child in node.children:
+                fill_dict(child, level+1)
 
+        fill_dict(self, 0)
+        
+        # get the length of each level
+        for level in nodes.keys():
+            nodes[level] = len(nodes[level])
+        return nodes
+    
+    def average_branching_factor(self):
+        '''
+        Function that returns the average branching factor of a tree and all of its children
+        '''
+        nodes = []
+        C_Tree.inorder(self, lambda x: nodes.append(x))
+        
+        branching = []
+        for node in nodes:
+            if node.is_terminal() or node.is_root():
+                continue
+            else:
+                branching.append(len(node.children))
+        
+        return sum(branching)/len(branching) if len(branching) > 0 else 0
+    
+    def branching(self):
+        '''
+        In linguistics, branching refers to the shape of the parse tree
+        that represents the structure of a sentence. We will compute the 
+        branching of a tree as the number of non-terminal nodes that are 
+        either left or right child of their parent.
+
+        For example the following tree
+
+        (ROOT
+            (A a)
+            (NT1 
+                (B b) 
+                (C c)
+                (NT2
+                    (D d)
+                    (E e)
+                )
+            )
+        )
+        
+        is a right-branching tree with a ratio of 1:2 (1 left-branching node
+        and 2 right-branching nodes)
+        '''
+
+        nodes = []
+        C_Tree.inorder(self, lambda x: nodes.append(x))
+
+        branching = []
+        for node in nodes:
+            if node.is_terminal() or node.is_root():
+                continue
+            else:
+                branching.append("L" if node.is_left_child() else "R")
+        
+        return {"L": branching.count("L"), "R": branching.count("R")}
+    
 # Checkers
     def is_right_child(self):
         '''
@@ -190,6 +265,12 @@ class C_Tree:
             if c.label == C_NONE_LABEL:
                 return True
         return False
+
+    def is_root(self):
+        '''
+        Function that checks if a tree is a root
+        '''
+        return self.parent is None
 
     def is_terminal(self):
         '''
@@ -243,9 +324,9 @@ class C_Tree:
         for child in self.children:
             child.clean_tree(idx_marker)
 
-    def collapse_unary(self, unary_joiner="+", collapse_postags=False):
+    def collapse_unary(self, unary_joiner="+"):
         '''
-        Returns a new tree where the unary chains are replaced
+        Returns a new tree where the intermediate unary chains are replaced
         by a new node where the label is formed by all the 
         members in the unary chain separated by 'unary_joiner' string.
         '''
@@ -254,15 +335,15 @@ class C_Tree:
             label = c.label
             
             # get all unary chain nodes
-            while c.is_unary_chain() and not (c.is_preterminal() and collapse_postags):
+            while c.is_unary_chain() and not c.is_preterminal():
                 label += unary_joiner + c.children[0].label
                 c = c.children[0]
 
             label = self.label + unary_joiner + label
             children = c.children
-            return C_Tree(label, [c.collapse_unary(unary_joiner, collapse_postags) for c in children])
+            return C_Tree(label, [c.collapse_unary(unary_joiner) for c in children])
         else:
-            return C_Tree(self.label, [c.collapse_unary(unary_joiner, collapse_postags) for c in self.children])
+            return C_Tree(self.label, [c.collapse_unary(unary_joiner) for c in self.children])
 
     def uncollapse_unary(self, unary_joiner="+"):
         '''
@@ -600,6 +681,14 @@ class C_Tree:
 
     @staticmethod
     def preorder(node, fn):
+        '''
+        Given a tree and a function fn, applies fn to
+        each node of the tree in preorder.
+
+        Preorder traversal:
+        1. Run on root
+        2. Recurse on children from left to right
+        '''
         if node == None:
             return
         
@@ -612,6 +701,15 @@ class C_Tree:
     
     @staticmethod
     def inorder(node, fn):
+        '''
+        Given a tree and a function fn, applies fn to
+        each node of the tree in inorder.
+        
+        Inorder traversal:
+        1. Recurse on children from left to right up to the last one
+        2. Run in Root
+        3. Run in last one
+        '''
         if node == None:
             return
 
@@ -632,6 +730,15 @@ class C_Tree:
 
     @staticmethod
     def postorder(node, fn):
+        '''
+        Given a tree and a function fn, applies fn to
+        each node of the tree in postorder.
+
+        Postorder traversal:
+        1. Recurse on children from left to right
+        2. Run on root
+        '''
+
         if node == None:
             return
         
