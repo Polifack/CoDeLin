@@ -176,6 +176,8 @@ class C_JuxtaposedEncoding(ACEncoding):
     def decode(self, linearized_tree):
         t = C_Tree(C_NONE_LABEL)
         st = t
+
+        is_first = True
         for word, postag, feats, label in linearized_tree.iterrows():
             # reset level
             t = st
@@ -186,6 +188,7 @@ class C_JuxtaposedEncoding(ACEncoding):
             action_name = None
             parent_label = None
             new_label = None
+            
             for element in action:
                 n, v = element.split("=")
                 if n == "an":
@@ -194,6 +197,13 @@ class C_JuxtaposedEncoding(ACEncoding):
                     parent_label = v
                 elif n == "nl":
                     new_label = v
+
+            # enforce first action is an attach action
+            if is_first:
+                is_first = False
+                if action_name != "attach":
+                    raise Exception("First action must be an attach action")
+                
             
             action = Action(name=action_name, target_node=target_node, parent_label=parent_label, new_label=new_label)
 
@@ -211,11 +221,16 @@ class C_JuxtaposedEncoding(ACEncoding):
                 t = t.children[-1]
                 target_level -= 1
             
+            # apply action
             if action.name == "attach":
                 attach(term_tree, t, action.parent_label)
             
             elif action.name == "juxtapose":
                 t = juxtapose(term_tree, t, action.parent_label, action.new_label)
+
+            print(t)
+            print(st)
+            print("---")
 
         final_tree = st.children[0]
         if self.binary:

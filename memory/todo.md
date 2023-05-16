@@ -16,6 +16,7 @@
 [x] Check the gaps encoding with both binary directions and reverse
 [x] Check the tetratag with several orders with both binary directions and reverse
 [x] Check the juxtaposed encoding with reverse and binarization
+[x] Implement a better constituent stats extraction
 
 
 ## WIP
@@ -69,6 +70,10 @@
 [ ] Check for models quantification in the MTL setup
 
 [ ] Write Introduction and State of the art for paper
+
+[ ] Profundidad arbol // Tam arbol y numero etiquetas (e.g. filtrar por 3, por 4...)
+
+[ ] Etiquetas en multi-task (dividiendo los campos de etiqueta)
 
 ## Deadlines
 - AACL  23/05

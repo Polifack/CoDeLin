@@ -95,7 +95,8 @@ class C_GapsEncoding(ACEncoding):
                     node = C_Tree(unary, children=[node])
 
             for _ in range(n_right):
-                stack_top = nodes_stack.pop()
+                # try pop, else create a new empty node
+                stack_top = nodes_stack.pop() if nodes_stack else C_Tree(C_NONE_LABEL)
                 node = merge_if_free(last_nt, stack_top, node)
 
             if last_nt == "$$":

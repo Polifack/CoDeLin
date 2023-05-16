@@ -275,13 +275,16 @@ def decode_preorder(l_in, ujoiner):
                 else:
                     
                     nt = label.last_common
-
-                r_child = C_Tree(nt, [C_Tree.empty_tree(), C_Tree.empty_tree()])
-                stack[-1].children[1] = r_child
-                stack[-1].update_custody()
                 
-                stack.append(r_child)
-
+                if len(stack)>0:
+                    r_child = C_Tree(nt, [C_Tree.empty_tree(), C_Tree.empty_tree()])
+                    stack[-1].children[1] = r_child
+                    stack[-1].update_custody()
+                
+                    stack.append(r_child)
+                else:
+                    stack.append(C_Tree(nt, [C_Tree.empty_tree(), C_Tree.empty_tree()]))
+                    
     final_tree = stack.pop()
     return final_tree
 

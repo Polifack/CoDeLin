@@ -389,7 +389,7 @@ class Trainer(transformers.Trainer):
         self.test_dataset = {
             task: dataset["test"]
             for task, dataset in self.processed_tasks.items()
-        }
+        } if any(["test" in dataset for dataset in self.processed_tasks.values()]) else None
         
         # We prevent trainer from automatically evaluating on each dataset: transformers.Trainer recognizes 
         # eval_dataset instances of "dict" but we use a custom "evaluate" function so that we can use 

@@ -21,8 +21,14 @@ import os
 import torch
 import pandas as pd
 
+'''
+Train the models in multi-task learning fashion. To do this
+we will split the fields of the label and train different
+tasks according to this. After training, we will evaluate
+the decoded trees by re-joining the labels.
+'''
 
-# Generate datasets
+
 ptb_path = "~/Treebanks/const/PENN_TREEBANK/"
 ptb_path = os.path.expanduser(ptb_path)
 
@@ -42,14 +48,21 @@ def generate_dataset_from_codelin(train_dset, dev_dset, test_dset=None):
     label_names = sorted(list(label_set))
 
     train_dset = datasets.Dataset.from_dict(train_dset)
-    train_dset = train_dset.cast_column("target", Sequence(ClassLabel(num_classes=len(label_names), names=label_names)))
+    train_dset = train_dset.cast_column("target_1", Sequence(ClassLabel(num_classes=len(label_names), names=label_names)))
+    train_dset = train_dset.cast_column("target_2", Sequence(ClassLabel(num_classes=len(label_names), names=label_names)))
+    train_dset = train_dset.cast_column("target_3", Sequence(ClassLabel(num_classes=len(label_names), names=label_names)))
 
     dev_dset = datasets.Dataset.from_dict(dev_dset)
     dev_dset = dev_dset.cast_column("target", Sequence(ClassLabel(num_classes=len(label_names), names=label_names)))
+    dev_dset = dev_dset.cast_column("target_1", Sequence(ClassLabel(num_classes=len(label_names), names=label_names)))
+    dev_dset = dev_dset.cast_column("target_2", Sequence(ClassLabel(num_classes=len(label_names), names=label_names)))
+    dev_dset = dev_dset.cast_column("target_3", Sequence(ClassLabel(num_classes=len(label_names), names=label_names)))
 
     if test_dset:
         test_dset = datasets.Dataset.from_dict(test_dset)
-        test_dset = test_dset.cast_column("target", Sequence(ClassLabel(num_classes=len(label_names), names=label_names)))
+        test_dset = test_dset.cast_column("target_1", Sequence(ClassLabel(num_classes=len(label_names), names=label_names)))
+        test_dset = test_dset.cast_column("target_2", Sequence(ClassLabel(num_classes=len(label_names), names=label_names)))
+        test_dset = test_dset.cast_column("target_3", Sequence(ClassLabel(num_classes=len(label_names), names=label_names)))
     
         # Convert to Hugging Face DatasetDict format
         dataset = datasets.DatasetDict({
@@ -73,8 +86,20 @@ def encode_dset(encoder, dset):
         tree = C_Tree.from_string(line)
         lin_tree = encoder.encode(tree)
         encoded_trees["tokens"].append([w for w in lin_tree.words])
-        encoded_trees["target"].append([str(l) for l in lin_tree.labels])
+        
+        t1,t2,t3 = [],[],[]
+        for s1,s2,s3 in lin_tree.get_labels_splitted():
+            t1.append(s1)    
+            t2.append(s2)
+            t3.append(s3)
+            
+        encoded_trees["target_1"].append(t1)
+        encoded_trees["target_2"].append(t2)
+        encoded_trees["target_3"].append(t3)
+        
         max_len_tree = max(max_len_tree, len(lin_tree.words))
+    
+    
     return encoded_trees, max_len_tree
 
 def gen_dsets():
@@ -210,18 +235,32 @@ for enc in encodings:
     
     tasks = [TokenClassification(
                 dataset = dataset,
+                y = "target_1",
+                name = enc["name"],
+                tokenizer_kwargs = frozendict(padding="max_length", max_length=args.max_seq_length, truncation=True)
+            ),
+            TokenClassification(
+                dataset = dataset,
+                y = "target_2",
+                name = enc["name"],
+                tokenizer_kwargs = frozendict(padding="max_length", max_length=args.max_seq_length, truncation=True)
+            ),
+            TokenClassification(
+                dataset = dataset,
+                y = "target_3",
                 name = enc["name"],
                 tokenizer_kwargs = frozendict(padding="max_length", max_length=args.max_seq_length, truncation=True)
             )]
         
-    model   = Model(tasks, args)            # list of models; by default, shared encoder, task-specific CLS token task-specific head 
-    trainer = Trainer(model, tasks, args)   # tasks are uniformly sampled by default
+    model   = Model(tasks, args)   
+    trainer = Trainer(model, tasks, args)
     
     print("[GPU] Model created; Total allocated memory", torch.cuda.memory_allocated()/1e6,"MB")
     print("[GPU] Model created; Total cached memory", torch.cuda.memory_cached()/1e6,"MB")
     device = torch.device("cuda")
     trainer.train()
-    # Free dataset
+    
+    # free dataset
     del dataset
     model_memory = torch.cuda.memory_allocated()/1e6
     cached_memory = torch.cuda.memory_cached()/1e6
@@ -230,43 +269,55 @@ for enc in encodings:
     
     # save
     trainer.save_model(output_dir=f"models/{enc['name']}")
-    
-    for i, t in enumerate(tasks[1:2]):
-        test_trees = ptb_test[:train_limit] if train_limit else ptb_test
-        dec_trees = []
-        scorer = Scorer()
 
+    test_trees = ptb_test[:train_limit] if train_limit else ptb_test
+    scorer = Scorer()
+    dec_trees = []
+    
+    # torch no grad: memory optimization
+    with torch.no_grad():
         for gold_tree in test_trees:
+            labels = []
             tree = C_Tree.from_string(gold_tree)
             
             words = tree.get_words()
             postags = tree.get_postags()
             sentence = " ".join(words)
-            
-            tokenized_input = trainer.tokenizer(sentence, return_tensors='pt')
+
+            tokenized_input = trainer.tokenizer(sentence, return_tensor='pt')
             tokenized_input = {k: v.to(device) for k, v in tokenized_input.items()}
-            
-            outputs = model.task_models_list[i](**tokenized_input)
-            logits = outputs.logits
-            predictions = logits.argmax(-1).squeeze().tolist()
-            true_predictions = [tasks[i].label_names[p] for p in predictions[1:-1]]
-            
+
+            # get the label fields for each taks
+            l = [[],[],[]]
+            for i, t in enumerate(tasks):
+                output_i = model.task_models_list[i](**tokenized_input)
+                logits = output_i.logits
+                predictions = logits.argmax(-1).squeeze().tolist()
+                
+                true_predictions = [tasks[i].label_names[p] for p in predictions[1:-1]]
+                l[i] = true_predictions
+                
+            # merge again the takss
             labels = []
-            for p in true_predictions:
-                labels.append(C_Label.from_string(p, sep="[_]", uj="[+]"))
+            for a,b,c in zip(l[0],l[1],l[2]):
+                label_str = f"{a}[_]{b}[_]{c}"
+                labels.append(C_Label.from_string(label_str, sep="[_]", uj="[+]"))
 
             lin_tree = LinearizedTree(words=words, postags=postags,
-                        additional_feats=[], labels=labels, n_feats=0)
+                    additional_feats=[], labels=labels, n_feats=0)
+            
             dec_tree = encoder.decode(lin_tree).postprocess_tree(conflict_strat=C_STRAT_MAX, clean_nulls=True, default_root="S")
             dec_tree = str(dec_tree)            
             dec_trees.append(dec_tree)
-
-            # free memory
+            
+            # free memmory
             del tokenized_input
             del predictions
             del logits
-            del outputs
-        
+            del output_i
+
+
+        # Score and store results
         try:
             results = scorer.score_corpus(test_trees, dec_trees)
             s = summary(results)
@@ -274,6 +325,7 @@ for enc in encodings:
             recall = s[4]
             fscore = s[6]
             precision = s[7]
+        
         except:
             recall = 0
             fscore = 0
@@ -304,3 +356,6 @@ for enc in encodings:
     f_name = "results"+enc["name"]+".tex"
     with open(f_name, "w") as f:
         f.write(results_latex)
+            
+
+            

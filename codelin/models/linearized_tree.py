@@ -1,4 +1,4 @@
-from codelin.utils.constants import BOS, EOS, C_NO_POSTAG_LABEL
+from codelin.utils.constants import BOS, EOS, C_NO_POSTAG_LABEL, C_NONE_LABEL
 from codelin.models.const_label import C_Label
 from codelin.models.deps_label import D_Label
 
@@ -9,6 +9,19 @@ class LinearizedTree:
         self.additional_feats = additional_feats
         self.labels = labels
         #len(f_idx_dict.keys()) = n_feats
+
+    def get_labels_splitted(self):
+        '''
+        Returns the labels split by
+        their separator.
+        '''
+        for l in self.labels:
+            spl = str(l).split(l.separator)
+            if len(spl) == 2:
+                yield spl[0], spl[1], C_NONE_LABEL
+            elif len(spl) == 3:
+                yield spl[0], spl[1], spl[2]
+
         
     def get_sentence(self):
         return "".join(self.words)

@@ -164,4 +164,5 @@ class C_NaiveRelativeEncoding(ACEncoding):
             tree.reverse_tree()
         if self.binary:
             tree = C_Tree.restore_from_binary(tree, self.binary_marker)
+        
         return tree

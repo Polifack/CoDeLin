@@ -93,6 +93,21 @@ Branching:
 - For the given tree we will say that it is right-branching, as most of the non-terminal nodes appear as right children of the tree.
 
 
+### Problems
+- Length mismatch for juxtaposed encodings (i.e. too much attach or too much juxtapose) fixable with changing stack
+- Error when decoding Juxtaposed trees when we misspredict a 'attach' with a 'juxtapose': The postag becomes an intermediate node
+    - Solution: Add postags at the end of the decoding (tree.fill_postags(p))
+
+![Error01](pics/jux_dec_err1.png)
+
+- Error when decoding Juxtaposed trees when the first label has n>1 as target-node-depth
+    - Solution: Enforce that condition
+
+- Error when decoding Juxtaposed trees when the first label has a 'juxtapose' action: This causes the tree to 'do the inheritance' into the dummy node, i.e. it will 'juxtapose' the first element with the dummy node
+    - Solutions: 
+        * Enforce first label is an attach label?
+
+
 ### Multi-task Learning
 
 - During evaluation, the batch size of the outputs is half of the inputs
@@ -108,5 +123,8 @@ Branching:
 	* Change train optimizer to 8-bit Adam
 	* Use Accelerator to create a custom training function (see https://huggingface.co/docs/transformers/v4.19.2/en/performance#using-accelerate). This is also used to create quantified models!
 	
-	
+- CUDA out of memory in: 
+	* binarized absolute encoding (local only, n_labels ~=4k)
+	* binarized yuxtaposed encoding (n_labels ~=8k)
+	* tetratagging postorder (n_labels ~=25k)
 	
