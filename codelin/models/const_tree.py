@@ -242,8 +242,8 @@ class C_Tree:
         bl = branching.count("L")
         br = branching.count("R")
         
-        bl_percentage = bl/(bl+br)*100
-        br_percentage = br/(bl+br)*100
+        bl_percentage = bl/(bl+br)*100 if bl+br > 0 else 0
+        br_percentage = br/(bl+br)*100 if bl+br > 0 else 0
         return {"L": bl_percentage, "R": br_percentage}
     
 # Checkers
