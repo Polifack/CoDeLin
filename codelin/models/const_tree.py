@@ -239,7 +239,12 @@ class C_Tree:
             else:
                 branching.append("L" if node.is_left_child() else "R")
         
-        return {"L": branching.count("L"), "R": branching.count("R")}
+        bl = branching.count("L")
+        br = branching.count("R")
+        
+        bl_percentage = bl/(bl+br)*100
+        br_percentage = br/(bl+br)*100
+        return {"L": bl_percentage, "R": br_percentage}
     
 # Checkers
     def is_right_child(self):
