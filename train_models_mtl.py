@@ -21,6 +21,12 @@ import os
 import torch
 import pandas as pd
 
+import logging
+
+# Set logging level
+logging.basicConfig(level=logging.INFO)
+
+
 '''
 Train the models in multi-task learning fashion. To do this
 we will split the fields of the label and train different
@@ -39,30 +45,40 @@ with open(os.path.join(ptb_path,"dev.trees")) as f:
 with open(os.path.join(ptb_path,"train.trees")) as f:
     ptb_train = [l.rstrip() for l in f.read().splitlines()]
 
+def get_n_labels(dsets, tar_field):
+    label_set = set()
+    for dset in dsets:
+        for labels in dset[tar_field]:
+            label_set.update(labels)
+    label_names = sorted(list(label_set))
+    return label_names, len(label_names)
+
 def generate_dataset_from_codelin(train_dset, dev_dset, test_dset=None):
     label_set = set()
     dsets = [train_dset, dev_dset, test_dset] if test_dset else [train_dset, dev_dset]
-    for dset in dsets:
-        for labels in dset["target"]:
-            label_set.update(labels)
-    label_names = sorted(list(label_set))
+    
+    l1, nl1 = get_n_labels(dsets, "target_1")
+    print("Sample of labels n_commons:", l1[5:10])
+    l2, nl2 = get_n_labels(dsets, "target_2")
+    print("Sample of labels last_common:", l2[5:10])
+    l3, nl3 = get_n_labels(dsets, "target_3")
+    print("Sample of labels unary_chain:", l3[5:10])
 
     train_dset = datasets.Dataset.from_dict(train_dset)
-    train_dset = train_dset.cast_column("target_1", Sequence(ClassLabel(num_classes=len(label_names), names=label_names)))
-    train_dset = train_dset.cast_column("target_2", Sequence(ClassLabel(num_classes=len(label_names), names=label_names)))
-    train_dset = train_dset.cast_column("target_3", Sequence(ClassLabel(num_classes=len(label_names), names=label_names)))
+    train_dset = train_dset.cast_column("target_1", Sequence(ClassLabel(num_classes=nl1, names=l1)))
+    train_dset = train_dset.cast_column("target_2", Sequence(ClassLabel(num_classes=nl2, names=l2)))
+    train_dset = train_dset.cast_column("target_3", Sequence(ClassLabel(num_classes=nl3, names=l3)))
 
     dev_dset = datasets.Dataset.from_dict(dev_dset)
-    dev_dset = dev_dset.cast_column("target", Sequence(ClassLabel(num_classes=len(label_names), names=label_names)))
-    dev_dset = dev_dset.cast_column("target_1", Sequence(ClassLabel(num_classes=len(label_names), names=label_names)))
-    dev_dset = dev_dset.cast_column("target_2", Sequence(ClassLabel(num_classes=len(label_names), names=label_names)))
-    dev_dset = dev_dset.cast_column("target_3", Sequence(ClassLabel(num_classes=len(label_names), names=label_names)))
+    dev_dset = dev_dset.cast_column("target_1", Sequence(ClassLabel(num_classes=nl1, names=l1)))
+    dev_dset = dev_dset.cast_column("target_2", Sequence(ClassLabel(num_classes=nl2, names=l2)))
+    dev_dset = dev_dset.cast_column("target_3", Sequence(ClassLabel(num_classes=nl3, names=l3)))
 
     if test_dset:
         test_dset = datasets.Dataset.from_dict(test_dset)
-        test_dset = test_dset.cast_column("target_1", Sequence(ClassLabel(num_classes=len(label_names), names=label_names)))
-        test_dset = test_dset.cast_column("target_2", Sequence(ClassLabel(num_classes=len(label_names), names=label_names)))
-        test_dset = test_dset.cast_column("target_3", Sequence(ClassLabel(num_classes=len(label_names), names=label_names)))
+        test_dset = test_dset.cast_column("target_1", Sequence(ClassLabel(num_classes=nl1, names=l1)))
+        test_dset = test_dset.cast_column("target_2", Sequence(ClassLabel(num_classes=nl2, names=l2)))
+        test_dset = test_dset.cast_column("target_3", Sequence(ClassLabel(num_classes=nl3, names=l3)))
     
         # Convert to Hugging Face DatasetDict format
         dataset = datasets.DatasetDict({
@@ -80,7 +96,7 @@ def generate_dataset_from_codelin(train_dset, dev_dset, test_dset=None):
     return dataset
 
 def encode_dset(encoder, dset):
-    encoded_trees = {"tokens":[], "target":[]}
+    encoded_trees = {"tokens":[], "target_1":[], "target_2":[], "target_3":[]}
     max_len_tree = 0
     for line in dset:
         tree = C_Tree.from_string(line)
@@ -175,13 +191,16 @@ def gen_dsets():
 args = easydict.EasyDict({
     "max_seq_length": 100,
     
-    "batch_size": 8,
-    "per_device_train_batch_size": 8,
-    "per_device_eval_batch_size": 8,
+    "batch_size": 16,
+    "per_device_train_batch_size": 16,
+    "per_device_eval_batch_size": 16,
 
-    "num_train_epochs": 10,
+    "save_strategy": "epoch",
+    "load_best_model_at_end": True,
 
-    "learning_rate": 1,
+    "num_train_epochs": 20,
+
+    "learning_rate": 1e-5,
     "weight_decay": 0.01,
     "adam_epsilon": 1e-8,
     "adam_beta1": 0.9,
@@ -236,22 +255,25 @@ for enc in encodings:
     tasks = [TokenClassification(
                 dataset = dataset,
                 y = "target_1",
-                name = enc["name"],
+                name = enc["name"]+"_n_commons",
                 tokenizer_kwargs = frozendict(padding="max_length", max_length=args.max_seq_length, truncation=True)
             ),
             TokenClassification(
                 dataset = dataset,
                 y = "target_2",
-                name = enc["name"],
+                name = enc["name"]+"_last_common",
                 tokenizer_kwargs = frozendict(padding="max_length", max_length=args.max_seq_length, truncation=True)
             ),
             TokenClassification(
                 dataset = dataset,
                 y = "target_3",
-                name = enc["name"],
+                name = enc["name"]+"_unary_chain",
                 tokenizer_kwargs = frozendict(padding="max_length", max_length=args.max_seq_length, truncation=True)
             )]
-        
+    print("[DST] Datasets encoded and ready to train")
+    for task in tasks:
+        print("[DST] Task", task.name, "has", task.num_labels, "labels")
+    
     model   = Model(tasks, args)   
     trainer = Trainer(model, tasks, args)
     
@@ -284,8 +306,11 @@ for enc in encodings:
             postags = tree.get_postags()
             sentence = " ".join(words)
 
-            tokenized_input = trainer.tokenizer(sentence, return_tensor='pt')
-            tokenized_input = {k: v.to(device) for k, v in tokenized_input.items()}
+            tokenized_input = trainer.tokenizer(sentence, return_tensors="pt")
+            t_items = tokenized_input.items()
+            for k, v in t_items:
+                print(k, v)
+            tokenized_input = {k: v.to(device) for k, v in t_items}
 
             # get the label fields for each taks
             l = [[],[],[]]

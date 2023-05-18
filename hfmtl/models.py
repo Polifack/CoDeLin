@@ -172,16 +172,12 @@ class MultitaskDataloader:
             
 
 def add_cls(model, Z_i, drop_probability=0.0):
-    """model is a standard HF Transformer"""
     emb_name, emb_module = [(name,module) for name,module in model.named_modules() if isinstance(module,torch.nn.Embedding)][0]
     magicattr.set(model, emb_name,
-        nn.Sequential(emb_module, 
-        CLSEmbedding(Z_i,
-        drop_probability=drop_probability
-    )))
+        nn.Sequential(emb_module, CLSEmbedding(Z_i, drop_probability=drop_probability)))
 
 def remove_cls(model):
-    model=copy.copy(model)
+    model = copy.copy(model)
     cls_embeddings = [(name,module) for name,module in model.named_modules() if isinstance(module,torch.nn.Sequential)
         and isinstance(module[-1], CLSEmbedding)]
     if cls_embeddings:
@@ -260,14 +256,15 @@ class Model(transformers.PreTrainedModel):
         for i, task in enumerate(tasks):
             m_i = self.task_models_list[i]
             if self.add_cls:
-                add_cls(m_i,self.Z[i],drop_probability = self.drop_probability)
+                add_cls(m_i, self.Z[i], drop_probability = self.drop_probability)
             if self.add_cln:
-                add_cln(m_i,self.Z[i][::8],
-                drop_probability=self.drop_probability)
+                add_cln(m_i, self.Z[i][::8], drop_probability = self.drop_probability)
         
         torch.cuda.empty_cache()
         gc.collect()
 
+
+    # This is never used?
     def set_encoder(self,encoder):
         for model in self.task_models_list:
             shallow_copy_A_to_B(encoder, getattr(model, self.get_encoder_attr_name(model)))

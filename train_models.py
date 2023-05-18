@@ -133,8 +133,10 @@ def gen_dsets():
     encodings.append({"name":"tetratag_preorder", "encoder":t_pr_enc})
     t_in_enc  = C_Tetratag(separator="[_]", unary_joiner="[+]", mode='inorder',   binary_marker="[b]")
     encodings.append({"name":"tetratag_inorder", "encoder":t_in_enc})
-    t_po_enc  = C_Tetratag(separator="[_]", unary_joiner="[+]", mode='postorder', binary_marker="[b]")
-    encodings.append({"name":"tetratag_postorder", "encoder":t_po_enc})
+    
+    # out of memory error
+    # t_po_enc  = C_Tetratag(separator="[_]", unary_joiner="[+]", mode='postorder', binary_marker="[b]")
+    # encodings.append({"name":"tetratag_postorder", "encoder":t_po_enc})
 
     # yuxtaposed encodings
     j_enc   = C_JuxtaposedEncoding(separator="[_]", unary_joiner="[+]", binary=False, binary_direction=None, binary_marker="[b]")
@@ -154,7 +156,7 @@ args = easydict.EasyDict({
     "per_device_train_batch_size": 8,
     "per_device_eval_batch_size": 8,
 
-    "num_train_epochs": 10,
+    "num_train_epochs": 20,
 
     "learning_rate": 1,
     "weight_decay": 0.01,
@@ -231,7 +233,7 @@ for enc in encodings:
     # save
     trainer.save_model(output_dir=f"models/{enc['name']}")
     
-    for i, t in enumerate(tasks[1:2]):
+    for i, t in enumerate(tasks):
         test_trees = ptb_test[:train_limit] if train_limit else ptb_test
         dec_trees = []
         scorer = Scorer()
@@ -244,6 +246,10 @@ for enc in encodings:
             sentence = " ".join(words)
             
             tokenized_input = trainer.tokenizer(sentence, return_tensors='pt')
+
+            t_items = tokenized_input.items()
+            for k, v in t_items:
+                print(k, v)
             tokenized_input = {k: v.to(device) for k, v in tokenized_input.items()}
             
             outputs = model.task_models_list[i](**tokenized_input)
@@ -287,6 +293,12 @@ for enc in encodings:
             print(f"{k}: {v}")
         results_df = results_df.append(results_dict, ignore_index=True)
         print()
+    
+    # save decoded trees
+    f_name = "test_"+enc["name"]+".trees"
+    with open(f_name, "w") as f:
+        for t in dec_trees:
+            f.write(t+"\n")
 
     # free memory
     del model
@@ -301,6 +313,6 @@ for enc in encodings:
 
     # save as latex
     results_latex = results_df.to_latex()
-    f_name = "results"+enc["name"]+".tex"
+    f_name = "results_"+enc["name"]+".tex"
     with open(f_name, "w") as f:
         f.write(results_latex)
