@@ -23,9 +23,10 @@ import pandas as pd
 
 import logging
 
+
 # Set logging level
 logging.basicConfig(level=logging.INFO)
-
+logging.getLogger("transformers.modeling_utils").setLevel(logging.ERROR)
 
 '''
 Train the models in multi-task learning fashion. To do this
@@ -33,7 +34,6 @@ we will split the fields of the label and train different
 tasks according to this. After training, we will evaluate
 the decoded trees by re-joining the labels.
 '''
-
 
 ptb_path = "~/Treebanks/const/PENN_TREEBANK/"
 ptb_path = os.path.expanduser(ptb_path)
@@ -198,10 +198,9 @@ args = easydict.EasyDict({
     "save_strategy": "epoch",
     "load_best_model_at_end": True,
 
-    "num_train_epochs": 20,
+    "num_train_epochs": 1,
 
     "learning_rate": 1e-5,
-    "weight_decay": 0.01,
     "adam_epsilon": 1e-8,
     "adam_beta1": 0.9,
     "adam_beta2": 0.999,
@@ -219,7 +218,7 @@ args = easydict.EasyDict({
     "add_cls": True,
     "add_clf": True,
     "drop_probability": 0.1,
-    "model_name": "roberta-base"
+    "model_name": "bert-base-uncased"
     })
 
 def delete_garbage():
@@ -252,6 +251,7 @@ for enc in encodings:
     dev_enc, mlt2   = encode_dset(encoder, ptb_dev[:train_limit]   if train_limit else ptb_dev)
     dataset  = generate_dataset_from_codelin(train_enc, dev_enc)
     
+    # generate 3 tasks: 1 for each field of the label
     tasks = [TokenClassification(
                 dataset = dataset,
                 y = "target_1",
@@ -270,6 +270,8 @@ for enc in encodings:
                 name = enc["name"]+"_unary_chain",
                 tokenizer_kwargs = frozendict(padding="max_length", max_length=args.max_seq_length, truncation=True)
             )]
+    
+
     print("[DST] Datasets encoded and ready to train")
     for task in tasks:
         print("[DST] Task", task.name, "has", task.num_labels, "labels")

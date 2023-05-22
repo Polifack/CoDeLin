@@ -156,13 +156,14 @@ args = easydict.EasyDict({
     "per_device_train_batch_size": 8,
     "per_device_eval_batch_size": 8,
 
-    "num_train_epochs": 20,
+    "num_train_epochs": 1,
 
-    "learning_rate": 1,
+    "learning_rate": 1e-5,
     "weight_decay": 0.01,
     "adam_epsilon": 1e-8,
     "adam_beta1": 0.9,
     "adam_beta2": 0.999,
+    
     "do_eval": False,
     "do_predict": False,
     "do_train": True,
@@ -192,6 +193,7 @@ def delete_garbage():
 
     torch.cuda.empty_cache()
 
+tokenizer_kwargs = frozendict(padding="max_length", max_length=args.max_seq_length, truncation=True)
 
 # train and evaluate using Evalb
 encodings = gen_dsets()
@@ -199,7 +201,7 @@ results = {}
 train_limit = None
 delete_garbage()
 
-for enc in encodings:
+for enc in encodings[:1]:
     results_df = pd.DataFrame(columns=["encoding", "recall", "precision", "f1", "n_labels"])
     print("[GPU] Starting training; Allocated memory:", torch.cuda.memory_allocated()/1e6,"MB")
     print("[GPU] Starting training; Cached memory:", torch.cuda.memory_cached()/1e6,"MB")
@@ -213,7 +215,7 @@ for enc in encodings:
     tasks = [TokenClassification(
                 dataset = dataset,
                 name = enc["name"],
-                tokenizer_kwargs = frozendict(padding="max_length", max_length=args.max_seq_length, truncation=True)
+                tokenizer_kwargs = tokenizer_kwargs
             )]
         
     model   = Model(tasks, args)            # list of models; by default, shared encoder, task-specific CLS token task-specific head 
@@ -233,42 +235,71 @@ for enc in encodings:
     # save
     trainer.save_model(output_dir=f"models/{enc['name']}")
     
-    for i, t in enumerate(tasks):
+    with torch.no_grad():
         test_trees = ptb_test[:train_limit] if train_limit else ptb_test
         dec_trees = []
+        lin_trees = []
         scorer = Scorer()
 
-        for gold_tree in test_trees:
+        for gold_tree in test_trees[:train_limit] if train_limit else test_trees:
             tree = C_Tree.from_string(gold_tree)
             
-            words = tree.get_words()
-            postags = tree.get_postags()
-            sentence = " ".join(words)
+            # Get words
+            words_tree = tree.get_words()            
+            sentence = " ".join(words_tree)
+            sentence = " "+sentence+" "
             
-            tokenized_input = trainer.tokenizer(sentence, return_tensors='pt')
-
-            t_items = tokenized_input.items()
-            for k, v in t_items:
-                print(k, v)
-            tokenized_input = {k: v.to(device) for k, v in tokenized_input.items()}
+            ti = trainer.tokenizer(words_tree, is_split_into_words=True, return_tensors='pt',
+                                   return_offsets_mapping=True)
             
-            outputs = model.task_models_list[i](**tokenized_input)
+            ti_iids = ti['input_ids']
+            
+            ti_wids = ti.word_ids()
+            
+            # sub-token’s start position and end position relative to the original token it was split from
+            ti_offsets   = ti['offset_mapping'][0].tolist()
+            ti_attention = len([x for x in ti['attention_mask'][0] if x == 1])
+            
+            # drop all unnecessary fields from the tokenized input
+            ti = {k: v.to(device) for k, v in ti.items() if isinstance(v, torch.Tensor) and k != "offset_mapping"}
+             
+            # Perform the prediction
+            outputs = model.task_models_list[0](**ti)
             logits = outputs.logits
             predictions = logits.argmax(-1).squeeze().tolist()
-            true_predictions = [tasks[i].label_names[p] for p in predictions[1:-1]]
-            
-            labels = []
-            for p in true_predictions:
-                labels.append(C_Label.from_string(p, sep="[_]", uj="[+]"))
+            true_predictions = [tasks[0].label_names[p] for p in predictions]
+            tokenizer_words = [x for x in trainer.tokenizer.convert_ids_to_tokens(ti_iids[0]) if x != "<pad>"]
 
-            lin_tree = LinearizedTree(words=words, postags=postags,
-                        additional_feats=[], labels=labels, n_feats=0)
-            dec_tree = encoder.decode(lin_tree).postprocess_tree(conflict_strat=C_STRAT_MAX, clean_nulls=True, default_root="S")
-            dec_tree = str(dec_tree)            
-            dec_trees.append(dec_tree)
+            # trim the predictions
+            labels = {}
+            for i in range(len(true_predictions)):
+                if ti_wids[i] is None:
+                    continue
+                else:
+                    # store the first prediction
+                    if ti_wids[i] not in labels.keys():
+                        labels[ti_wids[i]] = true_predictions[i]
+            
+            labels_tree = []
+            for p in list(labels.values()):
+                label_i = C_Label.from_string(p, sep="[_]", uj="[+]")
+                labels_tree.append(label_i)
+            
+            # Get postags
+            postags = tree.get_postags()
+
+            # Compute tree
+            lin_tree = LinearizedTree(words=words_tree, postags=postags,
+                        additional_feats=[], labels=labels_tree, n_feats=0)
+            lin_trees.append(str(lin_tree))
+            
+            dec_tree = encoder.decode(lin_tree)
+            dec_tree = dec_tree.postprocess_tree(conflict_strat=C_STRAT_MAX, clean_nulls=True, default_root="S")
+            dec_trees.append(str(dec_tree))
+
 
             # free memory
-            del tokenized_input
+            del ti
             del predictions
             del logits
             del outputs
@@ -285,8 +316,12 @@ for enc in encodings:
             fscore = 0
             precision = 0
 
-        results_dict = {"encoding":enc["name"], "recall":recall, "precision": precision, "f1": fscore, "n_labels": t.num_labels,
-                        "model_memory":model_memory, "cache_memory":cached_memory}
+        results_dict = {"encoding": enc["name"], 
+                        "recall": recall, 
+                        "precision": precision, 
+                        "f1": fscore, 
+                        "model_memory":model_memory, 
+                        "cache_memory":cached_memory}
         
         print("**** Results ****")
         for k, v in results_dict.items():
@@ -300,19 +335,25 @@ for enc in encodings:
         for t in dec_trees:
             f.write(t+"\n")
 
+    # save linearized trees
+    f_name = "test_"+enc["name"]+".lintree"
+    with open(f_name, "w") as f:
+        for t in lin_trees:
+            f.write(t)
+    
+    # save as latex
+    results_latex = results_df.to_latex()
+    f_name = "results_"+enc["name"]+".tex"
+    with open(f_name, "w") as f:
+        f.write(results_latex)
+
     # free memory
     del model
     del trainer
     del tasks
-
     delete_garbage()
 
     # garbage collection
     print("[GPU] End of training total allocated memory", torch.cuda.memory_allocated()/1e6,"MB")
     print("[GPU] End of training total cached memory", torch.cuda.memory_cached()/1e6,"MB")
 
-    # save as latex
-    results_latex = results_df.to_latex()
-    f_name = "results_"+enc["name"]+".tex"
-    with open(f_name, "w") as f:
-        f.write(results_latex)

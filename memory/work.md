@@ -128,3 +128,44 @@ Branching:
 	* binarized yuxtaposed encoding (n_labels ~=8k)
 	* tetratagging postorder (n_labels ~=25k)
 	
+- Pretrained tokenizer will split tokens into subtokens during the learning process. 
+    * situation = sit + uation
+    * could this cause bad predictions? should i be training on words?
+    * current strategy is to during training make all the tokens have the same label 
+        
+        sit -> 1_NP | ation -> 1_NP
+    
+    * current strategy is during decoding assign the 'first' found token to the whole label 
+        
+         sit -> 1_NP | ation -> 2_S is translated to situation -> 1_NP
+    
+    * would this cause problems to learn 'words' (messing SIT-UATION (noun) with SITTING (verb))?
+
+    ```
+    ====================
+    <s>              2[_]SQ[_]ADVP
+    No               8[_]NX
+    ,                2[_]SQ[_]ADVP
+    it               2[_]SQ[_]ADVP
+    was              2[_]SQ[_]ADVP
+    n                1[_]FRAG
+    't               7[_]S[+]VP[_]NP
+    Black            2[_]SQ[_]ADVP
+    Monday           1[_]SQ[_]VP
+    .                2[_]SQ[_]ADVP
+    </s>             2[_]SQ[_]ADVP
+    ====================
+    --------------------
+    No               8[_]NX
+    ,                2[_]SQ[_]ADVP
+    it               2[_]SQ[_]ADVP
+    was              2[_]SQ[_]ADVP
+    n't              1[_]FRAG
+    Black            2[_]SQ[_]ADVP
+    Monday           1[_]SQ[_]VP
+    .                2[_]SQ[_]ADVP
+    ====================
+    ```
+
+    * In the previous example 'nt' changes to n + t during model prediction and generates two different labels! For the decoding we pick the label predicted by 'n'. But n could have been seen in different contexts...
+    * For example, non-tokenized model may learn that 'nt' is a 'modifier' but by learning 'n' and 't' may find 'n' in 'night' that is a noun and missinterpret n...

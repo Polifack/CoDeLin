@@ -98,9 +98,7 @@ class NLPDataCollator:
     def __init__(self, tasks):
         self.tasks = tasks
 
-    def __call__(
-        self, features: List[Union[InputDataClass, Dict]]
-    ) -> Dict[str, torch.Tensor]:
+    def __call__(self, features: List[Union[InputDataClass, Dict]]) -> Dict[str, torch.Tensor]:
         try:
             task_index = features[0]["task"].flatten()[0].item()
         except:
@@ -108,7 +106,7 @@ class NLPDataCollator:
             
         features = [{k:v for k,v in x.items() if k!='task'} for x in features]
         collated = self.tasks[task_index].data_collator.__call__(features)
-        collated['task']=torch.tensor([task_index])
+        collated['task'] = torch.tensor([task_index])
         return collated
 
 class DataLoaderWithTaskname:
