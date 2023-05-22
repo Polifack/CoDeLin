@@ -168,11 +168,9 @@ class MultitaskDataloader:
             # this has input_ids, attention_mask, labels, task
             yield next(dataloader_iter_dict[task_name])
             
-
 def add_cls(model, Z_i, drop_probability=0.0):
     emb_name, emb_module = [(name,module) for name,module in model.named_modules() if isinstance(module,torch.nn.Embedding)][0]
-    magicattr.set(model, emb_name,
-        nn.Sequential(emb_module, CLSEmbedding(Z_i, drop_probability=drop_probability)))
+    magicattr.set(model, emb_name, nn.Sequential(emb_module, CLSEmbedding(Z_i, drop_probability=drop_probability)))
 
 def remove_cls(model):
     model = copy.copy(model)
@@ -192,8 +190,6 @@ def add_cln(model,Z_i,drop_probability=0.0):
 def last_linear(classifier):
     L = list([m for m in classifier.modules() if type(m)==torch.nn.Linear])[-1]
     return L
-
-
 
 class Model(transformers.PreTrainedModel):
     def __init__(self, tasks, args):
@@ -319,7 +315,6 @@ class Model(transformers.PreTrainedModel):
 
         return m_i, adapter
 
-
 class Trainer(transformers.Trainer):
     def __init__(self, model, tasks, hparams, tokenizer=None, *args, **kwargs):
         class default:
@@ -386,9 +381,6 @@ class Trainer(transformers.Trainer):
             for task, dataset in self.processed_tasks.items()
         } if any(["test" in dataset for dataset in self.processed_tasks.values()]) else None
         
-        # We prevent trainer from automatically evaluating on each dataset: transformers.Trainer recognizes 
-        # eval_dataset instances of "dict" but we use a custom "evaluate" function so that we can use 
-        # different metrics for each task
         self.eval_dataset = MappingProxyType(self.eval_dataset)
 
     @staticmethod
@@ -404,7 +396,6 @@ class Trainer(transformers.Trainer):
             other.inner_table.append([values.get(c, np.nan) for c in columns])
 
     def evaluate(self, metric_key_prefix="eval", **kwargs):
-        # logging
         try:
             i = [i for (i,c) in enumerate(self.callback_handler.callbacks) if 'NotebookProgress' in str(c)][0]
             self.callback_handler.callbacks[i].training_tracker.write_line = fc.partial(
@@ -428,7 +419,6 @@ class Trainer(transformers.Trainer):
         return fc.join(outputs) if metric_key_prefix!="test" else outputs
     
     def predict(self, test_dataset = None, ignore_keys = None, metric_key_prefix = "test"):
-        # logging
         try:
             i = [i for (i,c) in enumerate(self.callback_handler.callbacks) if 'NotebookProgress' in str(c)][0]
             self.callback_handler.callbacks[i].training_tracker.write_line = fc.partial(
@@ -514,8 +504,11 @@ class Trainer(transformers.Trainer):
 
     def pipeline(self, task_index=0):
         m,_ = self.model.factorize(task_index = task_index)
-        return pipeline("token-classification",model=m,tokenizer=self.tokenizer,
-                device=m.device, padding=True)
+        return pipeline("token-classification",
+                        model = m,
+                        tokenizer = self.tokenizer,
+                        device = m.device, 
+                        padding=True)
 
     def save_model(self, output_dir, task_index = 0, **kwargs):
         print("[TRN] Saving model of task", task_index)

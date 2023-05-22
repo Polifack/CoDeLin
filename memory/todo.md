@@ -22,6 +22,11 @@
 
 ## WIP
 
+[ ] Semantic Parsing? https://aclanthology.org/2022.starsem-1.19.pdf
+	- Discourse Representation Structure
+
+[ ] MTL? f1: 81.40267556955776 para el absolute a un solo epoch! However for ~20 epochs the training takes 8 hours...
+
 [ ] Train with PTB for all encodings. Use ROBERTA.
 [ ] Train with PTB for all encodings using mtl for each field of the labels. Use ROBERTA.
 

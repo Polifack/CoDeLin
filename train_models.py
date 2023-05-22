@@ -193,12 +193,48 @@ def delete_garbage():
 
     torch.cuda.empty_cache()
 
+def predict_single(words_tree, model, trainer, device):
+        ti = trainer.tokenizer(words_tree, is_split_into_words=True, return_tensors='pt',
+                            return_offsets_mapping=True)
+           
+        ti_wids = ti.word_ids()
+        ti = {k: v.to(device) for k, v in ti.items() if isinstance(v, torch.Tensor) and k != "offset_mapping"}
+            
+        # Perform the prediction
+        outputs = model.task_models_list[0](**ti)
+        logits = outputs.logits
+        predictions = logits.argmax(-1).squeeze().tolist()
+        true_predictions = [tasks[0].label_names[p] for p in predictions]
+
+        # trim the predictions and align them with the original words
+        labels = {}
+        for i in range(len(true_predictions)):
+            if ti_wids[i] is None:
+                continue
+            else:
+                # store the first prediction
+                if ti_wids[i] not in labels.keys():
+                    labels[ti_wids[i]] = true_predictions[i]
+        
+        labels_tree = []
+        for p in list(labels.values()):
+            label_i = C_Label.from_string(p, sep="[_]", uj="[+]")
+            labels_tree.append(label_i)
+
+        # free memory
+        del ti
+        del predictions
+        del logits
+        del outputs
+        
+        return labels_tree
+
 tokenizer_kwargs = frozendict(padding="max_length", max_length=args.max_seq_length, truncation=True)
 
 # train and evaluate using Evalb
 encodings = gen_dsets()
 results = {}
-train_limit = None
+train_limit = 10
 delete_garbage()
 
 for enc in encodings[:1]:
@@ -246,47 +282,10 @@ for enc in encodings[:1]:
             
             # Get words
             words_tree = tree.get_words()            
-            sentence = " ".join(words_tree)
-            sentence = " "+sentence+" "
-            
-            ti = trainer.tokenizer(words_tree, is_split_into_words=True, return_tensors='pt',
-                                   return_offsets_mapping=True)
-            
-            ti_iids = ti['input_ids']
-            
-            ti_wids = ti.word_ids()
-            
-            # sub-token’s start position and end position relative to the original token it was split from
-            ti_offsets   = ti['offset_mapping'][0].tolist()
-            ti_attention = len([x for x in ti['attention_mask'][0] if x == 1])
-            
-            # drop all unnecessary fields from the tokenized input
-            ti = {k: v.to(device) for k, v in ti.items() if isinstance(v, torch.Tensor) and k != "offset_mapping"}
-             
-            # Perform the prediction
-            outputs = model.task_models_list[0](**ti)
-            logits = outputs.logits
-            predictions = logits.argmax(-1).squeeze().tolist()
-            true_predictions = [tasks[0].label_names[p] for p in predictions]
-            tokenizer_words = [x for x in trainer.tokenizer.convert_ids_to_tokens(ti_iids[0]) if x != "<pad>"]
-
-            # trim the predictions
-            labels = {}
-            for i in range(len(true_predictions)):
-                if ti_wids[i] is None:
-                    continue
-                else:
-                    # store the first prediction
-                    if ti_wids[i] not in labels.keys():
-                        labels[ti_wids[i]] = true_predictions[i]
-            
-            labels_tree = []
-            for p in list(labels.values()):
-                label_i = C_Label.from_string(p, sep="[_]", uj="[+]")
-                labels_tree.append(label_i)
-            
-            # Get postags
             postags = tree.get_postags()
+            labels_tree = predict_single(words_tree, model, trainer, device)
+            print(len(words_tree), len(labels_tree))
+
 
             # Compute tree
             lin_tree = LinearizedTree(words=words_tree, postags=postags,
@@ -296,13 +295,6 @@ for enc in encodings[:1]:
             dec_tree = encoder.decode(lin_tree)
             dec_tree = dec_tree.postprocess_tree(conflict_strat=C_STRAT_MAX, clean_nulls=True, default_root="S")
             dec_trees.append(str(dec_tree))
-
-
-            # free memory
-            del ti
-            del predictions
-            del logits
-            del outputs
         
         try:
             results = scorer.score_corpus(test_trees, dec_trees)
