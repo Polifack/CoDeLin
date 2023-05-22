@@ -24,6 +24,7 @@
 
 [ ] Semantic Parsing? https://aclanthology.org/2022.starsem-1.19.pdf
 	- Discourse Representation Structure
+[ ] Could seq_lbl do something related w/ HPSG?
 
 [ ] MTL? f1: 81.40267556955776 para el absolute a un solo epoch! However for ~20 epochs the training takes 8 hours...
 
