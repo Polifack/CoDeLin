@@ -73,14 +73,14 @@ class SequenceClassification(Task):
             predictions = np.argmax(predictions, axis=1)
             
         elif getattr(self,"problem_type", None)=='multi_label_classification':
-            metric=evaluate.load('f1','multilabel', average='macro')
-            labels=labels.astype(int)
+            metric = evaluate.load('f1','multilabel', average='macro')
+            labels = labels.astype(int)
             predictions = (expit(predictions)>0.5).astype(int)
-            avg={"average":"macro"}
+            avg = {"average":"macro"}
         else:
             metric = evaluate.load("glue", "stsb")
         
         meta = {"name": self.name, "size": len(predictions), "index": self.index}
         metrics = metric.compute(predictions=predictions, references=labels,**avg)
-        self.results+=[metrics]
+        self.results += [metrics]
         return {**metrics, **meta}

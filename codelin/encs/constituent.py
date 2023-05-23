@@ -1,7 +1,7 @@
 from codelin.models.linearized_tree import LinearizedTree
 from codelin.encs.enc_const import *
 from codelin.utils.extract_feats import extract_features_const
-from codelin.utils.constants import C_ABSOLUTE_ENCODING, C_RELATIVE_ENCODING, C_DYNAMIC_ENCODING, C_TETRA_ENCODING
+from codelin.utils.constants import C_ABSOLUTE_ENCODING, C_RELATIVE_ENCODING, C_DYNAMIC_ENCODING, C_TETRA_ENCODING, C_JUXTAPOSED_ENCODING
 
 import stanza.pipeline
 from codelin.models.const_tree import C_Tree
@@ -9,7 +9,7 @@ from codelin.models.const_tree import C_Tree
 
 ## Encoding and decoding
 
-def encode_constituent(in_path, out_path, encoding_type, reverse, separator, unary_joiner, features, binary, binary_direction, binary_marker):
+def encode_constituent(in_path, out_path, encoding_type, reverse, separator, unary_joiner, features, binary, binary_direction, binary_marker, traverse_dir):
     '''
     Encodes the selected file according to the specified parameters:
     :param in_path: Path of the file to be encoded
@@ -27,7 +27,9 @@ def encode_constituent(in_path, out_path, encoding_type, reverse, separator, una
     elif encoding_type == C_DYNAMIC_ENCODING:
             encoder = C_NaiveDynamicEncoding(separator, unary_joiner, reverse, binary,  binary_direction, binary_marker)
     elif encoding_type == C_TETRA_ENCODING:
-            encoder = C_Tetratag(separator, unary_joiner, reverse, binary_direction, binary_marker)
+            encoder = C_Tetratag(separator, unary_joiner, traverse_dir, binary_marker)
+    elif encoding_type == C_JUXTAPOSED_ENCODING:
+            encoder = C_JuxtaposedEncoding(separator, unary_joiner, binary, binary_direction, binary_marker)
 
     else:
         raise Exception("Unknown encoding type")
@@ -62,7 +64,7 @@ def encode_constituent(in_path, out_path, encoding_type, reverse, separator, una
     
     return labels_counter, tree_counter, len(label_set)
 
-def decode_constituent(in_path, out_path, encoding_type, reverse, separator, unary_joiner, conflicts, nulls, postags, lang, binary, binary_marker):
+def decode_constituent(in_path, out_path, encoding_type, reverse, separator, unary_joiner, conflicts, nulls, postags, lang, binary, binary_marker, traverse_dir):
     '''
     Decodes the selected file according to the specified parameters:
     :param in_path: Path of the labels file to be decoded
@@ -81,6 +83,10 @@ def decode_constituent(in_path, out_path, encoding_type, reverse, separator, una
             decoder = C_NaiveDynamicEncoding(separator, unary_joiner, reverse, binary, None, binary_marker)
     elif encoding_type == C_TETRA_ENCODING:
             decoder = C_Tetratag(separator, unary_joiner, reverse, None, binary_marker)
+    elif encoding_type == C_TETRA_ENCODING:
+            decoder = C_Tetratag(separator, unary_joiner, traverse_dir, binary_marker)
+    elif encoding_type == C_JUXTAPOSED_ENCODING:
+            decoder = C_JuxtaposedEncoding(separator, unary_joiner, binary, None, binary_marker)
     else:
         raise Exception("Unknown encoding type")
 

@@ -7,7 +7,7 @@ import time
 
 if __name__=="__main__":
 
-    encodings = [C_ABSOLUTE_ENCODING, C_RELATIVE_ENCODING, C_DYNAMIC_ENCODING, C_TETRA_ENCODING,
+    encodings = [C_ABSOLUTE_ENCODING, C_RELATIVE_ENCODING, C_DYNAMIC_ENCODING, C_TETRA_ENCODING, C_JUXTAPOSED_ENCODING,
                 D_ABSOLUTE_ENCODING, D_RELATIVE_ENCODING, D_POS_ENCODING, D_BRACKET_ENCODING, D_BRACKET_ENCODING_2P]
 
     parser = argparse.ArgumentParser(description='Constituent and Dependencies Linearization System')
@@ -61,7 +61,7 @@ if __name__=="__main__":
     parser.add_argument('--postags', required = False, action='store_true', default = False, 
                         help = 'Predict Part of Speech tags using Stanza tagger')
     
-    parser.add_argument('--hfr', required=False, action='store_true', default=False,
+    parser.add_argument('--enforce_root', required=False, action='store_true', default=False,
                         help = 'Encode "root" nodes as a special label in relative encoding (i.e. "0_ROOT" instead of "-3_ROOT" )')
     
     parser.add_argument('--incremental', required=False, action='store_true', default=False,
@@ -78,6 +78,9 @@ if __name__=="__main__":
     
     parser.add_argument("--b_marker", required=False, type=str, default="*",
                         help='Character to use as a marker for binary nodes (only for constituent trees)')
+    
+    parser.add_argument('--traverse', required=False, choices= ['preorder','postorder','inorder'], default='inorder',
+                        help = 'Traverse order for tetratagging')
 
     args = parser.parse_args()
 
@@ -89,14 +92,15 @@ if __name__=="__main__":
         if args.operation == OP_ENC:
             n_labels, n_trees, n_diff_labels = encode_constituent(args.input, args.output, args.enc, args.incremental,
                                                                   args.sep, args.ujoiner, args.feats, 
-                                                                  args.binary, args.b_direction, args.b_marker)
+                                                                  args.binary, args.b_direction, args.b_marker,
+                                                                  args.traverse)
         
         elif args.operation == OP_DEC:
             n_diff_labels = None
             n_trees, n_labels = decode_constituent(args.input, args.output, args.enc, args.incremental, args.sep, 
                                                    args.ujoiner, args.conflict, args.nulls, 
                                                    args.postags, args.lang, 
-                                                   args.binary, args.b_marker)
+                                                   args.binary, args.b_marker, args.traverse)
     
     elif args.formalism == F_DEPENDENCY:
         
