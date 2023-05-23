@@ -26,7 +26,9 @@
 	- Discourse Representation Structure
 [ ] Could seq_lbl do something related w/ HPSG?
 
-[ ] MTL? f1: 81.40267556955776 para el absolute a un solo epoch! However for ~20 epochs the training takes 8 hours...
+[ ] MTL? f1: absolute 93.40267556 20 epochs 
+			 absolute_br 92.142416 20 epoch 
+			 the training takes 8 hours...
 
 [ ] Train with PTB for all encodings. Use ROBERTA.
 [ ] Train with PTB for all encodings using mtl for each field of the labels. Use ROBERTA.

@@ -270,7 +270,7 @@ args = easydict.EasyDict({
     "add_cls": True,
     "add_clf": True,
     "drop_probability": 0.1,
-    "model_name": "bert-base-uncased"
+    "model_name": "roberta-base"
     })
 
 # train and evaluate using Evalb
