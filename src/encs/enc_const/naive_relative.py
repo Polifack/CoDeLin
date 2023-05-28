@@ -87,7 +87,6 @@ class C_NaiveRelativeEncoding(ACEncoding):
         last_label = None
 
         for word, postag, feats, label in linearized_tree.iterrows():
-            
             # Convert the labels to absolute scale
             if last_label!=None:
                 label.to_absolute(last_label)
@@ -105,29 +104,26 @@ class C_NaiveRelativeEncoding(ACEncoding):
                 current_level = current_level.r_child()
 
             # Split the Last Common field of the Label in case it has a Unary Chain Collapsed
-            label.last_common = label.last_common.split(self.unary_joiner)
+            label.last_common = label.last_common.split(self.unary_joiner)            
 
             if len(label.last_common)==1:
-                # If current level has no label yet, put the label
-                # If current level has label but different than this one, set it as a conflict
                 if (current_level.label==C_NONE_LABEL):
                     current_level.label=label.last_common[0].rstrip()
                 else:
                     current_level.label = current_level.label + C_CONFLICT_SEPARATOR + label.last_common[0]
+            
             else:
                 current_level = tree
-                
-                # Descend to the beginning of the Unary Chain and fill it
-                descend_levels = label.n_commons - (len(label.last_common)) + 1
-                
+                descend_levels = max(label.n_commons - (len(label.last_common)) + 1, 1)
+
                 for level_index in range(descend_levels):
                     current_level = current_level.r_child()
                 
                 for i in range(len(label.last_common)-1):
-                    if (current_level.label==C_NONE_LABEL):
-                        current_level.label=label.last_common[i]
+                    if (current_level.label == C_NONE_LABEL):
+                        current_level.label = label.last_common[i]
                     else:
-                        current_level.label=current_level.label+C_CONFLICT_SEPARATOR+label.last_common[i]
+                        current_level.label = current_level.label+C_CONFLICT_SEPARATOR+label.last_common[i]
 
                     if len(current_level.children)>0:
                         current_level = current_level.r_child()
