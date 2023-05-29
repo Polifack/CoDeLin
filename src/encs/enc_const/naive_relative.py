@@ -97,12 +97,11 @@ class C_NaiveRelativeEncoding(ACEncoding):
             
             # Descend through the tree until reach the level indicated by last_common
             current_level = tree
-
             for level_index in range(label.n_commons):
                 if (current_level.is_terminal()) or (level_index >= old_n_commons):
                     current_level.add_child(C_Tree(C_NONE_LABEL, []))
                 current_level = current_level.r_child()
-
+            
             # Split the Last Common field of the Label in case it has a Unary Chain Collapsed
             label.last_common = label.last_common.split(self.unary_joiner)            
 
@@ -112,13 +111,13 @@ class C_NaiveRelativeEncoding(ACEncoding):
                 else:
                     current_level.label = current_level.label + C_CONFLICT_SEPARATOR + label.last_common[0]
             
-            else:
+            if len(label.last_common)>1:
                 current_level = tree
-                descend_levels = max(label.n_commons - (len(label.last_common)) + 1, 1)
-
+                
+                # problem when n_commons predicted is LESS than the number of last commons predicted
+                descend_levels = label.n_commons - (len(label.last_common)) + 1
                 for level_index in range(descend_levels):
                     current_level = current_level.r_child()
-                
                 for i in range(len(label.last_common)-1):
                     if (current_level.label == C_NONE_LABEL):
                         current_level.label = label.last_common[i]
@@ -130,9 +129,11 @@ class C_NaiveRelativeEncoding(ACEncoding):
 
                 # If we reach a POS tag, set it as child of the current chain
                 if current_level.is_preterminal():
-                    temp_current_level =current_level
+                    temp_current_level_children = current_level.children
                     current_level.label = label.last_common[i+1]
-                    current_level.children = [temp_current_level]
+                    current_level.children = temp_current_level_children
+                    for c in temp_current_level_children:
+                        c.parent = current_level
                 else:
                     current_level.label=label.last_common[i+1]
             

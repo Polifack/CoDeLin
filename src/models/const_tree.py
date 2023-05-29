@@ -14,12 +14,16 @@ class C_Tree:
         '''
         Function that adds a child to the current tree
         '''
-        if type(child) is not C_Tree:
-            raise TypeError("[!] Child must be a ConstituentTree")
+        if type(child) is list:
+            for c in child:
+                self.add_child(c)
+        elif type(child) is C_Tree:
+            self.children.append(child)
+            child.parent = self
 
-        self.children.append(child)
-        child.parent = self
-
+        else:
+            raise TypeError("[!] Child must be a ConstituentTree or a list of Constituent Trees")
+    
     def add_left_child(self, child):
         '''
         Function that adds a child to the left of the current tree
@@ -261,27 +265,29 @@ class C_Tree:
             child.parent = self.parent
 
 
-    def prune_nones(self, default_root):
+    def prune_nones(self):
         """
         Return a copy of the tree without 
         null nodes (nodes with label C_NONE_LABEL)
         """
-        childs = [child.prune_nones(default_root) for child in self.children]
-        if self.label == C_NONE_LABEL:
-            if len(childs) == 1:
-                return childs[0]
-            else:
-                return C_Tree(default_root, childs)
+        if self.label != C_NONE_LABEL:
+            t = C_Tree(self.label, [])
+            new_childs = [c.prune_nones() for c in self.children]
+            t.add_child(new_childs)
+            return t
         
-        return C_Tree(self.label, childs)
+        else:
+            return [c.prune_nones() for c in self.children]
 
     def remove_conflicts(self, conflict_strat):
-        # Postprocess Childs
+        '''
+        Removes all conflicts in the label of the tree generated
+        during the decoding process. Conflicts will be signaled by -||- 
+        string.
+        '''
         for c in self.children:
             if type(c) is C_Tree:
                 c.remove_conflicts(conflict_strat)
-
-        # Clean conflicts
         if C_CONFLICT_SEPARATOR in self.label:
             labels = self.label.split(C_CONFLICT_SEPARATOR)
             
@@ -294,12 +300,15 @@ class C_Tree:
 
     def postprocess_tree(self, conflict_strat, clean_nulls=True, default_root="S"):
         '''
-        Apply heuristics to the reconstructed Constituent Trees
-        in order to ensure correctness
+        Returns a C_Tree object with conflicts in node labels removed
+        and with NULL nodes cleaned.
         '''
-        t = self
         if clean_nulls:
-            t = self.prune_nones(default_root=default_root)
+            if self.label == C_NONE_LABEL:
+                self.label = default_root
+            t = self.prune_nones()
+        else:
+            t = self
         t.remove_conflicts(conflict_strat)
         return t
         

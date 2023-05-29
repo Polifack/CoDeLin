@@ -128,7 +128,7 @@ class C_NaiveDynamicEncoding(ACEncoding):
                 current_level = tree
                 
                 # Descend to the beginning of the Unary Chain and fill it
-                descend_levels = max(label.n_commons - (len(label.last_common)) + 1, 1)
+                descend_levels = label.n_commons - (len(label.last_common)) + 1
                 for level_index in range(descend_levels):
                     current_level = current_level.r_child()
                 
