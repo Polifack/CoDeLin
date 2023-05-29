@@ -103,29 +103,32 @@ class C_NaiveAbsoluteEncoding(ACEncoding):
                     current_level.label = label.last_common[0].rstrip()
                 else:
                     current_level.label = current_level.label + C_CONFLICT_SEPARATOR + label.last_common[0]
-            else:
+            if len(label.last_common)>1:
                 current_level = tree
                 
-                # Descend to the beginning of the Unary Chain and fill it
+                # problem when n_commons predicted is LESS than the number of last commons predicted
                 descend_levels = label.n_commons - (len(label.last_common)) + 1
-                
                 for level_index in range(descend_levels):
                     current_level = current_level.r_child()
-                
                 for i in range(len(label.last_common)-1):
                     if (current_level.label == C_NONE_LABEL):
                         current_level.label = label.last_common[i]
                     else:
-                        current_level.label = current_level.label + C_CONFLICT_SEPARATOR + label.last_common[i]
-                    current_level = current_level.r_child()
+                        current_level.label = current_level.label+C_CONFLICT_SEPARATOR+label.last_common[i]
+
+                    if len(current_level.children)>0:
+                        current_level = current_level.r_child()
 
                 # If we reach a POS tag, set it as child of the current chain
                 if current_level.is_preterminal():
-                    temp_current_level = current_level
+                    temp_current_level_children = current_level.children
                     current_level.label = label.last_common[i+1]
-                    current_level.children = [temp_current_level]
+                    current_level.children = temp_current_level_children
+                    for c in temp_current_level_children:
+                        c.parent = current_level
                 else:
                     current_level.label=label.last_common[i+1]
+            
             
             # Fill POS tag in this node or previous one
             if (label.n_commons >= old_n_commons):
