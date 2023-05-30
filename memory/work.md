@@ -169,3 +169,8 @@ Branching:
 
     * In the previous example 'nt' changes to n + t during model prediction and generates two different labels! For the decoding we pick the label predicted by 'n'. But n could have been seen in different contexts...
     * For example, non-tokenized model may learn that 'nt' is a 'modifier' but by learning 'n' and 't' may find 'n' in 'night' that is a noun and missinterpret n...
+
+- Problems with MTL: 
+    * The dataset is being replicated n times where n is the number of tasks. This is fine for tasks where we have different datasets, but not for when we have one.
+    * During training we are passing each sample through the transformer before task heads. This should be done by passing the sample ONCE by the transformer and after that by each of the heads.
+    * New approach https://arxiv.org/pdf/2009.09139.pdf

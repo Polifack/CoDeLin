@@ -366,6 +366,8 @@ class Trainer(transformers.Trainer):
         self.tokenizer = tokenizer
         self.processed_tasks = self.preprocess_tasks(tasks, self.tokenizer)
         
+        print("========>",self.processed_tasks)
+
         self.train_dataset = {
             task: dataset["train"]
             for task, dataset in self.processed_tasks.items()

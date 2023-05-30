@@ -1,12 +1,11 @@
 import numpy as np
 import datasets as ds
-from datasets import load_dataset, Dataset
+from datasets import Dataset
 from transformers import DefaultDataCollator
 import evaluate
 import funcy as fc
 import evaluate
 from dataclasses import dataclass
-from transformers.tokenization_utils_base import PreTrainedTokenizerBase
 from scipy.special import expit
 from .task import Task
 

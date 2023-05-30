@@ -16,6 +16,7 @@ from codelin.encs.constituent import *
 from codelin.utils.constants import *
 
 import easydict
+from chrono import Timer
 from frozendict import frozendict
 import os
 import torch
@@ -207,6 +208,7 @@ def predict_single(words_tree, tasks, model, trainer, device):
             
         # Perform the prediction
         l = []
+ 
         for i, t in enumerate(tasks):
             output_i = model.task_models_list[i](**ti)
             logits = output_i.logits
@@ -235,7 +237,7 @@ def predict_single(words_tree, tasks, model, trainer, device):
         del ti
         del predictions
         del logits
-        
+
         return labels_tree
 
 
@@ -346,7 +348,10 @@ for enc in encodings:
             
             words = tree.get_words()
             postags = tree.get_postags()
-            labels = predict_single(words, tasks, model, trainer, device)
+
+            with Timer() as timed:
+                labels = predict_single(words, tasks, model, trainer, device)
+            print(f"[INF] Decoding took {timed.elapsed:.2f} seconds")
             
             lin_tree = LinearizedTree(words=words, postags=postags,
                     additional_feats=[], labels=labels, n_feats=0)

@@ -16,6 +16,7 @@ from codelin.encs.constituent import *
 from codelin.utils.constants import *
 
 import easydict
+from chrono import Timer
 from frozendict import frozendict
 import os
 import torch
@@ -155,8 +156,10 @@ args = easydict.EasyDict({
     "batch_size": 8,
     "per_device_train_batch_size": 8,
     "per_device_eval_batch_size": 8,
-
-    "num_train_epochs": 1,
+    
+    "save_strategy": "epoch",
+    "load_best_model_at_end": True,
+    "num_train_epochs": 20,
 
     "learning_rate": 1e-5,
     "weight_decay": 0.01,
@@ -179,7 +182,7 @@ args = easydict.EasyDict({
     "add_clf": True,
     "drop_probability": 0.1,
     "model_name": "roberta-base"
-    })
+})
 
 def delete_garbage():
     gc.collect()
@@ -234,10 +237,10 @@ tokenizer_kwargs = frozendict(padding="max_length", max_length=args.max_seq_leng
 # train and evaluate using Evalb
 encodings = gen_dsets()
 results = {}
-train_limit = 10
+train_limit = None
 delete_garbage()
 
-for enc in encodings[:1]:
+for enc in encodings[18:]:
     results_df = pd.DataFrame(columns=["encoding", "recall", "precision", "f1", "n_labels"])
     print("[GPU] Starting training; Allocated memory:", torch.cuda.memory_allocated()/1e6,"MB")
     print("[GPU] Starting training; Cached memory:", torch.cuda.memory_cached()/1e6,"MB")
@@ -261,6 +264,7 @@ for enc in encodings[:1]:
     print("[GPU] Model created; Total cached memory", torch.cuda.memory_cached()/1e6,"MB")
     device = torch.device("cuda")
     trainer.train()
+    
     # Free dataset
     del dataset
     model_memory = torch.cuda.memory_allocated()/1e6
@@ -283,8 +287,10 @@ for enc in encodings[:1]:
             # Get words
             words_tree = tree.get_words()            
             postags = tree.get_postags()
-            labels_tree = predict_single(words_tree, model, trainer, device)
-            print(len(words_tree), len(labels_tree))
+            with Timer() as timed:
+                labels_tree = predict_single(words_tree, model, trainer, device)
+            print(f"[DST] Prediction took {timed.elapsed} seconds")
+            
 
 
             # Compute tree
