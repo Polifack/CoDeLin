@@ -43,6 +43,10 @@
 
 ## BACKLOG
 
+[ ] change n_commons for constituent parsing!!!!
+
+[ ] 16b dependency parser
+
 [ ] Get stats of NER trees (e.g. average-depth, number of trees with depth higher than n...)
 
 [ ] Train the BIO and BILOU models for GENIA
