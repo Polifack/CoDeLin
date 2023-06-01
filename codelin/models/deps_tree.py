@@ -2,19 +2,30 @@ from codelin.utils.constants import D_ROOT_HEAD, D_NULLHEAD, D_ROOT_REL, D_POSRO
 
 class D_Node:
     def __init__(self, wid, form, lemma=None, upos=None, xpos=None, feats=None, head=None, deprel=None, deps=None, misc=None):
-        self.id = int(wid)                      # word id
+        # word id
+        self.id = int(wid)                      
         
-        self.form = form if form else "_"       # word 
-        self.lemma = lemma if lemma else "_"    # word lemma/stem
-        self.upos = upos if upos else "_"       # universal postag
-        self.xpos = xpos if xpos else "_"       # language_specific postag
-        self.feats = self.parse_feats(feats) if feats else "_"    # morphological features
+        # word 
+        self.form = form if form else "_"       
+        # word lemma/stem
+        self.lemma = lemma if lemma else "_"    
+        # universal postag
+        self.upos = upos if upos else "_"       
+        # language_specific postag
+        self.xpos = xpos if xpos else "_"       
+        # morphological features
+        self.feats = self.parse_feats(feats) if feats else "_"    
         
-        self.head = int(head)                   # id of the word that depends on
-        self.relation = deprel                  # type of relation with head
-
-        self.deps = deps if deps else "_"       # enhanced dependency graph
-        self.misc = misc if misc else "_"       # miscelaneous data
+        # head of the current word
+        head = 0 if head is None else head
+        self.head = int(head) if type(head) == str else head
+        
+        # type of relation with head
+        self.relation = deprel                  
+        # enhanced dependency graph
+        self.deps = deps if deps else "_"       
+        # miscelaneous data
+        self.misc = misc if misc else "_"       
     
     def is_left_arc(self):
         return self.head > self.id
@@ -48,8 +59,7 @@ class D_Node:
         return '\t'.join(str(e) for e in list(self.__dict__.values()))+'\n'
 
     def __eq__(self, other):
-        return self.__dict__ == other.__dict__
-    
+        return self.__dict__ == other.__dict__    
 
     @staticmethod
     def from_string(conll_str):
@@ -65,7 +75,7 @@ class D_Node:
         return D_Node(0, None, None, None, None, None, 0, None, None, None)
 
 class D_Tree:
-    def __init__(self, nodes):
+    def __init__(self, nodes: list):
         self.nodes = nodes
 
 # getters    
@@ -182,6 +192,27 @@ class D_Tree:
                 break
 
 # properties functions
+    def is_leftmost(self, node):
+        ''' 
+        Returns true if the given node is the 
+        leftmost dependant of its head
+        '''
+        head = node.head
+        head_dependants = [x.id for x in self.nodes if x.head == head]
+        head_dependants.sort()
+        return head_dependants[0] == node.id
+    
+    def is_rightmost(self, node):
+        ''' 
+        Returns true if the given node is the 
+        rightmost dependant of its head
+        '''
+        head = node.head
+        head_dependants = [x.id for x in self.nodes if x.head == head]
+        head_dependants.sort()
+        return head_dependants[-1] == node.id
+        
+
     def is_projective(self):
         '''
         Returns a boolean indicating if the dependency tree
@@ -195,8 +226,11 @@ class D_Tree:
         return True
     
 # postprocessing
-    def remove_dummy(self):
-        self.nodes = self.nodes[1:]
+    def remove_dummy(self, return_new_tree=False):
+        if not return_new_tree:
+            self.nodes = self.nodes[1:]
+        else:
+            return D_Tree(self.nodes[1:])
 
     def postprocess_tree(self, search_root_strat, allow_multi_roots=False):
         '''
@@ -279,6 +313,51 @@ class D_Tree:
     
     def __len__(self):
         return self.nodes.__len__()
+    
+# scorers
+    def las_score(self, other):
+        this = self
+        accum = 0
+        
+        if self[0].form == D_POSROOT:
+            this = self.remove_dummy(return_new_tree=True)
+        if other[0].form == D_POSROOT:
+            other = other.remove_dummy(return_new_tree=True)
+        
+        if type(this) is not D_Tree or type(other) is not D_Tree:
+            print("Error: ulas score is only defined for trees")
+            return 0
+
+        for i in range(len(this)):
+            if this[i].form != other[i].form:
+                print("Error: ulas score is not defined for trees with different words")
+                print(this[i].form, other[i].form)
+                return 0
+            
+            accum += 1 if this[i].head == other[i].head and this[i].relation == other[i].relation else 0
+        return accum/len(this)
+    
+    def ulas_score(self, other):
+        this = self
+        accum = 0
+        
+        if self[0].form == D_POSROOT:
+            this = self.remove_dummy(return_new_tree=True)
+        if other[0].form == D_POSROOT:
+            other = other.remove_dummy(return_new_tree=True)
+        
+        if type(this) is not D_Tree or type(other) is not D_Tree:
+            print("Error: ulas score is only defined for trees")
+            return 0
+
+        for i in range(len(this)):
+            if this[i].form != other[i].form:
+                print("Error: ulas score is not defined for trees with different words")
+                print(this[i].form, other[i].form)
+                return 0
+            
+            accum += 1 if this[i].head == other[i].head else 0
+        return accum/len(this)
 
 # base tree
     @staticmethod
@@ -368,3 +447,44 @@ class D_Tree:
         '''
         file_io.write("# text = "+tree.get_sentence()+"\n")
         file_io.write("".join(str(e) for e in tree)+"\n")
+
+    @staticmethod
+    def short_print(tree):
+        '''
+        Print a ConllTree in a short format.
+        '''
+        for node in tree:
+            print(node.id,'\t\t', node.form,'\t\t', node.head,'\t\t', node.relation)
+
+
+    @staticmethod
+    def to_latex(tree):
+        '''
+        Turns a ConllTree into a latex tree using
+        the tikz-dependency package formated as
+        \begin{dependency}
+            \begin{deptext}[row sep=.25em, column sep=1.5em]
+                $w_i$           \& The      \& owls     \& are      \& not      \& what         \& they     \& seem         \& .        \\
+            \end{deptext}
+            \depedge{3}{2}{det}
+            \depedge{4}{3}{nsubj}
+            \deproot{4}{root}
+            \depedge{4}{5}{advmod}
+            \depedge{8}{6}{obj}
+            \depedge{8}{7}{nsubj}
+            \depedge{4}{8}{ccomp}
+            \depedge{4}{9}{punct}
+        \end{dependency}
+        '''
+        nodes_str = ' \& '.join([node.form for node in tree.nodes])
+        latex = f"\\begin{{dependency}}[theme = simple]\n"
+        latex += f"\\begin{{deptext}}[row sep=.25em, column sep=1.5em]\n"
+        latex += f"$w_i$ \& {nodes_str} \\\\ \n"
+        latex += f"\\end{{deptext}}\n"
+        for node in tree.nodes:
+            if node.id == 0:
+                continue
+            if node.head != D_NULLHEAD:
+                latex += f"\\depedge{{{node.head+2}}}{{{node.id+2}}}{{{node.relation}}}\n"
+        latex += f"\\end{{dependency}}\n"
+        return latex

@@ -60,9 +60,13 @@ class LinearizedTree:
         self.additional_feats.append(additional_feat)
         self.labels.append(label)
     
-    def iterrows(self):
-        for i in range(len(self)):
-            yield self.get_word(i), self.get_postag(i), self.get_additional_feat(i), self.get_label(i)
+    def iterrows(self, dir='l2r'):
+        if dir == 'l2r':
+            for i in range(len(self)):
+                yield self.get_word(i), self.get_postag(i), self.get_additional_feat(i), self.get_label(i)
+        elif dir == 'r2l':
+            for i in range(len(self)-1, -1, -1):
+                yield self.get_word(i), self.get_postag(i), self.get_additional_feat(i), self.get_label(i)
             
     def __len__(self):
         return len(self.words)

@@ -43,6 +43,8 @@
 
 ## BACKLOG
 
+[ ] Change braketing encoding to have sorted brackest
+
 [ ] change n_commons for constituent parsing!!!!
 
 [ ] 16b dependency parser
