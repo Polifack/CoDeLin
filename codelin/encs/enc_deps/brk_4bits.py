@@ -44,8 +44,9 @@ class D_Brk4BitsEncoding(ADEncoding):
 
             current = D_Label(xi, li, self.separator)
             encoded_labels.append(current)
-
-        return LinearizedTree(dep_tree.get_words(), dep_tree.get_postags(), dep_tree.get_feats(), encoded_labels, len(encoded_labels))
+        lt = LinearizedTree(dep_tree.get_words(), dep_tree.get_postags(), dep_tree.get_feats(), encoded_labels, len(encoded_labels))
+        #lt.remove_dummy()
+        return lt
 
     def decode(self, lin_tree):
         # Create an empty tree with n labels

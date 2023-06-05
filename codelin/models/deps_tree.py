@@ -456,7 +456,6 @@ class D_Tree:
         for node in tree:
             print(node.id,'\t\t', node.form,'\t\t', node.head,'\t\t', node.relation)
 
-
     @staticmethod
     def to_latex(tree):
         '''
@@ -488,3 +487,15 @@ class D_Tree:
                 latex += f"\\depedge{{{node.head+2}}}{{{node.id+2}}}{{{node.relation}}}\n"
         latex += f"\\end{{dependency}}\n"
         return latex
+    
+    @staticmethod
+    def get_planarity_percentage(trees):
+        '''
+        Given a list of trees returns the % of trees
+        that are 1-planar, 2-planar or n-planar for n>2.
+        '''
+        planar = 0
+        two_planar = 0
+        n_planar = 0
+        for tree in trees:
+            print("[computing planarity]")
