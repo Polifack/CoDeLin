@@ -1,5 +1,5 @@
 from src.utils.constants import C_END_LABEL, C_START_LABEL, C_NONE_LABEL
-from src.utils.constants import C_CONFLICT_SEPARATOR, C_STRAT_MAX, C_STRAT_FIRST, C_STRAT_LAST, C_NONE_LABEL
+from src.utils.constants import C_CONFLICT_SEPARATOR, C_STRAT_MAX, C_STRAT_FIRST, C_STRAT_LAST, C_NONE_LABEL, C_ROOT_LABEL
 import copy
 
 class C_Tree:
@@ -304,7 +304,7 @@ class C_Tree:
         and with NULL nodes cleaned.
         '''
         if clean_nulls:
-            if self.label == C_NONE_LABEL:
+            if self.label == C_NONE_LABEL or self.label==C_ROOT_LABEL:
                 self.label = default_root
             t = self.prune_nones()
         else:

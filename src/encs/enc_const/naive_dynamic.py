@@ -103,8 +103,8 @@ class C_NaiveDynamicEncoding(ACEncoding):
                 label.to_absolute(last_label)
             
             # First label must have a positive n_commons value
-            if is_first and label.n_commons < 0:
-                label.n_commons = 0
+            if is_first and label.n_commons <= 0:
+                label.n_commons = 1
 
             # Descend through the tree until reach the level indicated by last_common
             current_level = tree

@@ -4,6 +4,14 @@
 /labels
 /labels_dec
 /ncrf_configs
+/codelin
+/results
+/models
+/hfmtl
+/__pycache__
+
+train_models.ipynb
+
 
 # stanza resources, ncrfpp and eval scripts
 /stanza_resources
