@@ -605,10 +605,14 @@ class D_Tree:
     def get_planarity_percentage(trees):
         '''
         Given a list of trees returns the % of trees
-        that are 1-planar, 2-planar or n-planar for n>2.
+        that are 1-planar or 2-planar
         '''
         planar = 0
         two_planar = 0
-        n_planar = 0
         for tree in trees:
-            print("[computing planarity]")
+            p1,p2 = D_Tree.two_planar_greedy(tree)
+            if len(p2) == 0:
+                planar += 1
+            else:
+                two_planar += 1
+        return planar/len(trees), two_planar/len(trees)
