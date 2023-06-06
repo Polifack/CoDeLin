@@ -1,4 +1,4 @@
-from codelin.utils.constants import BOS, EOS, C_NO_POSTAG_LABEL, C_NONE_LABEL
+from codelin.utils.constants import BOS, EOS, C_NO_POSTAG_LABEL, C_NONE_LABEL, C_ROOT_LABEL
 from codelin.models.const_label import C_Label
 from codelin.models.deps_label import D_Label
 
@@ -38,6 +38,13 @@ class LinearizedTree:
     def get_label(self, index):
         return self.labels[index]
     
+    def remove_dummy(self):
+        if self.words[0] == C_ROOT_LABEL:
+            self.words = self.words[1:]
+            self.postags = self.postags[1:]
+            self.additional_feats = self.additional_feats[1:]
+            self.labels = self.labels[1:]
+
     def reverse_tree(self, ignore_bos_eos=True):
         '''
         Reverses the lists of words, postags, additional_feats and labels.
@@ -74,7 +81,12 @@ class LinearizedTree:
     def __repr__(self):        
         return self.to_string()
     
-    def to_string(self, f_idx_dict=None, add_bos_eos=True):
+    def to_string(self, f_idx_dict=None, add_bos_eos=True, separate_columns=False):
+        n_cols = (len(f_idx_dict.keys())+1) if f_idx_dict else 1
+        if separate_columns:
+            n_cols += len(str(self.labels[0]).split(self.labels[0].separator))
+
+
         if add_bos_eos:
             self.words = [BOS] + self.words + [EOS]
             self.postags = [BOS] + self.postags + [EOS]
@@ -93,11 +105,11 @@ class LinearizedTree:
             # check for features
             if f_idx_dict:
                 if w == BOS:
-                    f_list = [BOS] * (len(f_idx_dict.keys())+1)
+                    f_list = [BOS] * n_cols
                 elif w == EOS:
-                    f_list = [EOS] * (len(f_idx_dict.keys())+1)
+                    f_list = [EOS] * n_cols
                 else:
-                    f_list = ["_"] * (len(f_idx_dict.keys())+1)
+                    f_list = ["_"] *n_cols
                 
                 if af != [None]:
                     for element in af:
@@ -108,9 +120,18 @@ class LinearizedTree:
                 # append the additional elements or the placehodler
                 for element in f_list:
                     output_line.append(element)
-
-            # add the label
-            output_line.append(str(l))
+            
+            ## add as much bos eos as there are columns
+            if separate_columns:
+                if l==BOS:
+                    output_line+=[BOS]*(n_cols-1)
+                elif l==EOS:
+                    output_line+=[BOS]*(n_cols-1)
+                else:
+                    output_line+=str(l).split(l.separator)
+            else:
+                output_line.append(str(l))
+            
             tree_string+=u"\t".join(output_line)+u"\n"
         
         if add_bos_eos:
@@ -128,7 +149,7 @@ class LinearizedTree:
         return temp_tree
 
     @staticmethod
-    def from_string(content, mode, separator="_", unary_joiner="|", n_features=0):
+    def from_string(content, mode, separator="_", unary_joiner="|", separate_columns=False, n_features=0):
         '''
         Reads a linearized tree from a string shaped as
         -BOS- \t -BOS- \t (...) \t -BOS- \n
@@ -164,16 +185,36 @@ class LinearizedTree:
             if EOS == word:
                 linearized_tree = LinearizedTree(words, postags, additional_feats, labels, n_features)
                 continue
+            
+            if separate_columns:
+                if mode=="CONST":
+                    label_cols=3
+                elif mode=="DEPS":
+                    label_cols=2
 
-            if len(line_columns) == 2:
-                word, label = line_columns
-                postag = C_NO_POSTAG_LABEL
-                feats = "_"
-            elif len(line_columns) == 3:
-                word, postag, label = line_columns[0], line_columns[1], line_columns[2]
-                feats = "_"
+                if len(line_columns) == 1+label_cols:
+                    word, *label = line_columns
+                    postag = C_NO_POSTAG_LABEL
+                    feats = "_"
+                    label = separator.join(label)
+                elif len(line_columns) == 2+label_cols:
+                    word, postag, *label = line_columns
+                    feats = "_"
+                    label = separator.join(label)
+                else:
+                    label = line_columns[-label_cols:]
+                    word, postag, *feats = line_columns[:-label_cols]
+                    label = separator.join(label)    
             else:
-                word, postag, *feats, label = line_columns[0], line_columns[1], line_columns[1:-1], line_columns[-1]
+                if len(line_columns) == 2:
+                    word, label = line_columns
+                    postag = C_NO_POSTAG_LABEL
+                    feats = "_"
+                elif len(line_columns) == 3:
+                    word, postag, label = line_columns[0], line_columns[1], line_columns[2]
+                    feats = "_"
+                else:
+                    word, postag, *feats, label = line_columns[0], line_columns[1], line_columns[1:-1], line_columns[-1]
             
             # Check for predictions with no label
             if BOS in label or EOS in label:
@@ -189,5 +230,5 @@ class LinearizedTree:
                 raise ValueError("[!] Unknown mode: %s" % mode)
             
             additional_feats.append(feats)
-
+    
         return linearized_tree

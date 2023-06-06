@@ -7,7 +7,7 @@ from codelin.utils.constants import *
 from codelin.models.deps_tree import D_Tree
 
 # Encoding
-def encode_dependencies(in_path, out_path, encoding_type, separator, displacement, planar_alg, root_enc, features):
+def encode_dependencies(in_path, out_path, encoding_type, separator, multitask, displacement, planar_alg, root_enc, features):
     '''
     Encodes the selected file according to the specified parameters:
     :param in_path: Path of the file to be encoded
@@ -30,6 +30,8 @@ def encode_dependencies(in_path, out_path, encoding_type, separator, displacemen
             encoder = D_BrkBasedEncoding(separator, displacement)
     elif encoding_type == D_BRACKET_ENCODING_2P:
             encoder = D_Brk2PBasedEncoding(separator, displacement, planar_alg)
+    elif encoding_type == D_BRK_4B_ENCODING:
+            encoder = D_Brk4BitsEncoding(separator) 
     else:
         raise Exception("Unknown encoding type")
     
@@ -51,11 +53,11 @@ def encode_dependencies(in_path, out_path, encoding_type, separator, displacemen
     for t in trees:
         # encode labels
         linearized_tree = encoder.encode(t)        
-        file_out.write(linearized_tree.to_string(f_idx_dict))
+        file_out.write(linearized_tree.to_string(f_idx_dict, separate_columns=multitask))
         file_out.write("\n")
         
-        tree_counter+=1
-        label_counter+=len(linearized_tree)
+        tree_counter += 1
+        label_counter += len(linearized_tree)
         
         for lbl in linearized_tree.labels:
             label_set.add(str(lbl))      
@@ -64,7 +66,7 @@ def encode_dependencies(in_path, out_path, encoding_type, separator, displacemen
 
 # Decoding
 
-def decode_dependencies(in_path, out_path, encoding_type, separator, displacement, multiroot, root_search, root_enc, postags, lang):
+def decode_dependencies(in_path, out_path, encoding_type, separator, multitask, displacement, multiroot, root_search, root_enc, postags, lang):
     '''
     Decodes the selected file according to the specified parameters:
     :param in_path: Path of the file to be encoded
@@ -86,6 +88,8 @@ def decode_dependencies(in_path, out_path, encoding_type, separator, displacemen
         decoder = D_BrkBasedEncoding(separator, displacement)
     elif encoding_type == D_BRACKET_ENCODING_2P:
         decoder = D_Brk2PBasedEncoding(separator, displacement, None)
+    elif encoding_type == D_BRK_4B_ENCODING:
+        decoder = D_Brk4BitsEncoding(separator) 
     else:
         raise Exception("Unknown encoding type")
 
@@ -104,7 +108,7 @@ def decode_dependencies(in_path, out_path, encoding_type, separator, displacemen
     for line in f_in:
         if line == "\n":
             tree_string = tree_string.rstrip()
-            current_tree = LinearizedTree.from_string(tree_string, mode="DEPS", separator=separator)
+            current_tree = LinearizedTree.from_string(tree_string, mode="DEPS", separator=separator, separate_columns=multitask)
             
             if postags:
                 c_tags = nlp(current_tree.get_sentence())

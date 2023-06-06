@@ -9,7 +9,7 @@ from codelin.models.const_tree import C_Tree
 
 ## Encoding and decoding
 
-def encode_constituent(in_path, out_path, encoding_type, reverse, separator, unary_joiner, features, binary, binary_direction, binary_marker, traverse_dir):
+def encode_constituent(in_path, out_path, encoding_type, reverse, separator, multitask, unary_joiner, features, binary, binary_direction, binary_marker, traverse_dir):
     '''
     Encodes the selected file according to the specified parameters:
     :param in_path: Path of the file to be encoded
@@ -55,7 +55,7 @@ def encode_constituent(in_path, out_path, encoding_type, reverse, separator, una
         line = line.rstrip()
         tree = C_Tree.from_string(line)
         linearized_tree = encoder.encode(tree)
-        file_out.write(linearized_tree.to_string(f_idx_dict))
+        file_out.write(linearized_tree.to_string(f_idx_dict, separate_columns=multitask))
         file_out.write("\n")
         tree_counter += 1
         labels_counter += len(linearized_tree)
@@ -64,7 +64,7 @@ def encode_constituent(in_path, out_path, encoding_type, reverse, separator, una
     
     return labels_counter, tree_counter, len(label_set)
 
-def decode_constituent(in_path, out_path, encoding_type, reverse, separator, unary_joiner, conflicts, nulls, postags, lang, binary, binary_marker, traverse_dir):
+def decode_constituent(in_path, out_path, encoding_type, reverse, separator,  multitask, unary_joiner, conflicts, nulls, postags, lang, binary, binary_marker, traverse_dir):
     '''
     Decodes the selected file according to the specified parameters:
     :param in_path: Path of the labels file to be decoded

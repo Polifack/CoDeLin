@@ -8,7 +8,7 @@ import time
 if __name__=="__main__":
 
     encodings = [C_ABSOLUTE_ENCODING, C_RELATIVE_ENCODING, C_DYNAMIC_ENCODING, C_TETRA_ENCODING, C_JUXTAPOSED_ENCODING,
-                D_ABSOLUTE_ENCODING, D_RELATIVE_ENCODING, D_POS_ENCODING, D_BRACKET_ENCODING, D_BRACKET_ENCODING_2P]
+                D_ABSOLUTE_ENCODING, D_RELATIVE_ENCODING, D_POS_ENCODING, D_BRACKET_ENCODING, D_BRACKET_ENCODING_2P, D_BRK_4B_ENCODING, D_BRK_7B_ENCODING]
 
     parser = argparse.ArgumentParser(description='Constituent and Dependencies Linearization System')
     parser.add_argument('formalism', metavar='formalism', type=str, choices=[F_CONSTITUENT, F_DEPENDENCY],
@@ -25,6 +25,9 @@ if __name__=="__main__":
 
     parser.add_argument('output', metavar='out file', type=str,
                         help='Path of the file save decoded tree.')
+
+    parser.add_argument('--multitask', action='store_true', required=False, default=False,
+                        help='Flag to indicate that the output file will be shaped with one column per field.')
 
     parser.add_argument("--time", action='store_true', required=False, 
                         help='Flag to measure decoding time.')
@@ -81,6 +84,9 @@ if __name__=="__main__":
     
     parser.add_argument('--traverse', required=False, choices= ['preorder','postorder','inorder'], default='inorder',
                         help = 'Traverse order for tetratagging')
+    
+    parser.add_argument('--hfr', required=False, action='store_true', default=False,
+                        help = 'Hang from root strategy for dependency encoding')
 
     args = parser.parse_args()
 
@@ -91,26 +97,26 @@ if __name__=="__main__":
         
         if args.operation == OP_ENC:
             n_labels, n_trees, n_diff_labels = encode_constituent(args.input, args.output, args.enc, args.incremental,
-                                                                  args.sep, args.ujoiner, args.feats, 
+                                                                  args.sep, args.multitask, args.ujoiner, args.feats, 
                                                                   args.binary, args.b_direction, args.b_marker,
                                                                   args.traverse)
         
         elif args.operation == OP_DEC:
             n_diff_labels = None
             n_trees, n_labels = decode_constituent(args.input, args.output, args.enc, args.incremental, args.sep, 
-                                                   args.ujoiner, args.conflict, args.nulls, 
+                                                   args.multitask, args.ujoiner, args.conflict, args.nulls, 
                                                    args.postags, args.lang, 
                                                    args.binary, args.b_marker, args.traverse)
     
     elif args.formalism == F_DEPENDENCY:
         
         if args.operation == OP_ENC:
-            n_trees, n_labels, n_diff_labels = encode_dependencies(args.input, args.output, args.enc, args.sep, 
+            n_trees, n_labels, n_diff_labels = encode_dependencies(args.input, args.output, args.enc, args.sep, args.multitask,
                                                                    args.disp, args.planar, args.hfr, args.feats)
         
         elif args.operation == OP_DEC:
             n_diff_labels = None
-            n_trees, n_labels = decode_dependencies(args.input, args.output, args.enc, args.sep, 
+            n_trees, n_labels = decode_dependencies(args.input, args.output, args.enc, args.sep, args.multitask,
                                                     args.disp, args.rsingle, args.rsearch, 
                                                     args.hfr, args.postags, args.lang)
 
