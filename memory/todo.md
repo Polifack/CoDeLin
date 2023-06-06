@@ -43,6 +43,8 @@
 
 ## BACKLOG
 
+[ ] Extract planarity metrics from treebanks
+
 [ ] Change braketing encoding to have sorted brackest
 
 [ ] change n_commons for constituent parsing!!!!

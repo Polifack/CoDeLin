@@ -1,4 +1,4 @@
-from codelin.utils.constants import D_ROOT_HEAD, D_NULLHEAD, D_ROOT_REL, D_POSROOT, D_EMPTYREL
+from codelin.utils.constants import D_ROOT_HEAD, D_NULLHEAD, D_ROOT_REL, D_POSROOT, D_EMPTYREL, D_2P_GREED, D_2P_PROP
 
 class D_Node:
     def __init__(self, wid, form, lemma=None, upos=None, xpos=None, feats=None, head=None, deprel=None, deps=None, misc=None):
@@ -190,6 +190,17 @@ class D_Tree:
             if node.id == node_id:
                 node.upos = postag
                 break
+
+    def get_next_edge(self, idx_l, idx_r):
+        next_arc = None
+        
+        if self[idx_l].head == idx_r:
+            next_arc = self[idx_l]
+        
+        elif self[idx_r].head == idx_l:
+            next_arc = self[idx_r]
+        
+        return next_arc
 
 # properties functions
     def is_leftmost(self, node):
@@ -456,9 +467,88 @@ class D_Tree:
         for node in tree:
             print(node.id,'\t\t', node.form,'\t\t', node.head,'\t\t', node.relation)
 
+    @staticmethod
+    def two_planar_propagate(dep_tree):
+        '''
+        Separates the node of a given dependency tree into two
+        non-crossing planes using the propagation algorithm.
+        '''
+        
+        def propagate(nodes, fp1, fp2, current_edge, i):
+            # add the current edge to the forbidden plane opposite to the plane
+            # where the node has already been added
+            fpi  = None
+            fp3mi= None
+            if i == 1:
+                fpi  = fp1
+                fp3mi= fp2
+            if i == 2:
+                fpi  = fp2
+                fp3mi= fp1
+            fpi.append(current_edge)
+            
+            # add all nodes from the dependency graph that crosses the current edge
+            # to the corresponding forbidden plane
+            for node in nodes:
+                if node.check_cross(current_edge):
+                    if node not in fp3mi:
+                        # y si es for nodes in that plane?
+                        (fp1, fp2) = propagate(nodes, fp1, fp2, node, 3-i)
+            return fp1, fp2
+        
+        p1, p2, fp1, fp2 = [], [], [], []
+        for i in range(0, (len(dep_tree))):
+            for j in range(i, -1, -1):
+                # if the node in position 'i' has an arc with head 'j' 
+                # or node in position 'j' has an arc with head 'i'
+                next_arc = dep_tree.get_next_edge(i, j)
+                if next_arc is None:
+                    continue
+                # check restrictions
+                if next_arc not in fp1:
+                    p1.append(next_arc)
+                    fp1, fp2 = propagate(dep_tree, fp1, fp2, next_arc, 2)
+                
+                elif next_arc not in fp2:
+                    p2.append(next_arc)
+                    fp1, fp2 = propagate(dep_tree, fp1, fp2, next_arc, 1)        
+        return D_Tree(p1),D_Tree(p2)
+    
+    @staticmethod
+    def two_planar_greedy(dep_tree):
+        '''
+        Separates the node of a given dependency tree into two
+        non-crossing planes using the greedy algorithm.
+        '''
+
+        p1, p2 = [], []
+        for i in range(len(dep_tree)):
+            for j in range(i, -1, -1):
+                # if the node in position 'i' has an arc to 'j' 
+                # or node in position 'j' has an arc to 'i'
+                next_arc = dep_tree.get_next_edge(i, j)
+                if next_arc is None:
+                    continue
+
+                else:
+                    cross_plane_1 = False
+                    cross_plane_2 = False
+                    for node in p1:                
+                        cross_plane_1 = cross_plane_1 or next_arc.check_cross(node)
+                    for node in p2:        
+                        cross_plane_2 = cross_plane_2 or next_arc.check_cross(node)
+                    
+                    if not cross_plane_1:
+                        p1.append(next_arc)
+                    elif not cross_plane_2:
+                        p2.append(next_arc)
+
+        # processs them separately
+        return D_Tree(p1), D_Tree(p2)
+
 
     @staticmethod
-    def to_latex(tree):
+    def to_latex(tree, planar_separate = False, planar_alg = D_2P_GREED, planar_colors = ["red", "blue"]):
         '''
         Turns a ConllTree into a latex tree using
         the tikz-dependency package formated as
@@ -476,15 +566,37 @@ class D_Tree:
             \depedge{4}{9}{punct}
         \end{dependency}
         '''
+        if planar_separate:
+            if planar_alg == D_2P_GREED:
+                p1, p2 = D_Tree.two_planar_greedy(tree)
+            elif planar_alg == D_2P_PROP:
+                p1, p2 = D_Tree.two_planar_propagate(tree)
+
         nodes_str = ' \& '.join([node.form for node in tree.nodes])
+        indexes_str = ' \& '.join([str(node.id) for node in tree.nodes])
         latex = f"\\begin{{dependency}}[theme = simple]\n"
         latex += f"\\begin{{deptext}}[row sep=.25em, column sep=1.5em]\n"
+        
+        latex += f"$i$ \& {indexes_str} \\\\ \n"
         latex += f"$w_i$ \& {nodes_str} \\\\ \n"
+        
         latex += f"\\end{{deptext}}\n"
         for node in tree.nodes:
             if node.id == 0:
                 continue
             if node.head != D_NULLHEAD:
-                latex += f"\\depedge{{{node.head+2}}}{{{node.id+2}}}{{{node.relation}}}\n"
+                latex += "\\depedge"
+                
+                if planar_separate:
+                    if node in p1:
+                        latex += f"[edge style={{{planar_colors[0]}}}]"
+                    elif node in p2:
+                        latex += f"[edge style={{{planar_colors[1]}}}]"
+                    else:
+                        latex += f"[edge style={{green}}]"
+                
+                latex += f"{{{node.head+2}}}{{{node.id+2}}}{{{node.relation}}}"
+                latex += "\n"
+        
         latex += f"\\end{{dependency}}\n"
         return latex

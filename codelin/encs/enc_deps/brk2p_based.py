@@ -17,106 +17,44 @@ class D_Brk2PBasedEncoding(ADEncoding):
     def __str__(self):
         return "Dependency 2-Planar Bracketing Based Encoding"
 
-    def get_next_edge(self, dep_tree, idx_l, idx_r):
-        next_arc=None
-
-        if dep_tree[idx_l].head==idx_r:
-            next_arc = dep_tree[idx_l]
-        
-        elif dep_tree[idx_r].head==idx_l:
-            next_arc = dep_tree[idx_r]
-        
-        return next_arc
-
-    def two_planar_propagate(self, nodes):
-        p1=[]
-        p2=[]
-        fp1=[]
-        fp2=[]
-
-        for i in range(0, (len(nodes))):
-            for j in range(i, -1, -1):
-                # if the node in position 'i' has an arc to 'j' 
-                # or node in position 'j' has an arc to 'i'
-                next_arc=self.get_next_edge(nodes, i, j)
-                if next_arc is None:
-                    continue
-                else:
-                    # check restrictions
-                    if next_arc not in fp1:
-                        p1.append(next_arc)
-                        fp1, fp2 = self.propagate(nodes, fp1, fp2, next_arc, 2)
-                    
-                    elif next_arc not in fp2:
-                        p2.append(next_arc)
-                        fp1, fp2 = self.propagate(nodes, fp1, fp2, next_arc, 1)
-        return p1, p2
-    def propagate(self, nodes, fp1, fp2, current_edge, i):
-        # add the current edge to the forbidden plane opposite to the plane
-        # where the node has already been added
-        fpi  = None
-        fp3mi= None
-        if i==1:
-            fpi  = fp1
-            fp3mi= fp2
-        if i==2:
-            fpi  = fp2
-            fp3mi= fp1
-
-        fpi.append(current_edge)
-        
-        # add all nodes from the dependency graph that crosses the current edge
-        # to the corresponding forbidden plane
-        for node in nodes:
-            if current_edge.check_cross(node):
-                if node not in fp3mi:
-                    (fp1, fp2)=self.propagate(nodes, fp1, fp2, node, 3-i)
-        
-        return fp1, fp2
-
-    def two_planar_greedy(self, dep_tree):    
-        plane_1 = []
-        plane_2 = []
-
-        for i in range(len(dep_tree)):
-            for j in range(i, -1, -1):
-                # if the node in position 'i' has an arc to 'j' 
-                # or node in position 'j' has an arc to 'i'
-                next_arc = self.get_next_edge(dep_tree, i, j)
-                if next_arc is None:
-                    continue
-
-                else:
-                    cross_plane_1 = False
-                    cross_plane_2 = False
-                    for node in plane_1:                
-                        cross_plane_1 = cross_plane_1 or next_arc.check_cross(node)
-                    for node in plane_2:        
-                        cross_plane_2 = cross_plane_2 or next_arc.check_cross(node)
-                    
-                    if not cross_plane_1:
-                        plane_1.append(next_arc)
-                    elif not cross_plane_2:
-                        plane_2.append(next_arc)
-
-        # processs them separately
-        return plane_1,plane_2
-
-
     def encode(self, dep_tree):
+        def encoding_step(disp, plane, lbl_brk, brk_chars):
+            for node in plane:
+                # skip root relations (optional?)
+                if node.head == 0:
+                    continue
+                
+                if node.id < node.head:
+                    if disp:
+                        lbl_brk[node.id+1]+=brk_chars[3]
+                    else:
+                        lbl_brk[node.id]+=brk_chars[3]
+
+                    lbl_brk[node.head]+=brk_chars[2]
+                
+                else:
+                    if disp:
+                        lbl_brk[node.head+1]+=brk_chars[1]
+                    else:
+                        lbl_brk[node.head]+=brk_chars[1]
+
+                    lbl_brk[node.id]+=brk_chars[0]
+            
+            return lbl_brk
+
         # create brackets array
         n_nodes = len(dep_tree)
-        labels_brk     = [""] * (n_nodes + 1)
+        labels_brk = [""] * (n_nodes + 1)
 
         # separate the planes
-        if self.planar_alg==D_2P_GREED:
-            p1_nodes, p2_nodes = self.two_planar_greedy(dep_tree)
-        elif self.planar_alg==D_2P_PROP:
-            p1_nodes, p2_nodes = self.two_planar_propagate(dep_tree)
-            
+        if self.planar_alg == D_2P_GREED:
+            p1_nodes, p2_nodes = D_Tree.two_planar_greedy(dep_tree)
+        elif self.planar_alg == D_2P_PROP:
+            p1_nodes, p2_nodes = D_Tree.two_planar_propagate(dep_tree)
+
         # get brackets separatelly
-        labels_brk = self.encode_step(p1_nodes, labels_brk, ['>','/','\\','<'])
-        labels_brk = self.encode_step(p2_nodes, labels_brk, ['>*','/*','\\*','<*'])
+        labels_brk = encoding_step(self.displacement, p1_nodes, labels_brk, ['>','/','\\','<'])
+        labels_brk = encoding_step(self.displacement, p2_nodes, labels_brk, ['>*','/*','\\*','<*'])
         
         # merge and obtain labels
         lbls=[]
@@ -124,28 +62,8 @@ class D_Brk2PBasedEncoding(ADEncoding):
         for node in dep_tree:
             current = D_Label(labels_brk[node.id], node.relation, self.separator)
             lbls.append(current)
+        
         return LinearizedTree(dep_tree.get_words(), dep_tree.get_postags(), dep_tree.get_feats(), lbls, len(lbls))
-
-    def encode_step(self, p, lbl_brk, brk_chars):
-        for node in p:
-            # skip root relations (optional?)
-            if node.head==0:
-                continue
-            if node.id < node.head:
-                if self.displacement:
-                    lbl_brk[node.id+1]+=brk_chars[3]
-                else:
-                    lbl_brk[node.id]+=brk_chars[3]
-
-                lbl_brk[node.head]+=brk_chars[2]
-            else:
-                if self.displacement:
-                    lbl_brk[node.head+1]+=brk_chars[1]
-                else:
-                    lbl_brk[node.head]+=brk_chars[1]
-
-                lbl_brk[node.id]+=brk_chars[0]
-        return lbl_brk
 
     def decode(self, lin_tree):
         decoded_tree = D_Tree.empty_tree(len(lin_tree)+1)

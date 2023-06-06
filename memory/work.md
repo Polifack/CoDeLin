@@ -174,3 +174,22 @@ Branching:
     * The dataset is being replicated n times where n is the number of tasks. This is fine for tasks where we have different datasets, but not for when we have one.
     * During training we are passing each sample through the transformer before task heads. This should be done by passing the sample ONCE by the transformer and after that by each of the heads.
     * New approach https://arxiv.org/pdf/2009.09139.pdf
+
+### New bracketing algorithm
+
+7-bits dependency encoding:
+
+b0 can be '<0' or '<1' or none
+b1 can be '>0' or '>1' or none
+b2 can be '*' or none
+b3 can be '\0' or none
+b4 can be '/0' or none
+b5 can be '\1' or none
+b6 can be '/1' or none
+
+Where 1,0 indicate the plane and * indicates if it is rightmost/leftmost child
+
+As in dependency trees each word will have only one head, we can assume that
+the first two bits will be unique (i.e. it will either have b0 or b1)
+
+The encoding will be done in similar fashion to the 2-planar one: we will split the tree into two planes and we will encode each plane by separate. 

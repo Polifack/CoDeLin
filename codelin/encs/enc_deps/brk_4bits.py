@@ -47,19 +47,20 @@ class D_Brk4BitsEncoding(ADEncoding):
 
         return LinearizedTree(dep_tree.get_words(), dep_tree.get_postags(), dep_tree.get_feats(), encoded_labels, len(encoded_labels))
 
-    def decode(self, lin_tree):
-        # Create an empty tree with n labels
-        decoded_tree = D_Tree.empty_tree(len(lin_tree))
-        
+    def _merge_brackets(self, brks):
+        for i in range(len(brks)):
+            if brks[i] == "*":
+                brks[i-1] = brks[i-1] + "*"
+                brks[i] = ""
+        brks = [brk for brk in brks if brk != ""]
+        return brks
+
+    def _decode_l2r(self, lin_tree, decoded_tree):    
         stack = []
         current_node = 0
         for word, postag, features, label in lin_tree.iterrows(dir='l2r'):
             brks = list(label.xi) if label.xi != D_NONE_LABEL else []
-            for i in range(len(brks)):
-                if brks[i] == "*":
-                    brks[i-1] = brks[i-1] + "*"
-                    brks[i] = ""
-            brks = [brk for brk in brks if brk != ""]
+            brks = self._merge_brackets(brks)
                        
             # set parameters to the node
             decoded_tree.update_word(current_node, word)
@@ -77,18 +78,14 @@ class D_Brk4BitsEncoding(ADEncoding):
                         stack.pop()
             
             current_node+=1
-
+        return decoded_tree
+    
+    def _decode_r2l(self, lin_tree, decoded_tree):
         stack = []
         current_node = len(lin_tree)-1
         for word, postag, features, label in lin_tree.iterrows(dir='r2l'):
-            # get the brackets
             brks = list(label.xi) if label.xi != D_NONE_LABEL else []
-            # merge * with the brackets
-            for i in range(len(brks)):
-                if brks[i] == "*":
-                    brks[i-1] = brks[i-1] + "*"
-                    brks[i] = ""
-            brks = [brk for brk in brks if brk != ""]
+            brks = self._merge_brackets(brks)
             
             # sort brackets with < first and \ last
             brks.sort(key = lambda x: (x == "\\", x))
@@ -97,7 +94,7 @@ class D_Brk4BitsEncoding(ADEncoding):
             decoded_tree.update_word(current_node, word)
             decoded_tree.update_upos(current_node, postag)
             decoded_tree.update_relation(current_node, label.li)
-            # fill the relation using brks
+            #  fill the relation using brks
             for char in brks:
                 if "\\" in char:
                     stack.append(current_node)  
@@ -106,8 +103,19 @@ class D_Brk4BitsEncoding(ADEncoding):
                     decoded_tree.update_head(current_node, head_id)
                     if "*" in char:
                         stack.pop()
+            
+            current_node-=1
+        return decoded_tree
 
-            current_node -= 1
+    def decode(self, lin_tree):
+        # Create an empty tree with n labels
+        decoded_tree = D_Tree.empty_tree(len(lin_tree))
+        
+        # parse left to right arcs
+        decoded_tree = self._decode_l2r(lin_tree, decoded_tree)
+        
+        # Decode the tree from right to left
+        decoded_tree = self._decode_r2l(lin_tree, decoded_tree)
 
         decoded_tree.remove_dummy()
         return decoded_tree
