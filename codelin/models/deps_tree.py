@@ -537,9 +537,9 @@ class D_Tree:
                 else:
                     cross_plane_1 = False
                     cross_plane_2 = False
-                    for node in p1:                
+                    for node in p1:
                         cross_plane_1 = cross_plane_1 or next_arc.check_cross(node)
-                    for node in p2:        
+                    for node in p2:
                         cross_plane_2 = cross_plane_2 or next_arc.check_cross(node)
                     
                     if not cross_plane_1:

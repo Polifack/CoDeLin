@@ -45,6 +45,8 @@
 
 [ ] Extract planarity metrics from treebanks
 
+[ ] from here https://arxiv.org/pdf/2209.06699.pdf AG20/SM18/Q19 + PTB + BASELINE BRACKETING (BASE+2P)
+
 [ ] Change braketing encoding to have sorted brackest
 
 [ ] change n_commons for constituent parsing!!!!
