@@ -105,7 +105,7 @@ class D_Brk7BitsEncoding(ADEncoding):
                 if s_peek_brk in char:
                     head_id = stack[-1] if len(stack) > 0 else 0
                     decoded_tree.update_head(current_node, head_id)
-                    if "*" in char:
+                    if "*" in char and len(stack) > 0:
                         stack.pop()
             
             current_node += 1 if direction == 'l2r' else -1
@@ -131,7 +131,7 @@ class D_Brk7BitsEncoding(ADEncoding):
                 if ">0" in char:
                     head_id = stack[-1] if len(stack) > 0 else 0
                     decoded_tree.update_head(current_node, head_id)
-                    if "*" in char:
+                    if "*" in char and len(stack) > 0:
                         stack.pop()
             
             current_node += 1
@@ -158,7 +158,7 @@ class D_Brk7BitsEncoding(ADEncoding):
                 if "<0" in char:
                     head_id = stack[-1] if len(stack) > 0 else 0
                     decoded_tree.update_head(current_node, head_id)
-                    if "*" in char:
+                    if "*" in char and len(stack) > 0:
                         stack.pop()
             
             current_node-=1
@@ -175,9 +175,6 @@ class D_Brk7BitsEncoding(ADEncoding):
         
         decoded_tree = self._decoding_step(lin_tree, decoded_tree, '1', 'l2r')
         decoded_tree = self._decoding_step(lin_tree, decoded_tree, '1', 'r2l')
-        
-        # decoded_tree = self._decode_l2r(lin_tree, decoded_tree)
-        # decoded_tree = self._decode_r2l(lin_tree, decoded_tree)
 
         # decoded_tree.remove_dummy()
         return decoded_tree

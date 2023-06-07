@@ -281,6 +281,10 @@ class D_Tree:
                 if node.rel == 'root' or node.rel == 'ROOT':
                     root = node.id
                     break
+
+        # Enforce root
+        self.nodes[root-1].head = 0
+
         return root
 
     def fix_oob_heads(self):

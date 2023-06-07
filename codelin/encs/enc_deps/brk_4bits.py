@@ -75,7 +75,7 @@ class D_Brk4BitsEncoding(ADEncoding):
                 if ">" in char:
                     head_id = stack[-1] if len(stack) > 0 else 0
                     decoded_tree.update_head(current_node, head_id)
-                    if "*" in char:
+                    if "*" in char and len(stack) > 0:
                         stack.pop()
             
             current_node+=1
@@ -102,7 +102,7 @@ class D_Brk4BitsEncoding(ADEncoding):
                 if "<" in char:
                     head_id = stack[-1] if len(stack) > 0 else 0
                     decoded_tree.update_head(current_node, head_id)
-                    if "*" in char:
+                    if "*" in char and len(stack) > 0:
                         stack.pop()
             
             current_node-=1
