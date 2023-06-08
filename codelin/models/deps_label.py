@@ -2,8 +2,8 @@ class D_Label:
     def __init__(self, xi, li, sp):
         self.separator = sp
 
-        self.xi = xi    # dependency relation
-        self.li = li    # encoding
+        self.xi = xi if xi is not None else "_"
+        self.li = li if li is not None else "_"
 
     def __repr__(self):
         return f'{self.xi}{self.separator}{self.li}'

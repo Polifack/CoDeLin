@@ -243,7 +243,7 @@ class D_Tree:
         else:
             return D_Tree(self.nodes[1:])
 
-    def postprocess_tree(self, search_root_strat, allow_multi_roots=False):
+    def postprocess_tree(self, search_root_strat=D_ROOT_HEAD, allow_multi_roots=False):
         '''
         Postprocess the tree by finding the root according to the selected 
         strategy and fixing cycles and out of bounds heads

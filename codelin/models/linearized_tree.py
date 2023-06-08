@@ -123,12 +123,12 @@ class LinearizedTree:
             
             ## add as much bos eos as there are columns
             if separate_columns:
-                if l==BOS:
-                    output_line+=[BOS]*(n_cols-1)
-                elif l==EOS:
-                    output_line+=[BOS]*(n_cols-1)
+                if l == BOS:
+                    output_line += [BOS]*(n_cols-1)
+                elif l == EOS:
+                    output_line += [BOS]*(n_cols-1)
                 else:
-                    output_line+=str(l).split(l.separator)
+                    output_line += str(l).split(l.separator)
             else:
                 output_line.append(str(l))
             

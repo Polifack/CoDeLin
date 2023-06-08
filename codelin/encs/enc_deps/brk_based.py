@@ -38,7 +38,7 @@ class D_BrkBasedEncoding(ADEncoding):
         # encode labels
         for node in dep_tree:
             li = node.relation
-            xi = labels_brk[node.id]
+            xi = labels_brk[node.id] if labels_brk[node.id] != "" else "_"
 
             current = D_Label(xi, li, self.separator)
             encoded_labels.append(current)
