@@ -605,6 +605,9 @@ class D_Tree:
         latex += f"\\end{{dependency}}\n"
         return latex
     
+    
+    # statistics extraction
+    
     @staticmethod
     def get_planarity_percentage(trees):
         '''
@@ -620,3 +623,41 @@ class D_Tree:
             else:
                 two_planar += 1
         return planar/len(trees), two_planar/len(trees)
+
+    @staticmethod
+    def get_dependency_direction_percentage(trees):
+        '''
+        Given a list of trees returns the % of dependencies
+        that are 'towards the right' (head > dependent)
+        and the % of dependencies that are 'towards the left'
+        (head < dependent)
+        '''
+        right = 0
+        left = 0
+        total = 0
+        for tree in trees:
+            for node in tree.nodes:
+                if node.id == 0:
+                    continue
+                if node.head > node.id:
+                    right += 1
+                else:
+                    left += 1
+                total += 1
+
+        return right/total, left/total
+    
+    @staticmethod
+    def get_avg_dependants(trees):
+        '''
+        Given a list of trees returns the average number
+        of dependants per head
+        '''
+        avgs=[]
+        for tree in trees:
+            tree_dependants = {}
+            for node in tree.nodes:
+                tree_dependants[node.head] = tree_dependants.get(node.head, 0) + 1
+            avgs.append(sum(tree_dependants.values())/len(tree_dependants))        
+        return sum(avgs)/len(avgs)
+        
