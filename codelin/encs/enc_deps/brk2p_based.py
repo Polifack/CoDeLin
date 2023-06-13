@@ -6,7 +6,7 @@ from codelin.models.linearized_tree import LinearizedTree
 
 
 class D_Brk2PBasedEncoding(ADEncoding):
-    def __init__(self, separator, displacement, planar_alg):
+    def __init__(self, separator:str = "_", displacement:bool = False, planar_alg:str = D_2P_GREED):
         if planar_alg and planar_alg not in [D_2P_GREED, D_2P_PROP]:
             print("[*] Error: Unknown planar separation algorithm")
             exit(1)

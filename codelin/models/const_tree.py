@@ -563,6 +563,45 @@ class C_Tree:
     def __contains__(self, item):
         return item in self.label or item in self.children
 
+    @staticmethod
+    def to_latex(tree):
+        '''
+        Returns a latex representation of the tree
+        using the qtree package shaped as 
+
+        \begin{tikzpicture}[scale=0.75]
+            \Tree 
+                [.S 
+                    [.NP
+                        [.DT The ]
+                        [.NNS owls ]
+                    ]
+                        [.VP
+                            [.VBP are ]
+                            [.RB not ]
+                            [.SBAR
+                                [.WHNP 
+                                    [.WP what ] 
+                                ]
+                                [.S
+                                    [.NP+PRP they ] 
+                                    [.VP+VBP seem ] 
+                                ]
+                            ]
+                        ]
+                        [.PUNCT . ]
+                    ]            
+        \end{tikzpicture}
+        '''
+        latex_str = "\\begin{tikzpicture}[scale=0.75]\n"
+        latex_str += "\\Tree\n"
+        latex_str += "\t[." + tree.label + "\n"
+        
+        latex_str += "\t\t" + " ".join([C_Tree.to_latex(child) for child in tree.children]) + "\n"
+        latex_str += "\t]\n"
+        latex_str += "\\end{tikzpicture}"
+
+        pass
 
 # Tree creation
     @staticmethod
@@ -608,8 +647,12 @@ class C_Tree:
             i+=1
         return t
 
-# Binarization
+# Transformation
+    @staticmethod
+    def make_node(lbl, lchild, rchild):
+        return C_Tree(lbl, [lchild, rchild])
 
+# Binarization
     @staticmethod
     def to_binary_left(t, binary_marker="*"):
         '''
@@ -683,7 +726,6 @@ class C_Tree:
         return bt
                    
 # Traversals
-
     @staticmethod
     def preorder(node, fn):
         '''

@@ -30,15 +30,17 @@ class D_Brk7BitsEncoding(ADEncoding):
                     labels_brk[node.id] += brk_chars[0]
                     if plane.is_leftmost(node):
                         labels_brk[node.id] += '*'
-                    
-                    labels_brk[node.head] += brk_chars[1] if brk_chars[1] not in labels_brk[node.head] else ""
+                    next_brk = brk_chars[1] if brk_chars[1] not in labels_brk[node.head] else ""
+                    # print("updating head", node.form, "with", next_brk, "from", brk_chars[1], "and", labels_brk[node.head], "to", labels_brk[node.head] + next_brk)
+                    labels_brk[node.head] += next_brk
                 
                 else:
                     labels_brk[node.id] += brk_chars[2]
                     if plane.is_rightmost(node):
                         labels_brk[node.id] += '*'
-                    
-                    labels_brk[node.head] += brk_chars[3] if brk_chars[3] not in labels_brk[node.head] else ""
+                    next_brk = brk_chars[3] if brk_chars[3] not in labels_brk[node.head] else ""
+                    # print("updating head", node.form, "with", next_brk, "from", brk_chars[3], "and", labels_brk[node.head], "to", labels_brk[node.head] + next_brk)
+                    labels_brk[node.head] += next_brk
 
             return labels_brk
         
@@ -57,6 +59,8 @@ class D_Brk7BitsEncoding(ADEncoding):
         for node in dep_tree:
             li = node.relation
             xi = labels_brk[node.id]
+            if xi == "":
+                xi = D_NONE_LABEL
 
             current = D_Label(xi, li, self.separator)
             encoded_labels.append(current)

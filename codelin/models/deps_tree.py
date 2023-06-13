@@ -1,4 +1,6 @@
 from codelin.utils.constants import D_ROOT_HEAD, D_NULLHEAD, D_ROOT_REL, D_POSROOT, D_EMPTYREL, D_2P_GREED, D_2P_PROP
+from codelin.models.const_tree import C_Tree
+
 
 class D_Node:
     def __init__(self, wid, form, lemma=None, upos=None, xpos=None, feats=None, head=None, deprel=None, deps=None, misc=None):
@@ -116,6 +118,14 @@ class D_Tree:
         '''
         return list(map((lambda x :x.form), self.nodes))
 
+    def get_root(self):
+        '''
+        Returns the root of the tree
+        '''
+        for node in self.nodes:
+            if node.head == 0:
+                return node
+
     def get_indexes(self):
         '''
         Returns a list of integers representing the words of the 
@@ -146,6 +156,17 @@ class D_Tree:
         Returns the morphological features of the tree
         '''
         return list(map((lambda x :x.feats), self.nodes))
+
+    def get_dependants(self, head):
+        '''
+        Returns two lists of the dependants of the given head,
+        one with the dependants to the left of the head
+        and one to the right
+        '''
+        dependants =  list(filter((lambda x :x.head == head and x.id!=head), self.nodes))
+        dependants_left = list(filter((lambda x :x.id < head), dependants))
+        dependants_right = list(filter((lambda x :x.id > head), dependants))
+        return dependants_left, dependants_right
 
 # update functions
     def append_node(self, node):
@@ -223,7 +244,6 @@ class D_Tree:
         head_dependants.sort()
         return head_dependants[-1] == node.id
         
-
     def is_projective(self):
         '''
         Returns a boolean indicating if the dependency tree
@@ -550,7 +570,6 @@ class D_Tree:
         # processs them separately
         return D_Tree(p1), D_Tree(p2)
 
-
     @staticmethod
     def to_latex(tree, planar_separate = False, planar_alg = D_2P_GREED, planar_colors = ["red", "blue"]):
         '''
@@ -605,9 +624,80 @@ class D_Tree:
         latex += f"\\end{{dependency}}\n"
         return latex
     
+    @staticmethod
+    def to_bht(tree):
+        '''
+        Converts a dependency tree into a binary head tree.
+        We will consider a bht as a constituent tree.
+
+        BHTs are a special kind of constituent trees where
+        the internal nodes are labeled with an 'L' or 'R' depending
+        of the position of the head in the dependency tree
+        (https://arxiv.org/pdf/2306.05477.pdf)
+
+        The tree is built using a stack and push/make_node operations.
+        We start from the root and performa a DFS traversal.
+        '''
+        def to_bht_rec(node):
+            stack.append(node)
+            ld, rd = tree.get_dependants(node.id)
+            for dep in ld:
+                to_bht_rec(dep)
+                left = stack.pop()
+                right = stack.pop()
+                
+                if type(left) is not C_Tree:
+                    left = C_Tree(left.form)
+                if type(right) is not C_Tree:
+                    right = C_Tree(right.form)            
+
+                stack.append(C_Tree.make_node('R', left, right))
+
+            for dep in rd:
+                to_bht_rec(dep)
+                left = stack.pop()
+                right = stack.pop()
+                
+                if type(left) is not C_Tree:
+                    left = C_Tree(left.form)
+                if type(right) is not C_Tree:
+                    right = C_Tree(right.form)
+
+                stack.append(C_Tree.make_node('L', left, right))
+
+        tree_root = tree.get_root()
+        stack = []
+        to_bht_rec(tree_root)
+        
+        return stack.pop()
     
+    @staticmethod
+    def from_bht(bht):
+        '''
+        Converts a constituent tree shaped as a binary head tree back into
+        a dependency tree.
+        1: procedure TREE2DEP(node)
+            2: if node is leaf :
+            3: return node
+            4: left ← TREE2DEP(node.left)
+            5: right ← TREE2DEP(node.right)
+            6: if node is L :
+            7: return MAKEARC(left right )
+            8: return MAKEARC(left right )
+        '''
+        def from_bht_rec(node):
+            if type(node) is not C_Tree:
+                return node
+            left = from_bht_rec(node.left)
+            right = from_bht_rec(node.right)
+            if node.label == 'L':
+                return D_Tree.make_arc(right, left)
+            else:
+                return D_Tree.make_arc(left, right)
+        
+
+
     # statistics extraction
-    
     @staticmethod
     def get_planarity_percentage(trees):
         '''
