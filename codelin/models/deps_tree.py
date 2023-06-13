@@ -647,9 +647,9 @@ class D_Tree:
                 right = stack.pop()
                 
                 if type(left) is not C_Tree:
-                    left = C_Tree(left.form)
+                    left = C_Tree(str(left.id))
                 if type(right) is not C_Tree:
-                    right = C_Tree(right.form)            
+                    right = C_Tree(str(right.id))
 
                 stack.append(C_Tree.make_node('R', left, right))
 
@@ -659,9 +659,9 @@ class D_Tree:
                 right = stack.pop()
                 
                 if type(left) is not C_Tree:
-                    left = C_Tree(left.form)
+                    left = C_Tree(str(left.id))
                 if type(right) is not C_Tree:
-                    right = C_Tree(right.form)
+                    right = C_Tree(str(right.id))
 
                 stack.append(C_Tree.make_node('L', left, right))
 
@@ -676,24 +676,30 @@ class D_Tree:
         '''
         Converts a constituent tree shaped as a binary head tree back into
         a dependency tree.
-        1: procedure TREE2DEP(node)
-            2: if node is leaf :
-            3: return node
-            4: left ← TREE2DEP(node.left)
-            5: right ← TREE2DEP(node.right)
-            6: if node is L :
-            7: return MAKEARC(left right )
-            8: return MAKEARC(left right )
         '''
         def from_bht_rec(node):
-            if type(node) is not C_Tree:
+            if node.is_terminal():
                 return node
-            left = from_bht_rec(node.left)
-            right = from_bht_rec(node.right)
+            
+            left = from_bht_rec(node.children[0])
+            right = from_bht_rec(node.children[1])
+            
             if node.label == 'L':
-                return D_Tree.make_arc(right, left)
+                node_head = int(left.label) if "label" in dir(left) else int(left.id)
+                node_dependant = int(right.label) if "label" in dir(right) else int(right.id)
+                n = D_Node(wid=node_dependant, form="-NONE-", head=node_head, deprel="-NONE-") 
+                nodes.append(n)
+                return n
             else:
-                return D_Tree.make_arc(left, right)
+                node_head = int(right.label) if "label" in dir(right) else int(right.id)
+                node_dependant = int(left.label) if "label" in dir(left) else int(left.id)
+                n = D_Node(wid=node_dependant, form="-NONE-", head=node_head, deprel="-NONE-")
+                nodes.append(n)
+                return n
+
+        nodes=[]
+        from_bht_rec(bht)
+        return D_Tree(nodes)
         
 
 
