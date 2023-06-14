@@ -60,7 +60,12 @@ class D_Brk2PBasedEncoding(ADEncoding):
         lbls=[]
         dep_tree.remove_dummy()
         for node in dep_tree:
-            current = D_Label(labels_brk[node.id], node.relation, self.separator)
+            xi = labels_brk[node.id]
+            li = node.relation
+            if xi=="":
+                xi=D_NONE_LABEL
+
+            current = D_Label(xi, li, self.separator)
             lbls.append(current)
         
         return LinearizedTree(dep_tree.get_words(), dep_tree.get_postags(), dep_tree.get_feats(), lbls, len(lbls))

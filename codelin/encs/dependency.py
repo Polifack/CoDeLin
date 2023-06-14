@@ -32,6 +32,8 @@ def encode_dependencies(in_path, out_path, encoding_type, separator, multitask, 
             encoder = D_Brk2PBasedEncoding(separator, displacement, planar_alg)
     elif encoding_type == D_BRK_4B_ENCODING:
             encoder = D_Brk4BitsEncoding(separator) 
+    elif encoding_type == D_BRK_7B_ENCODING:
+            encoder = D_Brk7BitsEncoding(separator)
     else:
         raise Exception("Unknown encoding type")
     
@@ -90,6 +92,8 @@ def decode_dependencies(in_path, out_path, encoding_type, separator, multitask, 
         decoder = D_Brk2PBasedEncoding(separator, displacement, None)
     elif encoding_type == D_BRK_4B_ENCODING:
         decoder = D_Brk4BitsEncoding(separator) 
+    elif encoding_type == D_BRK_7B_ENCODING:
+        decoder = D_Brk7BitsEncoding(separator)
     else:
         raise Exception("Unknown encoding type")
 

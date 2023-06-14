@@ -180,5 +180,5 @@ class D_Brk7BitsEncoding(ADEncoding):
         decoded_tree = self._decoding_step(lin_tree, decoded_tree, '1', 'l2r')
         decoded_tree = self._decoding_step(lin_tree, decoded_tree, '1', 'r2l')
 
-        # decoded_tree.remove_dummy()
+        decoded_tree.remove_dummy()
         return decoded_tree

@@ -1,24 +1,96 @@
 \begin{table}[h]
-\centering
-\caption{RESULTS}
-\label{tab:my_table}
+    \centering
+    \caption{RESULTS (fscore)}
+    \label{tab:scores}
+    
+    \begin{tabular}{|l|c|c|c|c|}
+        \hline
+        \textbf{Corpus}                & \textbf{BRK} & \textbf{BRK-2P} & \textbf{BRK-4B} & \textbf{BRK-7B} \\ 
+        \hline
+        Penn-Treebank                  & 94.62        & --              & 94.72           & 94.66           \\
+        UD-Russian-GSD                 & 87.84        & --              & 88.04           & 89.58           \\
+        UD-Finnish-TDT                 & 92.45        & --              & 92.19           & 92.74           \\
+        UD-German-GSD                  & 84.10        & --              & 83.96           & 83.25           \\
+        UD-Ancient-Greek-Perseus       & 71.84        & --              & 67.63           & 75.36           \\
+        UD-Chinese-GSD                 & 85.23        & --              & 85.36           & 85.70           \\
+        UD-Hebrew-HTB                  & 90.25        & --              & 90.81           & 90.58           \\  
+        UD-Tamil-TTB                   & 63.65        & --              & 65.16           & 65.69           \\
+        UD-Uyghur-UDT                  & 67.22        & --              & 67.17           & 69.10           \\
+        UD-Wolof-WTF                   & 75.04        & --              & 76.24           & 75.57           \\
+        UD-English-EWT                 & 91.03        & --              & 89.48           & 91.78           \\
+        \hline
 
-\begin{tabular}{|l|c|c|c|c|}
-\hline
-\textbf{Corpus}                & \textbf{BRK} & \textbf{BRK-2P} & \textbf{BRK-4B} & \textbf{BRK-7B} \\ 
-\hline
-Penn-Treebank                  & 94.62        & --              & 94.72           & --              \\
-UD-Russian-GSD                 & 87.84        & --              & 88.04           & --              \\
-UD-Finnish-TDT                 & 92.45        & --              & 92.19           & --              \\
-UD-German-GSD                  & 84.10        & --              & 83.96           & --              \\
-UD-Ancient-Greek-Perseus       & 71.84        & --              & 67.63           & --              \\
-UD-Chinese-GSD                 & 85.23        & --              & 85.36           & --              \\
-UD-Hebrew-HTB                  & 90.25        & --              & 90.81           & --              \\  
-UD-Tamil-TTB                   & 63.65        & --              & 65.16           & --              \\
-UD-Uyghur-UDT                  & 67.22        & --              & 67.17           & --              \\
-UD-Wolof-WTF                   & 75.04        & --              & 76.24           & --              \\
-UD-English-EWT                 & 91.03        & --              & 89.48           & --              \\
-\hline
+    \end{tabular}
+\end{table}
 
-\end{tabular}
+
+\begin{table}[h]
+    \centering
+    \caption{Unique labels (fscore)}
+    \label{tab:unique}
+    \begin{tabular}{lccccc}
+        \hline
+        Corpus                          & n-trees &  planarity &   r-deps &   l-deps &  avg-dependants \\
+        \hline
+        PENN-TREEBANK                   &   43948 &   0.998953 & 0.487397 & 0.512603 &        2.295559 \\
+        UD-Russian-GSD                  &    5030 &   0.938767 & 0.490234 & 0.509766 &        2.263321 \\
+        UD-Finnish-TDT                  &   15136 &   0.938689 & 0.528854 & 0.471146 &        2.365725 \\
+        UD-German-GSD                   &   15590 &   0.906671 & 0.606649 & 0.393351 &        2.590553 \\
+        UD-Ancient-Greek-Perseus        &   13919 &   0.376679 & 0.528112 & 0.471888 &        2.447137 \\
+        UD-Chinese-GSD                  &    4997 &   0.969382 & 0.616777 & 0.383223 &        2.426972 \\
+        UD-Hebrew-HTB                   &    6143 &   0.987140 & 0.463491 & 0.536509 &        2.301833 \\
+        UD-Tamil-TTB                    &     600 &   0.983333 & 0.685628 & 0.314372 &        2.262076 \\
+        UD-Uyghur-UDT                   &    3456 &   0.918403 & 0.667189 & 0.332811 &        2.216945 \\
+        UD-Wolof-WTB                    &    2107 &   0.970100 & 0.482173 & 0.517827 &        2.519338 \\
+        UD-English-EWT                  &   16622 &   0.972747 & 0.572834 & 0.427166 &        2.530780 \\
+        \hline
+    \end{tabular}
+\end{table}
+
+
+\begin{table}[h]
+    \centering
+    \caption{Unique labels (fscore)}
+    \label{tab:unique}
+    \begin{tabular}{lcccc}
+        \hline
+        Corpus                          &  BRK & BRK2P & BRK4B & BRK7B \\
+        \hline
+        PENN-TREEBANK                   & 1216 &  1233 &   396 &   408 \\
+        UD-Russian-GSD                  &  802 &   961 &   400 &   614 \\
+        UD-Finnish-TDT                  & 1054 &  1223 &   435 &   685 \\
+        UD-German-GSD                   & 1120 &  1476 &   428 &   771 \\
+        UD-Ancient-Greek-Perseus        & 1469 &  2401 &   304 &  1167 \\
+        UD-Chinese-GSD                  &  804 &   912 &   321 &   406 \\
+        UD-Hebrew-HTB                   &  754 &   798 &   317 &   357 \\
+        UD-Tamil-TTB                    &  262 &   274 &   153 &   164 \\
+        UD-Uyghur-UDT                   &  553 &   683 &   353 &   475 \\
+        UD-Wolof-WTB                    &  585 &   643 &   318 &   382 \\
+        UD-English-EWT                  & 1089 &  1281 &   487 &   709 \\
+        \hline
+    \end{tabular}
+\end{table}
+
+
+\begin{table}[h]
+    \centering
+    \caption{SPEED (s/t)}
+    \label{tab:speed}
+    \begin{tabular}{|l|c|c|c|c|}
+        \hline
+        \textbf{Corpus}                 & \textbf{BRK} & \textbf{BRK-2P} & \textbf{BRK-4B} & \textbf{BRK-7B} \\ 
+        \hline
+        Penn-Treebank (2416)            & 145.10       & --              & 142.28          & 144.32          \\
+        UD-Russian-GSD (601)            & 87.10        & --              & 85.24           & 86.59           \\
+        UD-Finnish-TDT (1555)           & 150.24       & --              & 145.46          & 145.84          \\
+        UD-German-GSD (977)             & 121.82       & --              & 119.43          & 119.14          \\
+        UD-Ancient-Greek-Perseus (1306) & 103.56       & --              & 100.69          & 101.55          \\
+        UD-Chinese-GSD (500)            & 72.45        & --              & 71.56           & 71.93           \\
+        UD-Hebrew-HTB (401)             & 75.88        & --              & 74.28           & 76.36           \\  
+        UD-Tamil-TTB (120)              & 30.075       & --              & 29.33           & 29.62           \\
+        UD-Uyghur-UDT (900)             & 126.93       & --              & 126.58          & 126.93          \\
+        UD-Wolof-WTF (470)              & 75.07        & --              & 75.44           & 75.68           \\
+        UD-English-EWT (2077)           & 170.94       & --              & 166.55          & 168.45          \\
+        \hline 
+    \end{tabular}
 \end{table}
