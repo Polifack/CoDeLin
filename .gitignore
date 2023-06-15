@@ -33,6 +33,5 @@
 # ceval script
 ceval.sh
 deval.sh
-train_models.ipynb
 error.txt
 test.ipynb
