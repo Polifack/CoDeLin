@@ -366,7 +366,7 @@ class D_Tree:
         for i in range(len(this)):
             if this[i].form != other[i].form:
                 print("Error: ulas score is not defined for trees with different words")
-                print(this[i].form, other[i].form)
+                print(this, other)
                 return 0
             
             accum += 1 if this[i].head == other[i].head and this[i].relation == other[i].relation else 0
@@ -712,13 +712,17 @@ class D_Tree:
         '''
         planar = 0
         two_planar = 0
+        n_planar = 0
         for tree in trees:
             p1,p2 = D_Tree.two_planar_greedy(tree)
-            if len(p2) == 0:
+            if len(p2) == 0 and len(p1) != 0:
                 planar += 1
-            else:
+            elif len(p2) != 0 and len(p1) != 0:
                 two_planar += 1
-        return planar/len(trees), two_planar/len(trees)
+            else:
+                n_planar += 1
+        
+        return planar/len(trees), two_planar/len(trees), n_planar/len(trees)
 
     @staticmethod
     def get_dependency_direction_percentage(trees):
