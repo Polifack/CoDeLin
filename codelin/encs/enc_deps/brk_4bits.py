@@ -120,3 +120,32 @@ class D_Brk4BitsEncoding(ADEncoding):
 
         decoded_tree.remove_dummy()
         return decoded_tree
+    
+    @staticmethod
+    def labels_to_bits(labels):
+        '''
+        Given a list of labels returns its bits representation:
+
+        b0 is 1 if > is in label 0 otherwise
+        b1 is 1 if the next character to b0 is * and 0 otherwise
+        b2 is 1 if \\ is in label 0 otherwise
+        b3 is 1 if / is in label 0 otherwise
+        '''        
+        bits = []
+        blank_label = [0,0,0,0]
+        for label in labels:
+            if label == D_NONE_LABEL:
+                bits.append(blank_label)
+            else:
+                label_brackets = label.xi
+                b0,b1,b2,b3 = 0,0,0,0
+                if ">" in label_brackets:
+                    b0 = 1
+                if "*" in label_brackets:
+                    b1 = 1
+                if "\\" in label_brackets:
+                    b2 = 1
+                if "/" in label_brackets:
+                    b3 = 1
+                bits.append([b0,b1,b2,b3])
+        return bits

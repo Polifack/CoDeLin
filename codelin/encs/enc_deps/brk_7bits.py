@@ -182,3 +182,60 @@ class D_Brk7BitsEncoding(ADEncoding):
 
         decoded_tree.remove_dummy()
         return decoded_tree
+    
+    @staticmethod
+    def labels_to_bits(labels):
+        '''
+        Given a set of labels returns the -7b representation
+        of them
+        
+        b0 is 1 if > is in label 0 otherwise
+        b1 is 1 if the next character to b0 is 1 and 0 otherwise
+        b2 is 1 if the next character to b1 is * and 0 otherwise
+        b3 is 1 if \0 is in label and 0 otherwise
+        b4 is 1 if /0 is in label and 0 otherwise
+        b5 is 1 if \1 is in label and 1 otherwise
+        b6 is 1 if /1 is in label and 1 otherwise
+
+        '''
+        bits = []
+        blank_label = [0,0,0,0,0,0,0]
+        for label in labels:
+            if label == D_NONE_LABEL:
+                bits.append(blank_label)
+            else:
+                label_brackets = label.xi
+                b0,b1,b2,b3,b4,b5,b6 = 0,0,0,0,0,0,0
+                if ">0" in label_brackets:
+                    b0 = 0
+                    b1 = 0
+                
+                if ">1" in label_brackets:
+                    b0 = 0
+                    b1 = 1
+                
+                if "<0" in label_brackets:
+                    b0 = 1
+                    b1 = 0
+                
+                if "<1" in label_brackets:
+                    b0 = 1
+                    b1 = 1
+                
+                if "*" in label_brackets:
+                    b2 = 1
+                
+                if "\\0" in label_brackets:
+                    b3 = 1
+                
+                if "/0" in label_brackets:
+                    b4 = 1
+                
+                if "\\1" in label_brackets:
+                    b5 = 1
+                
+                if "/1" in label_brackets:
+                    b6 = 1
+                bits.append([b0,b1,b2,b3,b4,b5,b6])
+                
+        return bits

@@ -1,3 +1,7 @@
+## Useful papers:
+The Fragility of Multi-Treebank Parsing Evaluation: https://arxiv.org/pdf/2209.06699.pdf
+Attach-Juxtapose encoding: https://arxiv.org/pdf/2010.14568.pdf
+
 ## DONE:
 
 [x] Implement tetra-tagging.

@@ -40,6 +40,13 @@ class D_Node:
             return [None]
         else:
             return [x for x in feats.split('|')]
+        
+    def feats_to_str(self):
+        if self.feats != [None]:
+            return '|'.join(self.feats)
+        else:
+            return '_'
+        
 
     def check_cross(self, other):
         if ((self.head == other.head) or (self.head==other.id)):
@@ -58,7 +65,9 @@ class D_Node:
         return head_inside^id_inside
     
     def __repr__(self):
-        return '\t'.join(str(e) for e in list(self.__dict__.values()))+'\n'
+        node_fields = self.__dict__
+        node_fields['feats'] = self.feats_to_str()
+        return '\t'.join(str(e) for e in list(node_fields.values()))+'\n'
 
     def __eq__(self, other):
         return self.__dict__ == other.__dict__    
@@ -571,7 +580,7 @@ class D_Tree:
         return D_Tree(p1), D_Tree(p2)
 
     @staticmethod
-    def to_latex(tree, planar_separate = False, planar_alg = D_2P_GREED, planar_colors = ["red", "blue"]):
+    def to_latex(tree, include_col=False, planar_separate = False, planar_alg = D_2P_GREED, planar_colors = ["black", "blue"], additional_labels = None):
         '''
         Turns a ConllTree into a latex tree using
         the tikz-dependency package formated as
@@ -600,8 +609,31 @@ class D_Tree:
         latex = f"\\begin{{dependency}}[theme = simple]\n"
         latex += f"\\begin{{deptext}}[row sep=.25em, column sep=1.5em]\n"
         
-        latex += f"$i$ \& {indexes_str} \\\\ \n"
-        latex += f"$w_i$ \& {nodes_str} \\\\ \n"
+        if include_col:
+            latex += f"$i$ \& {indexes_str} \\\\ \n"
+            latex += f"$w_i$ \& {nodes_str} \\\\ \n"
+
+            if additional_labels is not None:
+                # replace \ with \\ to avoid latex errors
+                fix_labels = []
+                for lbl in additional_labels:
+                    r_lbl = lbl.replace("\\", "\\textbackslash")
+                    fix_labels.append(f"\\texttt{{{r_lbl}}}")
+
+                lbls = ' \& '.join(fix_labels)
+                latex += f"$l_i$ \& {lbls} \\\\ \n"
+
+        else:
+            latex += f"{indexes_str} \\\\ \n"
+            latex += f"{nodes_str} \\\\ \n"
+            if additional_labels is not None:
+                fix_labels = []
+                for lbl in additional_labels:
+                    r_lbl = lbl.replace("\\", "\\textbackslash")
+                    fix_labels.append(f"\\texttt{{{r_lbl}}}")
+
+                lbls = ' \& '.join(fix_labels)
+                latex += f"{lbls} \\\\ \n"
         
         latex += f"\\end{{deptext}}\n"
         for node in tree.nodes:
@@ -618,7 +650,8 @@ class D_Tree:
                     else:
                         latex += f"[edge style={{green}}]"
                 
-                latex += f"{{{node.head+2}}}{{{node.id+2}}}{{{node.relation}}}"
+                delta = 2 if include_col else 1
+                latex += f"{{{node.head+delta}}}{{{node.id+delta}}}{{{node.relation}}}"
                 latex += "\n"
         
         latex += f"\\end{{dependency}}\n"
