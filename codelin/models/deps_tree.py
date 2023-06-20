@@ -271,6 +271,9 @@ class D_Tree:
             self.nodes = self.nodes[1:]
         else:
             return D_Tree(self.nodes[1:])
+    
+    def add_dummy_root(self):
+        self.nodes.insert(0, D_Node.dummy_root())
 
     def postprocess_tree(self, search_root_strat=D_ROOT_HEAD, allow_multi_roots=False):
         '''
