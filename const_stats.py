@@ -4,6 +4,10 @@ from codelin.models.const_tree import C_Tree
 from codelin.encs.enc_const import *
 from codelin.utils.constants import *
 
+'''
+File to extract data from constituent files
+'''
+
 if __name__=="__main__":
     parser = argparse.ArgumentParser(description='Extractor of stats for constituent treebanks')
     parser.add_argument('--files', metavar='FILE', type=str, nargs='+',

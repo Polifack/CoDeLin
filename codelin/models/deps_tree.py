@@ -256,9 +256,13 @@ class D_Tree:
     def is_projective(self):
         '''
         Returns a boolean indicating if the dependency tree
-        is projective (i.e. no edges are crossing)
+        is projective (i.e. no edges are crossing). The main difference
+        between projective trees and planar trees is that in projective
+        trees the ROOT node is ignored.
         '''
         arcs = self.get_arcs()
+        # remove arc with head 0
+        arcs = list(filter((lambda x :x[1]!=0), arcs))
         for (i,j) in arcs:
             for (k,l) in arcs:
                 if (i,j) != (k,l) and min(i,j) < min(k,l) < max(i,j) < max(k,l):
@@ -740,6 +744,19 @@ class D_Tree:
 
 
     # statistics extraction
+    @staticmethod
+    def get_projectivity_percentage(trees):
+        '''
+        Given a list of trees returns the % of projective trees
+        '''
+        proj=0
+        for tree in trees:
+            tree = tree.remove_dummy(return_new_tree=True)
+            if tree.is_projective():
+                proj += 1
+
+        return proj/len(trees)
+
     @staticmethod
     def get_planarity_percentage(trees):
         '''
