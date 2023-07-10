@@ -724,24 +724,29 @@ class D_Tree:
             if node.is_terminal():
                 return node
             
-            left = from_bht_rec(node.children[0])
+            left  = from_bht_rec(node.children[0])
             right = from_bht_rec(node.children[1])
-            
             if node.label == 'L':
-                node_head = int(left.label) if "label" in dir(left) else int(left.id)
-                node_dependant = int(right.label) if "label" in dir(right) else int(right.id)
+                # L => head to the left and dependant to the right
+                node_head      = int(right.label) if type(right) is C_Tree else int(right.head)
+                node_dependant = int(left.label)  if type(left) is C_Tree else int(left.head)
+
                 n = D_Node(wid=node_dependant, form="-NONE-", head=node_head, deprel="-NONE-") 
                 nodes.append(n)
-                return n
             else:
-                node_head = int(right.label) if "label" in dir(right) else int(right.id)
-                node_dependant = int(left.label) if "label" in dir(left) else int(left.id)
+                # R => head to the right and dependant to the left
+                node_head      = int(right.label) if type(right) is C_Tree else int(right.head)
+                node_dependant = int(left.label)  if type(left) is C_Tree  else int(left.head)
+
                 n = D_Node(wid=node_dependant, form="-NONE-", head=node_head, deprel="-NONE-")
                 nodes.append(n)
-                return n
-
+                
+            return n
+        
         nodes=[]
         from_bht_rec(bht)
+        # sort nodes by id
+        nodes = sorted(nodes, key=lambda x: x.id)
         return D_Tree(nodes)
         
 
