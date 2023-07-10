@@ -113,7 +113,7 @@ def decode_dependencies(in_path, out_path, encoding_type, separator, multitask, 
         if line == "\n":
             tree_string = tree_string.rstrip()
             current_tree = LinearizedTree.from_string(tree_string, mode="DEPS", separator=separator, separate_columns=multitask)
-            
+
             if postags:
                 c_tags = nlp(current_tree.get_sentence())
                 current_tree.set_postags([word.pos for word in c_tags])

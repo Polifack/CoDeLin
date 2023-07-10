@@ -271,6 +271,9 @@ class D_Tree:
     
 # postprocessing
     def remove_dummy(self, return_new_tree=False):
+        if not self.nodes[0].form == D_POSROOT:
+            return
+        
         if not return_new_tree:
             self.nodes = self.nodes[1:]
         else:

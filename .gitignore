@@ -27,6 +27,7 @@
 .vscode/
 /src/models/__pycache__
 *.pyc
+__pycache__
 
 # *.ipynb
 
