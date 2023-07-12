@@ -6,3 +6,4 @@ from .brk_4bits import D_Brk4BitsEncoding
 from .brk_7bits import D_Brk7BitsEncoding
 from .pos_based import D_PosBasedEncoding
 from .brk2p_based import D_Brk2PBasedEncoding
+from .hexatag import D_HexatagEncoding

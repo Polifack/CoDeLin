@@ -684,6 +684,7 @@ class D_Tree:
         def to_bht_rec(node):
             stack.append(node)
             ld, rd = tree.get_dependants(node.id)
+            
             for dep in ld:
                 to_bht_rec(dep)
                 left = stack.pop()
@@ -713,7 +714,7 @@ class D_Tree:
         to_bht_rec(tree_root)
         
         return stack.pop()
-    
+
     @staticmethod
     def from_bht(bht):
         '''
@@ -763,7 +764,7 @@ class D_Tree:
             if tree.is_projective():
                 proj += 1
 
-        return proj/len(trees)
+        return proj/len(trees) if len(trees)>0 else 0
 
     @staticmethod
     def get_planarity_percentage(trees):
@@ -782,7 +783,8 @@ class D_Tree:
                 two_planar += 1
             else:
                 n_planar += 1
-        
+        if len(trees) == 0:
+            return 0,0,0
         return planar/len(trees), two_planar/len(trees), n_planar/len(trees)
 
     @staticmethod
