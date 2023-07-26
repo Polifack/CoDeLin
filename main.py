@@ -1,14 +1,14 @@
-from src.encs.dependency import encode_dependencies, decode_dependencies
-from src.encs.constituent import encode_constituent, decode_constituent
-from src.utils.constants import *
+from codelin.encs.dependency import encode_dependencies, decode_dependencies
+from codelin.encs.constituent import encode_constituent, decode_constituent
+from codelin.utils.constants import *
 
 import argparse
 import time
 
 if __name__=="__main__":
 
-    encodings = [C_ABSOLUTE_ENCODING, C_RELATIVE_ENCODING, C_DYNAMIC_ENCODING, C_INCREMENTAL_ENCODING,
-                D_ABSOLUTE_ENCODING, D_RELATIVE_ENCODING, D_POS_ENCODING, D_BRACKET_ENCODING, D_BRACKET_ENCODING_2P]
+    encodings = [C_ABSOLUTE_ENCODING, C_RELATIVE_ENCODING, C_DYNAMIC_ENCODING, C_TETRA_ENCODING, C_JUXTAPOSED_ENCODING, C_GAPS_ENCODING,
+                D_ABSOLUTE_ENCODING, D_RELATIVE_ENCODING, D_POS_ENCODING, D_BRACKET_ENCODING, D_BRACKET_ENCODING_2P, D_BRK_4B_ENCODING, D_BRK_7B_ENCODING]
 
     parser = argparse.ArgumentParser(description='Constituent and Dependencies Linearization System')
     parser.add_argument('formalism', metavar='formalism', type=str, choices=[F_CONSTITUENT, F_DEPENDENCY],
@@ -25,6 +25,9 @@ if __name__=="__main__":
 
     parser.add_argument('output', metavar='out file', type=str,
                         help='Path of the file save decoded tree.')
+
+    parser.add_argument('--multitask', action='store_true', required=False, default=False,
+                        help='Flag to indicate that the output file will be shaped with one column per field.')
 
     parser.add_argument("--time", action='store_true', required=False, 
                         help='Flag to measure decoding time.')
@@ -55,17 +58,35 @@ if __name__=="__main__":
     parser.add_argument('--conflict', choices = [C_STRAT_FIRST, C_STRAT_LAST, C_STRAT_MAX, C_STRAT_NONE], required = False, default=C_STRAT_MAX,
                         help='DECODE CONSTITUENT GRAMMARS ONLY: Method of conflict resolution for conflicting tree node labels.')
     
-    parser.add_argument('--allow-nulls', required = False, action='store_false', default=True, 
+    parser.add_argument('--nulls', required = False, action='store_true', default=True, 
                         help='DECODE CONSTITUENT GRAMMARS ONLY: Remove null nodes in the decoded tree.')
 
     parser.add_argument('--postags', required = False, action='store_true', default = False, 
                         help = 'Predict Part of Speech tags using Stanza tagger')
     
-    parser.add_argument('--hfr', required=False, action='store_true', default=False,
+    parser.add_argument('--enforce_root', required=False, action='store_true', default=False,
                         help = 'Encode "root" nodes as a special label in relative encoding (i.e. "0_ROOT" instead of "-3_ROOT" )')
+    
+    parser.add_argument('--incremental', required=False, action='store_true', default=False,
+                        help='Encode constituent trees in an incremental fashion')
     
     parser.add_argument('--lang', required=False, type=str, default='en', 
                         help = 'Language employed in part of speech predition')
+    
+    parser.add_argument('--binary', required=False, action='store_true', default=False,
+                        help = 'Convert the trees to binary trees before encoding (only for constituent trees)')
+    
+    parser.add_argument('--b_direction', required=False, type=str, default='R', choices=['L','R'],
+                        help = 'Direction of the binary conversion (only for constituent trees encoding)')
+    
+    parser.add_argument("--b_marker", required=False, type=str, default="*",
+                        help='Character to use as a marker for binary nodes (only for constituent trees)')
+    
+    parser.add_argument('--traverse', required=False, choices= ['preorder','postorder','inorder'], default='inorder',
+                        help = 'Traverse order for tetratagging')
+    
+    parser.add_argument('--hfr', required=False, action='store_true', default=False,
+                        help = 'Hang from root strategy for dependency encoding')
 
     args = parser.parse_args()
 
@@ -75,24 +96,27 @@ if __name__=="__main__":
     if args.formalism == F_CONSTITUENT:
         
         if args.operation == OP_ENC:
-            n_labels, n_trees, n_diff_labels = encode_constituent(args.input, args.output, args.enc, 
-                                                                  args.sep, args.ujoiner, args.feats)
+            n_labels, n_trees, n_diff_labels = encode_constituent(args.input, args.output, args.enc, args.incremental,
+                                                                  args.sep, args.multitask, args.ujoiner, args.feats, 
+                                                                  args.binary, args.b_direction, args.b_marker,
+                                                                  args.traverse)
         
         elif args.operation == OP_DEC:
             n_diff_labels = None
-            n_trees, n_labels = decode_constituent(args.input, args.output, args.enc, args.sep, 
-                                                   args.ujoiner, args.conflict, args.allow_nulls, 
-                                                   args.postags, args.lang)
+            n_trees, n_labels = decode_constituent(args.input, args.output, args.enc, args.incremental, args.sep, 
+                                                   args.multitask, args.ujoiner, args.conflict, args.nulls, 
+                                                   args.postags, args.lang, 
+                                                   args.binary, args.b_marker, args.traverse)
     
     elif args.formalism == F_DEPENDENCY:
         
         if args.operation == OP_ENC:
-            n_trees, n_labels, n_diff_labels = encode_dependencies(args.input, args.output, args.enc, args.sep, 
+            n_trees, n_labels, n_diff_labels = encode_dependencies(args.input, args.output, args.enc, args.sep, args.multitask,
                                                                    args.disp, args.planar, args.hfr, args.feats)
         
         elif args.operation == OP_DEC:
             n_diff_labels = None
-            n_trees, n_labels = decode_dependencies(args.input, args.output, args.enc, args.sep, 
+            n_trees, n_labels = decode_dependencies(args.input, args.output, args.enc, args.sep, args.multitask,
                                                     args.disp, args.rsingle, args.rsearch, 
                                                     args.hfr, args.postags, args.lang)
 

@@ -4,7 +4,6 @@
 /labels
 /labels_dec
 /ncrf_configs
-/codelin
 /results
 /models
 /hfmtl
@@ -32,3 +31,7 @@ train_models.ipynb
 test.ipynb
 error.txt
 error-ptb.txt
+biaffine_train.py
+encode_several_labels.ipynb
+ner2trees.py
+
