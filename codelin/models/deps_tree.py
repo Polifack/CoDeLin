@@ -272,6 +272,20 @@ class D_Tree:
                     return False
         return True
     
+    def is_planar(self):
+        '''
+        Returns a boolean indicating if the dependency tree
+        is planar (i.e. no edges are crossing). The main difference
+        between projective trees and planar trees is that in planar
+        trees the ROOT node is considered.
+        '''
+        arcs = self.get_arcs()
+        for (i,j) in arcs:
+            for (k,l) in arcs:
+                if (i,j) != (k,l) and min(i,j) < min(k,l) < max(i,j) < max(k,l):
+                    return False
+        return True
+    
     def shallow_equals(self, other):
         '''
         Returns true if the two trees are equal in the 
@@ -490,7 +504,7 @@ class D_Tree:
         return D_Tree(nodes)
     
     @staticmethod
-    def read_conllu_file(file_path, filter_projective = True):
+    def read_conllu_file(file_path, filter_projective = True, filter_planar = True):
         '''
         Read a conllu file and return a list of ConllTree objects.
         '''
@@ -503,7 +517,7 @@ class D_Tree:
         trees = []
         for x in data:
             t = D_Tree.from_string(x)
-            if not filter_projective or t.is_projective():
+            if not filter_projective or t.is_projective() and not filter_planar or t.is_planar():
                 trees.append(t)
         return trees    
 
@@ -707,7 +721,6 @@ class D_Tree:
             stack.append(node)
             ld, rd = tree.get_dependants(node.id)
             
-#            print(ld, rd)
             for dep in reversed(ld):
                 to_bht_rec(dep)
                 left  = stack.pop()
@@ -812,6 +825,7 @@ class D_Tree:
         idx_words = {value: key for key, value in word_idxs.items()}
 
         from_bht_rec(bht)
+        
         # sort nodes by id
         nodes = sorted(nodes, key=lambda x: x.id)
         return D_Tree(nodes)
