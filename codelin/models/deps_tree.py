@@ -1,5 +1,6 @@
 from codelin.utils.constants import D_ROOT_HEAD, D_NULLHEAD, D_ROOT_REL, D_POSROOT, D_EMPTYREL, D_2P_GREED, D_2P_PROP
 from codelin.models.const_tree import C_Tree
+import copy
 
 
 class D_Node:
@@ -27,7 +28,7 @@ class D_Node:
         # enhanced dependency graph
         self.deps = deps if deps else "_"       
         # miscelaneous data
-        self.misc = misc if misc else "_"       
+        self.misc = misc if misc else "_"
     
     def is_left_arc(self):
         return self.head > self.id
@@ -42,10 +43,12 @@ class D_Node:
             return [x for x in feats.split('|')]
         
     def feats_to_str(self):
-        if self.feats != [None]:
-            return '|'.join(self.feats)
+        if type(self.feats) is str:
+            return self.feats
+        elif self.feats == [None] or self.feats is None:
+            return "_"
         else:
-            return '_'
+            return '|'.join(self.feats)
         
 
     def check_cross(self, other):
@@ -65,7 +68,7 @@ class D_Node:
         return head_inside^id_inside
     
     def __repr__(self):
-        node_fields = self.__dict__
+        node_fields = copy.deepcopy(self.__dict__)
         node_fields['feats'] = self.feats_to_str()
         return '\t'.join(str(e) for e in list(node_fields.values()))+'\n'
 
@@ -269,9 +272,28 @@ class D_Tree:
                     return False
         return True
     
+    def shallow_equals(self, other):
+        '''
+        Returns true if the two trees are equal in the 
+        words, upos and head fields
+        '''
+        if len(self) != len(other):
+            print("trees have different length")
+            return False
+        
+        for i in range(len(self)):
+            if i == 0 :
+                # ignore root
+                continue
+
+            if not (self[i].form == other[i].form and self[i].relation == other[i].relation and self[i].head == other[i].head):
+                print("unmatch at",self[i], '\n', other[i])
+                return False
+        return True
+    
 # postprocessing
     def remove_dummy(self, return_new_tree=False):
-        if not self.nodes[0].form == D_POSROOT:
+        if not self.nodes[0].id == 0:
             return
         
         if not return_new_tree:
@@ -668,7 +690,7 @@ class D_Tree:
         return latex
     
     @staticmethod
-    def to_bht(tree):
+    def to_bht(tree, include_reltype=False):
         '''
         Converts a dependency tree into a binary head tree.
         We will consider a bht as a constituent tree.
@@ -685,16 +707,28 @@ class D_Tree:
             stack.append(node)
             ld, rd = tree.get_dependants(node.id)
             
-            for dep in ld:
+#            print(ld, rd)
+            for dep in reversed(ld):
                 to_bht_rec(dep)
-                left = stack.pop()
+                left  = stack.pop()
                 right = stack.pop()
                 
                 if type(left) is not C_Tree:
-                    left = C_Tree(str(left.id))
+                    if include_reltype:
+                        left = C_Tree(label=str(left.relation), 
+                                      children=[C_Tree(label=str(left.upos), 
+                                                       children=[C_Tree(str(left.form))])])
+                    else:
+                        left = C_Tree(label=str(left.upos), children=[C_Tree(str(left.form))])
+                
                 if type(right) is not C_Tree:
-                    right = C_Tree(str(right.id))
-
+                    if include_reltype:
+                        right = C_Tree(label=str(right.relation), 
+                                      children=[C_Tree(label=str(right.upos), 
+                                                       children=[C_Tree(str(right.form))])])
+                    else:
+                        right = C_Tree(label=str(right.upos), children=[C_Tree(str(right.form))])
+                
                 stack.append(C_Tree.make_node('R', left, right))
 
             for dep in rd:
@@ -703,13 +737,23 @@ class D_Tree:
                 right = stack.pop()
                 
                 if type(left) is not C_Tree:
-                    left = C_Tree(str(left.id))
+                    if include_reltype:
+                        left = C_Tree(label=str(left.relation), 
+                                      children=[C_Tree(label=str(left.upos), 
+                                                       children=[C_Tree(str(left.form))])])
+                    else:
+                        left = C_Tree(label=str(left.upos), children=[C_Tree(str(left.form))])
                 if type(right) is not C_Tree:
-                    right = C_Tree(str(right.id))
+                    if include_reltype:
+                        right = C_Tree(label=str(right.relation), 
+                                      children=[C_Tree(label=str(right.upos), 
+                                                       children=[C_Tree(str(right.form))])])
+                    else:
+                        right = C_Tree(label=str(right.upos), children=[C_Tree(str(right.form))])
 
-                stack.append(C_Tree.make_node('L', left, right))
+                stack.append(C_Tree.make_node('L', right, left))
 
-        tree_root = tree.get_root()
+        tree_root = tree[0]
         stack = []
         to_bht_rec(tree_root)
         
@@ -724,27 +768,49 @@ class D_Tree:
         def from_bht_rec(node):
             if node.is_terminal():
                 return node
+            if node.is_preterminal():
+                return node.children[0]
+            if node.children[0].is_preterminal():
+                return node.children[0].children[0]
             
             left  = from_bht_rec(node.children[0])
             right = from_bht_rec(node.children[1])
+            
             if node.label == 'L':
                 # L => head to the left and dependant to the right
-                node_head      = int(right.label) if type(right) is C_Tree else int(right.head)
-                node_dependant = int(left.label)  if type(left) is C_Tree else int(left.head)
-
-                n = D_Node(wid=node_dependant, form="-NONE-", head=node_head, deprel="-NONE-") 
+                node_head      = word_idxs[left]   if type(left) is C_Tree else int(left.head)
+                node_dependant = word_idxs[right]  if type(right) is C_Tree else int(right.head)
+                node_deprel    = word_deprels[node_dependant]
+                node_postag    = word_postags[node_dependant]
+                node_form = right.label if type(right) is C_Tree else str(idx_words[node_dependant])
+                n = D_Node(wid=node_dependant, upos=node_postag, form=node_form, head=node_head, deprel=node_deprel)
                 nodes.append(n)
             else:
                 # R => head to the right and dependant to the left
-                node_head      = int(right.label) if type(right) is C_Tree else int(right.head)
-                node_dependant = int(left.label)  if type(left) is C_Tree  else int(left.head)
-
-                n = D_Node(wid=node_dependant, form="-NONE-", head=node_head, deprel="-NONE-")
+                node_head      = word_idxs[right] if type(right) is C_Tree else int(right.head)
+                node_dependant = word_idxs[left]  if type(left) is C_Tree else int(left.head)
+                node_deprel    = word_deprels[node_dependant]
+                node_postag    = word_postags[node_dependant]
+                node_form = left.label if type(left) is C_Tree else str(idx_words[node_dependant])
+                n = D_Node(wid=node_dependant, upos=node_postag, form=node_form, head=node_head, deprel=node_deprel)
                 nodes.append(n)
                 
             return n
         
         nodes=[]
+        
+        # build a dictionary of the info stored in the unary chains
+        word_idxs = {}
+        word_deprels = {}
+        word_postags = {}
+        i = 0
+        for word in bht.get_terminals():
+            word_idxs[word] = i
+            word_postags[i] = word.parent.label
+            word_deprels[i] = word.parent.parent.label
+            i+=1
+        idx_words = {value: key for key, value in word_idxs.items()}
+
         from_bht_rec(bht)
         # sort nodes by id
         nodes = sorted(nodes, key=lambda x: x.id)
