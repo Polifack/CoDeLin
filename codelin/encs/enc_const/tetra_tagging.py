@@ -153,6 +153,11 @@ def decode_inorder(l_in, ujoiner):
                 else:
                     stack[-1] = combine(stack[-1], tree)
 
+    while(len(stack)>1):
+        tree = stack.pop()
+        tree = combine(stack[-1], tree)
+        stack[-1] = tree
+
     final_tree = stack.pop()
     return final_tree
 

@@ -34,6 +34,8 @@ def encode_dependencies(in_path, out_path, encoding_type, separator, multitask, 
             encoder = D_Brk4BitsEncoding(separator) 
     elif encoding_type == D_BRK_7B_ENCODING:
             encoder = D_Brk7BitsEncoding(separator)
+    elif encoding_type == D_6TG_ENCODING:
+            encoder = D_HexatagEncoding(separator)
     else:
         raise Exception("Unknown encoding type")
     
@@ -94,6 +96,8 @@ def decode_dependencies(in_path, out_path, encoding_type, separator, multitask, 
         decoder = D_Brk4BitsEncoding(separator) 
     elif encoding_type == D_BRK_7B_ENCODING:
         decoder = D_Brk7BitsEncoding(separator)
+    elif encoding_type == D_6TG_ENCODING:
+        decoder = D_HexatagEncoding(separator)
     else:
         raise Exception("Unknown encoding type")
 
@@ -112,8 +116,8 @@ def decode_dependencies(in_path, out_path, encoding_type, separator, multitask, 
     for line in f_in:
         if line == "\n":
             tree_string = tree_string.rstrip()
-            current_tree = LinearizedTree.from_string(tree_string, mode="DEPS", separator=separator, separate_columns=multitask)
-
+            mode = "DEPS" if encoding_type!=D_6TG_ENCODING else "CONST"
+            current_tree = LinearizedTree.from_string(tree_string, mode=mode, separator=separator, separate_columns=multitask)
             if postags:
                 c_tags = nlp(current_tree.get_sentence())
                 current_tree.set_postags([word.pos for word in c_tags])

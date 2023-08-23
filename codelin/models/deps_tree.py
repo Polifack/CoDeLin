@@ -801,19 +801,35 @@ class D_Tree:
         
         # build a dictionary of the info stored in the unary chains
         word_idxs = {}
+        word_dict = {}
         word_deprels = {}
         word_postags = {}
         i = 0
         for word in bht.get_terminals():
             word_idxs[word] = i
-            word_postags[i] = word.parent.label
-            word_deprels[i] = word.parent.parent.label
+            word_dict[i] = word
+            word_postags[i] = word.parent.label if word.parent is not None else "-NONE-"
+            word_deprels[i] = word.parent.parent.label if (word.parent is not None and word.parent.parent is not None) else "-NONE-"
             i+=1
         idx_words = {value: key for key, value in word_idxs.items()}
 
         from_bht_rec(bht)
+
         # sort nodes by id
         nodes = sorted(nodes, key=lambda x: x.id)
+
+        # fix for non-found nodes
+        for i, n in enumerate(nodes):
+            if n.id != i:
+                # new nodes will hang from root
+                new_node = D_Node.empty_node()
+                new_node.form = str(idx_words[i])
+                new_node.upos = str(word_postags[i])
+                new_node.id = i
+                new_node.head = 0
+                new_node.relation = str(word_deprels[i])
+                nodes.insert(i, new_node)
+
         return D_Tree(nodes)
         
 

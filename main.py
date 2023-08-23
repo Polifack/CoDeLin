@@ -8,7 +8,7 @@ import time
 if __name__=="__main__":
 
     encodings = [C_ABSOLUTE_ENCODING, C_RELATIVE_ENCODING, C_DYNAMIC_ENCODING, C_TETRA_ENCODING, C_JUXTAPOSED_ENCODING, C_GAPS_ENCODING,
-                D_ABSOLUTE_ENCODING, D_RELATIVE_ENCODING, D_POS_ENCODING, D_BRACKET_ENCODING, D_BRACKET_ENCODING_2P, D_BRK_4B_ENCODING, D_BRK_7B_ENCODING]
+                D_ABSOLUTE_ENCODING, D_RELATIVE_ENCODING, D_POS_ENCODING, D_BRACKET_ENCODING, D_BRACKET_ENCODING_2P, D_BRK_4B_ENCODING, D_BRK_7B_ENCODING, D_6TG_ENCODING]
 
     parser = argparse.ArgumentParser(description='Constituent and Dependencies Linearization System')
     parser.add_argument('formalism', metavar='formalism', type=str, choices=[F_CONSTITUENT, F_DEPENDENCY],

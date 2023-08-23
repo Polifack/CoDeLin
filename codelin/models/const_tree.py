@@ -488,7 +488,7 @@ class C_Tree:
             if conflict_strat == C_STRAT_LAST:
                 self.label = labels[len(labels)-1]
 
-    def postprocess_tree(self, conflict_strat, clean_nulls=True, default_root="S"):
+    def postprocess_tree(self, conflict_strat=C_STRAT_MAX, clean_nulls=True, default_root="S"):
         '''
         Returns a C_Tree object with conflicts in node labels removed
         and with NULL nodes cleaned.

@@ -149,7 +149,7 @@ class LinearizedTree:
         return temp_tree
 
     @staticmethod
-    def from_string(content, mode, separator="_", unary_joiner="|", separate_columns=False, n_features=0):
+    def from_string(content, mode, separator="[_]", unary_joiner="[+]", separate_columns=False, n_features=0):
         '''
         Reads a linearized tree from a string shaped as
         -BOS- \t -BOS- \t (...) \t -BOS- \n
@@ -164,8 +164,6 @@ class LinearizedTree:
         
         linearized_tree = None
         for line in content.split("\n"):
-            if line=="\n":
-                print("Empty line")
             # skip empty line
             if len(line) <= 1:
                 continue
