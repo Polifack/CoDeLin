@@ -7,7 +7,7 @@ from codelin.utils.constants import *
 from codelin.models.deps_tree import D_Tree
 
 # Encoding
-def encode_dependencies(in_path, out_path, encoding_type, separator, multitask, displacement, planar_alg, root_enc, features):
+def encode_dependencies(in_path, out_path, encoding_type, separator, multitask, displacement, planar_alg, root_enc, split_bits, features):
     '''
     Encodes the selected file according to the specified parameters:
     :param in_path: Path of the file to be encoded
@@ -31,9 +31,9 @@ def encode_dependencies(in_path, out_path, encoding_type, separator, multitask, 
     elif encoding_type == D_BRACKET_ENCODING_2P:
             encoder = D_Brk2PBasedEncoding(separator, displacement, planar_alg)
     elif encoding_type == D_BRK_4B_ENCODING:
-            encoder = D_Brk4BitsEncoding(separator) 
+            encoder = D_Brk4BitsEncoding(separator, split_bits) 
     elif encoding_type == D_BRK_7B_ENCODING:
-            encoder = D_Brk7BitsEncoding(separator)
+            encoder = D_Brk7BitsEncoding(separator, split_bits)
     elif encoding_type == D_6TG_ENCODING:
             encoder = D_HexatagEncoding(separator)
     else:
@@ -69,6 +69,43 @@ def encode_dependencies(in_path, out_path, encoding_type, separator, multitask, 
     return tree_counter, label_counter, len(label_set)
 
 # Decoding
+
+# TODO: Predict from --raw-text
+
+# for file in os.listdir(corpus_split_path):
+#     if file.endswith(".labels"):
+#         out_file = corpus_split_path + "output_" + file[:-7] + ".conllu"
+#         linearized_trees = []
+
+#         current_tree = []
+#         current_tree.append("-BOS-\t_\t_\t_\n")
+#         current_tree.append("-ROOT-\t_\t_\t_\n")
+        
+#         for line in open(corpus_split_path+file, "r"):
+#             if line == "\n":
+#                 current_tree.append("-EOS-\t_\t_\t_\n")
+#                 tree_string = "\n".join(current_tree).rstrip()
+#                 lt = LinearizedTree.from_string(tree_string, mode="DEPS", separate_columns=True)
+#                 linearized_trees.append(lt)
+
+#                 current_tree = []
+#                 current_tree.append("-BOS-\t_\t_\t_\n")
+#                 current_tree.append("-ROOT-\t_\t_\t_\n")
+#                 continue
+                
+#             if line == "" or line == " ":
+#                 continue
+        
+#             line = line.split("\t")
+#             line = line[1]+'\t'+"_\t"+line[2]+'\t'+line[3]
+#             current_tree.append(line)
+        
+#         with open(out_file, "w") as f:
+#             for tree in linearized_trees:
+#                 print(tree)
+#                 decoded_tree = decoder.decode(tree)
+#                 decoded_tree.postprocess_tree("strat_gethead", False)
+#                 f.write(str(decoded_tree)+"\n")
 
 def decode_dependencies(in_path, out_path, encoding_type, separator, multitask, displacement, multiroot, root_search, root_enc, postags, lang):
     '''

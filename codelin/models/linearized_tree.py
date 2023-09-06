@@ -131,7 +131,6 @@ class LinearizedTree:
                     output_line += str(l).split(l.separator)
             else:
                 output_line.append(str(l))
-            
             tree_string+=u"\t".join(output_line)+u"\n"
         
         if add_bos_eos:

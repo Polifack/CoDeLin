@@ -6,8 +6,9 @@ from codelin.models.linearized_tree import LinearizedTree
 
 class D_Brk4BitsEncoding(ADEncoding):
     
-    def __init__(self, separator:str = "_"):
+    def __init__(self, separator:str = "_", split_bits=False):
         super().__init__(separator)
+        self.split_bits = split_bits
 
     def __str__(self):
         return "Dependency Bracketing 4-Bits Encoding"
@@ -41,6 +42,15 @@ class D_Brk4BitsEncoding(ADEncoding):
         for node in dep_tree:
             li = node.relation
             xi = labels_brk[node.id]
+            
+            if self.split_bits:
+                xi_base = ["_","_","_","_"]
+                xi_base[0] = "1" if ">"  in xi else "0"     # node has incoming arc from right
+                xi_base[1] = "1" if "*"  in xi else "0"     # node is a rightmost or leftmost
+                xi_base[2] = "1" if "\\" in xi else "0"     # node has outgoing left arcs
+                xi_base[3] = "1" if "/"  in xi else "0"     # node has outgoing right arcs
+                
+                xi = self.separator.join(xi_base)
 
             current = D_Label(xi, li, self.separator)
             encoded_labels.append(current)

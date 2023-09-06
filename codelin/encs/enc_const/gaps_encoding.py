@@ -46,7 +46,10 @@ class C_GapsEncoding(ACEncoding):
         
         nodes = []
         C_Tree.inorder(constituent_tree, lambda x: nodes.append(x))
+        
         postag = None
+        unary_chain = None
+        features = None
 
         for node in nodes:
             if node.is_preterminal():

@@ -6,9 +6,10 @@ from codelin.models.linearized_tree import LinearizedTree
 
 class D_Brk7BitsEncoding(ADEncoding):
     
-    def __init__(self, separator:str = "_", planar_alg:str = D_2P_GREED):
+    def __init__(self, separator:str = "_", planar_alg:str = D_2P_GREED, split_bits=False):
         super().__init__(separator)
         self.planar_alg = planar_alg
+        self.split_bits = split_bits
 
     def __str__(self):
         return "Dependency Bracketing 7-Bits Encoding"
@@ -31,7 +32,6 @@ class D_Brk7BitsEncoding(ADEncoding):
                     if plane.is_leftmost(node):
                         labels_brk[node.id] += '*'
                     next_brk = brk_chars[1] if brk_chars[1] not in labels_brk[node.head] else ""
-                    # print("updating head", node.form, "with", next_brk, "from", brk_chars[1], "and", labels_brk[node.head], "to", labels_brk[node.head] + next_brk)
                     labels_brk[node.head] += next_brk
                 
                 else:
@@ -39,7 +39,6 @@ class D_Brk7BitsEncoding(ADEncoding):
                     if plane.is_rightmost(node):
                         labels_brk[node.id] += '*'
                     next_brk = brk_chars[3] if brk_chars[3] not in labels_brk[node.head] else ""
-                    # print("updating head", node.form, "with", next_brk, "from", brk_chars[3], "and", labels_brk[node.head], "to", labels_brk[node.head] + next_brk)
                     labels_brk[node.head] += next_brk
 
             return labels_brk
@@ -59,6 +58,12 @@ class D_Brk7BitsEncoding(ADEncoding):
         for node in dep_tree:
             li = node.relation
             xi = labels_brk[node.id]
+
+            if self.split_bits:
+                xi_base = ["_","_","_","_", "_", "_", "_"]
+
+                xi = self.separator.join(xi_base)
+
             if xi == "":
                 xi = D_NONE_LABEL
 
