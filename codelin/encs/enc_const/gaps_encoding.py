@@ -107,6 +107,11 @@ class C_GapsEncoding(ACEncoding):
 
             node = C_Tree(last_nt, children=[node, C_Tree(C_NONE_LABEL)])
             nodes_stack.append(node)
+        
+        while len(nodes_stack) > 0:
+            # merge node with stack top
+            stack_top = nodes_stack.pop()
+            node = merge_if_free(C_ROOT_LABEL, stack_top, node)
 
         final_tree = node
         final_tree = C_Tree.restore_from_binary(final_tree, self.binary_marker)

@@ -391,6 +391,11 @@ class C_Tree:
         
         (S (NP (NNP John)) (VP (VBD died))) => (NP (NNP John))
         '''
+        if len(self.children)>1:
+            # in this situation we cant inherit
+            return
+            
+
         self.label = self.children[0].label
         self.children = self.children[0].children
 
@@ -460,7 +465,7 @@ class C_Tree:
         label -NONE- are removed. The removed nones will have their
         children added to parent
         '''
-        if self.label != C_NONE_LABEL:
+        if self.label != C_NONE_LABEL or self.label == "":
             t = C_Tree(self.label, [])
             new_childs = [c.prune_nones() for c in self.children]
             t.add_child(new_childs)

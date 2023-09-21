@@ -105,7 +105,7 @@ class C_NaiveRelativeEncoding(ACEncoding):
         for word, postag, feats, label in linearized_tree.iterrows():
             # First label must have a positive n_commons value
             if is_first and label.n_commons < 0:
-                label.n_commons = 0
+                label.n_commons = 1
             
             # Descend through the tree until reach the level indicated by last_common
             current_level = tree
@@ -131,7 +131,7 @@ class C_NaiveRelativeEncoding(ACEncoding):
                 
                 for level_index in range(descend_levels):
                     current_level = current_level.r_child() if current_level.r_child() is not None else current_level
-                
+
                 for i in range(len(label.last_common)-1):
                     if (current_level.label==C_NONE_LABEL):
                         current_level.label=label.last_common[i]
@@ -140,7 +140,12 @@ class C_NaiveRelativeEncoding(ACEncoding):
 
                     if len(current_level.children)>0:
                         current_level = current_level.r_child() if current_level.r_child() is not None else current_level
-
+                
+                # If somehow we reach a word, go back to the parent
+                # if current_level.is_terminal() and current_level.label != C_NONE_LABEL and current_level.label != C_ROOT_LABEL:
+                #     print(current_level.label)
+                #     current_level = current_level.parent
+                
                 # If we reach a POS tag, set it as child of the current chain           
                 if current_level.is_preterminal():
                     temp_current_level = copy.deepcopy(current_level)
@@ -159,7 +164,7 @@ class C_NaiveRelativeEncoding(ACEncoding):
             old_level=current_level
             
             last_label=label
-        
+
         tree.inherit_tree()
         if self.reverse:
             tree.reverse_tree()

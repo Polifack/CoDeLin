@@ -186,8 +186,8 @@ class C_JuxtaposedEncoding(ACEncoding):
             target_node = label.n_commons
             action  = label.last_common.split("[;]")
             action_name = None
-            parent_label = None
-            new_label = None
+            parent_label = C_NONE_LABEL
+            new_label = C_NONE_LABEL
             
             for element in action:
                 n, v = element.split("=") if "=" in element else (element, None)
@@ -210,15 +210,15 @@ class C_JuxtaposedEncoding(ACEncoding):
 
             # build terminal
             term_tree = C_Tree(postag,[C_Tree(word)])
-            if label.unary_chain is not None:
+            if label.unary_chain is not None and label.unary_chain != "":
                 for uc in reversed(label.unary_chain.split(self.unary_joiner)):
                     term_tree = C_Tree(uc, [term_tree])
             
             # take action
             target_level = action.target_node
             
-            # descend
-            while target_level > 0 and len(t.children) > 0:
+            # descend until target level OR when we reach a preterminal node (postag)
+            while target_level > 0 and len(t.children) > 0 and not t.children[-1].is_preterminal():
                 t = t.children[-1]
                 target_level -= 1
             
@@ -230,6 +230,7 @@ class C_JuxtaposedEncoding(ACEncoding):
                 t = juxtapose(term_tree, t, action.parent_label, action.new_label)
                 
         final_tree = st.children[0]
+        
         if self.binary:
             final_tree = C_Tree.restore_from_binary(final_tree, self.binary_marker)
         final_tree = final_tree.uncollapse_unary(self.unary_joiner)
