@@ -31,9 +31,9 @@ def encode_dependencies(in_path, out_path, encoding_type, separator, multitask, 
     elif encoding_type == D_BRACKET_ENCODING_2P:
             encoder = D_Brk2PBasedEncoding(separator, displacement, planar_alg)
     elif encoding_type == D_BRK_4B_ENCODING:
-            encoder = D_Brk4BitsEncoding(separator) 
+            encoder = D_Brk4BitsEncoding(separator, split_bits) 
     elif encoding_type == D_BRK_7B_ENCODING:
-            encoder = D_Brk7BitsEncoding(separator)
+            encoder = D_Brk7BitsEncoding(separator, split_bits)
     elif encoding_type == D_6TG_ENCODING:
             encoder = D_HexatagEncoding(separator)
     else:

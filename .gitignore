@@ -29,9 +29,11 @@ train_models.ipynb
 /src/models/__pycache__
 *.pyc
 test.ipynb
+playground*
 error.txt
 error-ptb.txt
 biaffine_train.py
 encode_several_labels.ipynb
 ner2trees.py
 
+TODO.md
