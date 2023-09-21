@@ -19,11 +19,10 @@ class D_HexatagEncoding(ADEncoding):
         # the reltype encoding will be dealt by the unary chain encoding mechanism
         bht_tree = D_Tree.to_bht(dep_tree, include_reltype=True)
         tagger = C_Tetratag(separator=self.separator, unary_joiner="[+]", mode="inorder", binary_marker="[b]")
-        lin_tree = tagger.encode(bht_tree)        
+        lin_tree = tagger.encode(bht_tree)
         return lin_tree
         
     def decode(self, lin_tree):
-        print(lin_tree)
         tagger = C_Tetratag(separator=self.separator, unary_joiner="[+]", mode="inorder", binary_marker="[b]")
         bht_tree = tagger.decode(lin_tree)
         dectree = D_Tree.from_bht(bht_tree)
@@ -36,7 +35,5 @@ class D_HexatagEncoding(ADEncoding):
         if dectree.nodes[0].id == 0:
             for node in dectree.nodes:
                 node.id += 1
-
-        print(dectree)
 
         return dectree

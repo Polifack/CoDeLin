@@ -87,6 +87,9 @@ if __name__=="__main__":
     
     parser.add_argument('--hfr', required=False, action='store_true', default=False,
                         help = 'Hang from root strategy for dependency encoding')
+    
+    parser.add_argument('--sep_bits', required=False, type=int, default=None,
+                        help = 'Separate bits in the label at the specified index (only for dependency encoding)')
 
     args = parser.parse_args()
 
@@ -112,13 +115,13 @@ if __name__=="__main__":
         
         if args.operation == OP_ENC:
             n_trees, n_labels, n_diff_labels = encode_dependencies(args.input, args.output, args.enc, args.sep, args.multitask,
-                                                                   args.disp, args.planar, args.hfr, args.feats)
+                                                                   args.disp, args.planar, args.hfr, args.feats, args.sep_bits)
         
         elif args.operation == OP_DEC:
             n_diff_labels = None
             n_trees, n_labels = decode_dependencies(args.input, args.output, args.enc, args.sep, args.multitask,
                                                     args.disp, args.rsingle, args.rsearch, 
-                                                    args.hfr, args.postags, args.lang)
+                                                    args.hfr, args.postags, args.lang, args.sep_bits)
 
 
 

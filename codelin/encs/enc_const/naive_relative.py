@@ -4,7 +4,10 @@ from codelin.models.const_label import C_Label
 from codelin.models.linearized_tree import LinearizedTree
 from codelin.models.const_tree import C_Tree
 
+from nltk.tree import Tree
+
 import re
+import copy
 
 class C_NaiveRelativeEncoding(ACEncoding):
     def __init__(self, separator, unary_joiner, reverse, binary, binary_direction=None, binary_marker=None):
@@ -106,12 +109,10 @@ class C_NaiveRelativeEncoding(ACEncoding):
             
             # Descend through the tree until reach the level indicated by last_common
             current_level = tree
-
             for level_index in range(label.n_commons):
                 if (current_level.is_terminal()) or (level_index >= old_n_commons):
                     current_level.add_child(C_Tree(C_NONE_LABEL, []))
                 current_level = current_level.r_child()
-
             # Split the Last Common field of the Label in case it has a Unary Chain Collapsed
             label.last_common = label.last_common.split(self.unary_joiner)
 
@@ -129,7 +130,7 @@ class C_NaiveRelativeEncoding(ACEncoding):
                 descend_levels = max(label.n_commons - (len(label.last_common)) + 1, 1)
                 
                 for level_index in range(descend_levels):
-                    current_level = current_level.r_child()
+                    current_level = current_level.r_child() if current_level.r_child() is not None else current_level
                 
                 for i in range(len(label.last_common)-1):
                     if (current_level.label==C_NONE_LABEL):
@@ -138,11 +139,11 @@ class C_NaiveRelativeEncoding(ACEncoding):
                         current_level.label=current_level.label+C_CONFLICT_SEPARATOR+label.last_common[i]
 
                     if len(current_level.children)>0:
-                        current_level = current_level.r_child()
+                        current_level = current_level.r_child() if current_level.r_child() is not None else current_level
 
-                # If we reach a POS tag, set it as child of the current chain
+                # If we reach a POS tag, set it as child of the current chain           
                 if current_level.is_preterminal():
-                    temp_current_level =current_level
+                    temp_current_level = copy.deepcopy(current_level)
                     current_level.label = label.last_common[i+1]
                     current_level.children = [temp_current_level]
                 else:
@@ -164,5 +165,4 @@ class C_NaiveRelativeEncoding(ACEncoding):
             tree.reverse_tree()
         if self.binary:
             tree = C_Tree.restore_from_binary(tree, self.binary_marker)
-        
         return tree

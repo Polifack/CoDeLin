@@ -106,12 +106,12 @@ def decode_constituent(in_path, out_path, encoding_type, reverse, separator,  mu
     for line in f_in:
         if line == "\n":
             tree_string = tree_string.rstrip()
-            current_tree = LinearizedTree.from_string(tree_string, mode="CONST", separator=separator, unary_joiner=unary_joiner)
+            current_tree = LinearizedTree.from_string(tree_string, mode="CONST", separator=separator, unary_joiner=unary_joiner, separate_columns=multitask)
             
             if postags:
                 c_tags = nlp(current_tree.get_sentence())
                 current_tree.set_postags([word.pos for word in c_tags])
-
+                
             decoded_tree = decoder.decode(current_tree)
             decoded_tree = decoded_tree.postprocess_tree(conflicts, nulls)
 

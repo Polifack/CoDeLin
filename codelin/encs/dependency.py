@@ -7,7 +7,7 @@ from codelin.utils.constants import *
 from codelin.models.deps_tree import D_Tree
 
 # Encoding
-def encode_dependencies(in_path, out_path, encoding_type, separator, multitask, displacement, planar_alg, root_enc, features):
+def encode_dependencies(in_path, out_path, encoding_type, separator, multitask, displacement, planar_alg, root_enc, features, sep_bit):
     '''
     Encodes the selected file according to the specified parameters:
     :param in_path: Path of the file to be encoded
@@ -56,7 +56,13 @@ def encode_dependencies(in_path, out_path, encoding_type, separator, multitask, 
     
     for t in trees:
         # encode labels
-        linearized_tree = encoder.encode(t)        
+        linearized_tree = encoder.encode(t)
+
+        if sep_bit:
+            for w, p, af, l in linearized_tree.iterrows():
+                xi = l.separate_bits(sep_bit)
+                l.xi = separator.join(xi)
+
         file_out.write(linearized_tree.to_string(f_idx_dict, separate_columns=multitask))
         file_out.write("\n")
         
@@ -69,8 +75,7 @@ def encode_dependencies(in_path, out_path, encoding_type, separator, multitask, 
     return tree_counter, label_counter, len(label_set)
 
 # Decoding
-
-def decode_dependencies(in_path, out_path, encoding_type, separator, multitask, displacement, multiroot, root_search, root_enc, postags, lang):
+def decode_dependencies(in_path, out_path, encoding_type, separator, multitask, displacement, multiroot, root_search, root_enc, postags, lang, sep_bit):
     '''
     Decodes the selected file according to the specified parameters:
     :param in_path: Path of the file to be encoded

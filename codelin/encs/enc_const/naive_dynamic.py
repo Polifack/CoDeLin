@@ -5,6 +5,7 @@ from codelin.models.linearized_tree import LinearizedTree
 from codelin.models.const_tree import C_Tree
 
 import re
+import copy
 
 class C_NaiveDynamicEncoding(ACEncoding):
     def __init__(self, separator, unary_joiner, reverse, binary, binary_direction=None, binary_marker=None):
@@ -122,28 +123,27 @@ class C_NaiveDynamicEncoding(ACEncoding):
             if len(label.last_common)==1:
                 # If current level has no label yet, put the label
                 # If current level has label but different than this one, set it as a conflict
-                if (current_level.label==C_NONE_LABEL):
+                if current_level is not None and current_level.label == C_NONE_LABEL:
                     current_level.label = label.last_common[0].rstrip()
                 else:
                     current_level.label = current_level.label + C_CONFLICT_SEPARATOR + label.last_common[0]
             else:
                 current_level = tree
-                
                 # Descend to the beginning of the Unary Chain and fill it
                 descend_levels = max(label.n_commons - (len(label.last_common)) + 1, 1)
                 for level_index in range(descend_levels):
-                    current_level = current_level.r_child()
+                    current_level = current_level.r_child() if current_level.r_child() is not None else current_level
                 
                 for i in range(len(label.last_common)-1):
-                    if (current_level.label==C_NONE_LABEL):
+                    if current_level is not None and current_level.label == C_NONE_LABEL:
                         current_level.label=label.last_common[i]
                     else:
                         current_level.label=current_level.label+C_CONFLICT_SEPARATOR+label.last_common[i]
-                    current_level = current_level.r_child()
+                    current_level = current_level.r_child() if current_level.r_child() is not None else current_level
 
                 # If we reach a POS tag, set it as child of the current chain
                 if current_level.is_preterminal():
-                    temp_current_level = current_level
+                    temp_current_level = copy.deepcopy(current_level)
                     current_level.label = label.last_common[i+1]
                     current_level.children = [temp_current_level]
                 else:

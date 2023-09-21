@@ -190,7 +190,7 @@ class C_JuxtaposedEncoding(ACEncoding):
             new_label = None
             
             for element in action:
-                n, v = element.split("=")
+                n, v = element.split("=") if "=" in element else (element, None)
                 if n == "an":
                     action_name = v
                 elif n == "pl":
@@ -202,7 +202,8 @@ class C_JuxtaposedEncoding(ACEncoding):
             if is_first:
                 is_first = False
                 if action_name != "attach":
-                    raise Exception("First action must be an attach action")
+                    #raise Exception("First action must be an attach action")
+                    action_name = "attach"
                 
             
             action = Action(name=action_name, target_node=target_node, parent_label=parent_label, new_label=new_label)

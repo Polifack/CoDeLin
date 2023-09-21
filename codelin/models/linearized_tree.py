@@ -131,7 +131,6 @@ class LinearizedTree:
                     output_line += str(l).split(l.separator)
             else:
                 output_line.append(str(l))
-            
             tree_string+=u"\t".join(output_line)+u"\n"
         
         if add_bos_eos:
@@ -149,7 +148,7 @@ class LinearizedTree:
         return temp_tree
 
     @staticmethod
-    def from_string(content, mode, separator="[_]", unary_joiner="[+]", separate_columns=False, n_features=0):
+    def from_string(content, mode, separator="[_]", unary_joiner="[+]", separate_columns=False, n_features=0, sep_bits=-1):
         '''
         Reads a linearized tree from a string shaped as
         -BOS- \t -BOS- \t (...) \t -BOS- \n
@@ -185,24 +184,31 @@ class LinearizedTree:
                 continue
             
             if separate_columns:
+                # fix for not found unary chains
+                if len(line_columns) == 4:
+                    line_columns.append("")
+                
                 if mode=="CONST":
-                    label_cols=3
+                    label_cols = 3
                 elif mode=="DEPS":
-                    label_cols=2
+                    label_cols = 2
 
                 if len(line_columns) == 1+label_cols:
                     word, *label = line_columns
                     postag = C_NO_POSTAG_LABEL
                     feats = "_"
                     label = separator.join(label)
+                
                 elif len(line_columns) == 2+label_cols:
                     word, postag, *label = line_columns
                     feats = "_"
                     label = separator.join(label)
+                
                 else:
                     label = line_columns[-label_cols:]
                     word, postag, *feats = line_columns[:-label_cols]
-                    label = separator.join(label)    
+                    label = separator.join(label)
+
             else:
                 if len(line_columns) == 2:
                     word, label = line_columns
@@ -220,9 +226,17 @@ class LinearizedTree:
 
             words.append(word)
             postags.append(postag)
+
             if mode == "CONST":
                 labels.append(C_Label.from_string(label, separator, unary_joiner))
             elif mode == "DEPS":
+                # deps labels will have 2 fields (head, rel)
+                if sep_bits>0:
+                    label_parts = label.split(separator)
+                    deprel = label_parts[-1]
+                    bits = "".join(label_parts[:-1])
+                    label = separator.join(bits, deprel)
+
                 labels.append(D_Label.from_string(label, separator))
             else:
                 raise ValueError("[!] Unknown mode: %s" % mode)

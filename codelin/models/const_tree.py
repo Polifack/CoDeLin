@@ -74,7 +74,7 @@ class C_Tree:
         '''
         Function that returns the rightmost child of a tree
         '''
-        return self.children[len(self.children)-1]
+        return self.children[len(self.children)-1] if len(self.children)>0 else None
     
     def l_child(self):
         '''
