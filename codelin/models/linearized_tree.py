@@ -24,7 +24,7 @@ class LinearizedTree:
 
         
     def get_sentence(self):
-        return "".join(self.words)
+        return " ".join(self.words)
 
     def get_word(self, index):
         return self.words[index]
@@ -44,6 +44,9 @@ class LinearizedTree:
             self.postags = self.postags[1:]
             self.additional_feats = self.additional_feats[1:]
             self.labels = self.labels[1:]
+
+    def set_postags(self, postags):
+        print(postags)
 
     def reverse_tree(self, ignore_bos_eos=True):
         '''
@@ -185,14 +188,13 @@ class LinearizedTree:
             
             if separate_columns:
                 # fix for not found unary chains
-                if len(line_columns) == 4:
-                    line_columns.append("")
+                if len(line_columns) == 4 and mode == "CONST":
+                    line_columns.append(C_NONE_LABEL)
                 
                 if mode=="CONST":
                     label_cols = 3
                 elif mode=="DEPS":
                     label_cols = 2
-
                 if len(line_columns) == 1+label_cols:
                     word, *label = line_columns
                     postag = C_NO_POSTAG_LABEL
@@ -236,11 +238,10 @@ class LinearizedTree:
                     deprel = label_parts[-1]
                     bits = "".join(label_parts[:-1])
                     label = separator.join(bits, deprel)
-
+                
                 labels.append(D_Label.from_string(label, separator))
             else:
                 raise ValueError("[!] Unknown mode: %s" % mode)
             
             additional_feats.append(feats)
-    
         return linearized_tree

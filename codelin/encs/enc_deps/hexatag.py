@@ -27,6 +27,8 @@ class D_HexatagEncoding(ADEncoding):
         bht_tree = tagger.decode(lin_tree)
         dectree = D_Tree.from_bht(bht_tree)
 
+        #print(dectree)
+
         # remove first node if id = 0 and form = '-ROOT-'
         if dectree.nodes[0].id == 0 and dectree.nodes[0].form == "-ROOT-":
             dectree.nodes.pop(0)

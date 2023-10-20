@@ -256,7 +256,7 @@ class D_Tree:
         head_dependants.sort()
         return head_dependants[-1] == node.id
         
-    def is_projective(self):
+    def is_projective(self, filter_root=True):
         '''
         Returns a boolean indicating if the dependency tree
         is projective (i.e. no edges are crossing). The main difference
@@ -265,7 +265,8 @@ class D_Tree:
         '''
         arcs = self.get_arcs()
         # remove arc with head 0
-        arcs = list(filter((lambda x :x[1]!=0), arcs))
+        if filter_root:
+            arcs = list(filter((lambda x :x[1]!=0), arcs))
         for (i,j) in arcs:
             for (k,l) in arcs:
                 if (i,j) != (k,l) and min(i,j) < min(k,l) < max(i,j) < max(k,l):
@@ -490,7 +491,7 @@ class D_Tree:
         return D_Tree(nodes)
     
     @staticmethod
-    def read_conllu_file(file_path, filter_projective = True):
+    def read_conllu_file(file_path, filter_projective = False, remove_root = False, filter_root_projective=True):
         '''
         Read a conllu file and return a list of ConllTree objects.
         '''
@@ -503,17 +504,22 @@ class D_Tree:
         trees = []
         for x in data:
             t = D_Tree.from_string(x)
-            if not filter_projective or t.is_projective():
+            if not filter_projective or t.is_projective(filter_root_projective):
+                if remove_root:
+                    t.remove_dummy()
                 trees.append(t)
         return trees    
 
     @staticmethod
-    def write_conllu_file(file_path, trees):
+    def write_conllu_file(file_path, trees, write_sentence=False):
         '''
         Write a list of ConllTree objects to a conllu file.
         '''
         with open(file_path, 'w') as f:
-            f.write("".join(str(e) for e in trees))
+            for t in trees:
+                if write_sentence:
+                    f.write("# text = "+t.get_sentence()+"\n")
+                f.write("".join(str(e) for e in t)+"\n")
 
     @staticmethod
     def write_conllu(file_io, tree):
@@ -698,7 +704,6 @@ class D_Tree:
         BHTs are a special kind of constituent trees where
         the internal nodes are labeled with an 'L' or 'R' depending
         of the position of the head in the dependency tree
-        (https://arxiv.org/pdf/2306.05477.pdf)
 
         The tree is built using a stack and push/make_node operations.
         We start from the root and performa a DFS traversal.
@@ -706,8 +711,6 @@ class D_Tree:
         def to_bht_rec(node):
             stack.append(node)
             ld, rd = tree.get_dependants(node.id)
-            
-#            print(ld, rd)
             for dep in reversed(ld):
                 to_bht_rec(dep)
                 left  = stack.pop()
@@ -729,8 +732,9 @@ class D_Tree:
                     else:
                         right = C_Tree(label=str(right.upos), children=[C_Tree(str(right.form))])
                 
-                stack.append(C_Tree.make_node('R', left, right))
-
+                new_node = C_Tree.make_node('R', left, right)
+                stack.append(new_node)
+            
             for dep in rd:
                 to_bht_rec(dep)
                 left = stack.pop()
@@ -751,12 +755,12 @@ class D_Tree:
                     else:
                         right = C_Tree(label=str(right.upos), children=[C_Tree(str(right.form))])
 
-                stack.append(C_Tree.make_node('L', right, left))
+                new_node = C_Tree.make_node('L', right, left)
+                stack.append(new_node)
 
         tree_root = tree[0]
         stack = []
         to_bht_rec(tree_root)
-        
         return stack.pop()
 
     @staticmethod
@@ -774,7 +778,10 @@ class D_Tree:
                 return node.children[0].children[0]
             
             left  = from_bht_rec(node.children[0])
-            right = from_bht_rec(node.children[1])
+            if len(node.children) >= 2:
+                right = from_bht_rec(node.children[1])
+            else:
+                right = D_Node.empty_node()
             
             if node.label == 'L':
                 # L => head to the left and dependant to the right
@@ -817,10 +824,9 @@ class D_Tree:
 
         # sort nodes by id
         nodes = sorted(nodes, key=lambda x: x.id)
-
         # fix for non-found nodes
         for i, n in enumerate(nodes):
-            if n.id != i:
+            if n.id != i and i in idx_words and i in word_postags and i in word_deprels:
                 # new nodes will hang from root
                 new_node = D_Node.empty_node()
                 new_node.form = str(idx_words[i])

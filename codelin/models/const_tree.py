@@ -206,27 +206,9 @@ class C_Tree:
     
     def branching(self):
         '''
-        In linguistics, branching refers to the shape of the parse tree
-        that represents the structure of a sentence. We will compute the 
+        Cmpute the 
         branching of a tree as the number of non-terminal nodes that are 
         either left or right child of their parent.
-
-        For example the following tree
-
-        (ROOT
-            (A a)
-            (NT1 
-                (B b) 
-                (C c)
-                (NT2
-                    (D d)
-                    (E e)
-                )
-            )
-        )
-        
-        is a right-branching tree with a ratio of 1:2 (1 left-branching node
-        and 2 right-branching nodes)
         '''
 
         nodes = []

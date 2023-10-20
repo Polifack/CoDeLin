@@ -1,7 +1,7 @@
 from codelin.encs.abstract_encoding import ADEncoding
 from codelin.models.deps_label import D_Label
 from codelin.models.deps_tree import D_Tree
-from codelin.utils.constants import D_NONE_LABEL, D_2P_GREED, D_2P_PROP
+from codelin.utils.constants import D_NONE_LABEL, D_2P_GREED, D_2P_PROP, D_POSROOT
 from codelin.models.linearized_tree import LinearizedTree
 
 class D_Brk7BitsEncoding(ADEncoding):
@@ -185,7 +185,13 @@ class D_Brk7BitsEncoding(ADEncoding):
         decoded_tree = self._decoding_step(lin_tree, decoded_tree, '1', 'l2r')
         decoded_tree = self._decoding_step(lin_tree, decoded_tree, '1', 'r2l')
 
-        decoded_tree.remove_dummy()
+
+        if decoded_tree.nodes[0].form == D_POSROOT:
+            decoded_tree.remove_dummy()
+        else:
+            # increase by 1 all the ids
+            for node in decoded_tree.nodes:
+                node.id += 1
         return decoded_tree
     
     @staticmethod

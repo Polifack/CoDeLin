@@ -88,6 +88,9 @@ if __name__=="__main__":
     parser.add_argument('--hfr', required=False, action='store_true', default=False,
                         help = 'Hang from root strategy for dependency encoding')
     
+    parser.add_argument('--count_heur', required=False, action='store_true', default=False,
+                        help = 'Count heuristic for dependency encoding')
+
     parser.add_argument('--sep_bits', required=False, type=int, default=None,
                         help = 'Separate bits in the label at the specified index (only for dependency encoding)')
 
@@ -119,9 +122,9 @@ if __name__=="__main__":
         
         elif args.operation == OP_DEC:
             n_diff_labels = None
-            n_trees, n_labels = decode_dependencies(args.input, args.output, args.enc, args.sep, args.multitask,
+            n_trees, n_labels, n_heur = decode_dependencies(args.input, args.output, args.enc, args.sep, args.multitask,
                                                     args.disp, args.rsingle, args.rsearch, 
-                                                    args.hfr, args.postags, args.lang, args.sep_bits)
+                                                    args.hfr, args.postags, args.lang, args.sep_bits, args.count_heur)
 
 
 
@@ -140,6 +143,9 @@ if __name__=="__main__":
         print('%10s' % ('total labels'),n_labels)
         if n_diff_labels is not None:
             print('%10s' % ('unique labels'),n_diff_labels)
+        if n_heur != 0:
+            print('%10s' % ('heuristics in trees'),n_heur)
+            print('%10s' % ('heuristics percentage'),"{:.5f}".format(n_heur/n_trees))
         print('%10s' % ('time per label'),ls_str)
         print('%10s' % ('time per tree'),ts_str)
         print('%10s' % ('total time'),t_str)

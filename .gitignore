@@ -17,17 +17,18 @@ train_models.ipynb
 /NCRFpp
 /evalb
 /evalud
+/scripts
 
 # project related stuff
 /notes
 /deprecated
-/scripts
 /logs
 /default_cfgs
 
 .vscode/
 /src/models/__pycache__
 *.pyc
+scripts/
 test.ipynb
 playground*
 error.txt

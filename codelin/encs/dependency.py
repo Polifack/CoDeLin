@@ -1,4 +1,5 @@
 import stanza
+import copy
 from codelin.models.linearized_tree import LinearizedTree
 from codelin.models.deps_label import D_Label
 from codelin.utils.extract_feats import extract_features_deps
@@ -31,9 +32,9 @@ def encode_dependencies(in_path, out_path, encoding_type, separator, multitask, 
     elif encoding_type == D_BRACKET_ENCODING_2P:
             encoder = D_Brk2PBasedEncoding(separator, displacement, planar_alg)
     elif encoding_type == D_BRK_4B_ENCODING:
-            encoder = D_Brk4BitsEncoding(separator, split_bits) 
+            encoder = D_Brk4BitsEncoding(separator) 
     elif encoding_type == D_BRK_7B_ENCODING:
-            encoder = D_Brk7BitsEncoding(separator, split_bits)
+            encoder = D_Brk7BitsEncoding(separator)
     elif encoding_type == D_6TG_ENCODING:
             encoder = D_HexatagEncoding(separator)
     else:
@@ -75,7 +76,7 @@ def encode_dependencies(in_path, out_path, encoding_type, separator, multitask, 
     return tree_counter, label_counter, len(label_set)
 
 # Decoding
-def decode_dependencies(in_path, out_path, encoding_type, separator, multitask, displacement, multiroot, root_search, root_enc, postags, lang, sep_bit):
+def decode_dependencies(in_path, out_path, encoding_type, separator, multitask, displacement, multiroot, root_search, root_enc, postags, lang, sep_bit, count_heur=False):
     '''
     Decodes the selected file according to the specified parameters:
     :param in_path: Path of the file to be encoded
@@ -111,12 +112,13 @@ def decode_dependencies(in_path, out_path, encoding_type, separator, multitask, 
 
     tree_counter=0
     labels_counter=0
+    heur_counter=0
 
     tree_string = ""
 
     if postags:
         stanza.download(lang=lang)
-        nlp = stanza.Pipeline(lang=lang, processors='tokenize,pos')
+        nlp = stanza.Pipeline(lang=lang, processors='tokenize,pos,lemma')
 
     for line in f_in:
         if line == "\n":
@@ -124,10 +126,27 @@ def decode_dependencies(in_path, out_path, encoding_type, separator, multitask, 
             mode = "DEPS" if encoding_type!=D_6TG_ENCODING else "CONST"
             current_tree = LinearizedTree.from_string(tree_string, mode=mode, separator=separator, separate_columns=multitask)
             if postags:
-                c_tags = nlp(current_tree.get_sentence())
-                current_tree.set_postags([word.pos for word in c_tags])
+                print(current_tree)
+                c_tags = nlp(current_tree.get_sentence()).sentences                
+                c_tags = [w._words for w in c_tags[1:]]
+                print(c_tags)
+                c_tags = [w for w in c_tags[0]]
 
+                #c_tags = c_tags[0].words
+                #c_tags = [t._words for t in c_tags]
+                #print(c_tags)
+                #c_tags = [t._upos for t in c_tags]
+                current_tree.set_postags([word._upos for word in c_tags[1:]])
+            
             decoded_tree = decoder.decode(current_tree)
+            if count_heur:
+                base_tree = copy.deepcopy(decoded_tree)
+                decoded_tree.postprocess_tree(root_search, multiroot)
+                for n1, n2 in zip(base_tree.nodes, decoded_tree.nodes):
+                    if n1 != n2:
+                        heur_counter+=1
+                        break
+
             decoded_tree.postprocess_tree(root_search, multiroot)
             f_out.write("# text = "+decoded_tree.get_sentence()+"\n")
             f_out.write(str(decoded_tree))
@@ -139,4 +158,4 @@ def decode_dependencies(in_path, out_path, encoding_type, separator, multitask, 
         labels_counter += 1
 
 
-    return tree_counter, labels_counter
+    return tree_counter, labels_counter, heur_counter

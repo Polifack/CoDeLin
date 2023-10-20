@@ -40,8 +40,9 @@ def combine(tree, new_child):
     
     while(not current_level.has_none_child()):
         if (len(current_level.children) < 1):
-            print("[MERGE ERROR] No children found")
+            current_level.children.append(new_child)
             return tree
+            
         current_level = current_level.r_child()
     
     if current_level.children[0].label == C_NONE_LABEL:
@@ -111,7 +112,11 @@ def encode_inorder(tree, sep, ujoiner):
 def decode_inorder(l_in, ujoiner):
     stack = []
     for word, postag, feats, label in l_in.iterrows():
+        if type(label.n_commons)==int:
+            label.n_commons = 'l'
+        
         operators = list(label.n_commons)
+        
         for op in operators:
             if op == 'r':
                 terminal_tree = C_Tree(postag, children=[C_Tree(word)])
@@ -136,7 +141,7 @@ def decode_inorder(l_in, ujoiner):
 
             elif op.startswith("R"):
                 nt = label.last_common
-                tree = C_Tree(nt, [stack[-1], C_Tree.empty_tree()])
+                tree = C_Tree(nt, [stack[-1], C_Tree.empty_tree()]) if len(stack)>0 else C_Tree(nt, [C_Tree.empty_tree(), C_Tree.empty_tree()])
                 
                 if len(stack)==0:
                     stack.append(tree)
@@ -237,13 +242,16 @@ def decode_preorder(l_in, ujoiner):
             
             elif op == 'l':
                 # l => node is a right terminal child, combine it with the top of the stack
-
                 terminal_tree = C_Tree(postag, children=[C_Tree(word)])
                 parent_tree = stack.pop()
                 if label.unary_chain is not None:
                     for uc in reversed(label.unary_chain.split(ujoiner)):
                         terminal_tree = C_Tree(uc, [terminal_tree])
-                parent_tree.children[1] = terminal_tree
+                
+                if parent_tree.children[1].label == C_NONE_LABEL:
+                    parent_tree.children[1] = terminal_tree
+                else:
+                    parent_tree.children[1] = combine(parent_tree.children[1], terminal_tree)
 
                 while not parent_tree.has_none_child() and len(stack)>0:
                     parent_tree = stack.pop()
@@ -252,8 +260,6 @@ def decode_preorder(l_in, ujoiner):
                 stack.append(parent_tree)
 
             elif op.startswith("R"):
-                # R => node is a left non terminal child, combine it with the top of the stack
-                
                 # get the non terminal (or non terminals)
                 if ">" in label.last_common:
                     nt = label.last_common.split(">")[0]
@@ -271,25 +277,22 @@ def decode_preorder(l_in, ujoiner):
                     stack.append(C_Tree(nt, [C_Tree.empty_tree(), C_Tree.empty_tree()]))
 
             elif op.startswith("L"):
-                # L => node is a right non terminal child, combine it with the top of the stack
-                
                 # get the non terminal (or non terminals)
                 if ">" in label.last_common:
                     nt = label.last_common.split(">")[0]
                     label.last_common = ">".join(label.last_common.split(">")[1:])
                 else:
-                    
                     nt = label.last_common
                 
                 if len(stack)>0:
-                    r_child = C_Tree(nt, [C_Tree.empty_tree(), C_Tree.empty_tree()])
+                    r_child = C_Tree(nt, copy.deepcopy(stack[-1].children))
                     stack[-1].children[1] = r_child
                     stack[-1].update_custody()
                 
                     stack.append(r_child)
                 else:
                     stack.append(C_Tree(nt, [C_Tree.empty_tree(), C_Tree.empty_tree()]))
-                    
+
     final_tree = stack.pop()
     return final_tree
 
@@ -350,7 +353,6 @@ def encode_postorder(tree, sep, ujoiner):
     lintree.labels[-1].n_commons += nc_i
     lintree.labels[-1].last_common+=">"+lc if lc is not None else ""
     return lintree
-
 def decode_postorder(l_in, ujoiner):
     stack = []
     for word, postag, feats, label in l_in.iterrows():
@@ -464,6 +466,7 @@ class C_Tetratag(ACEncoding):
             raise Exception("Mode not supported")
 
     def decode(self, linearized_tree):
+        #print(linearized_tree,self.mode)
         if self.mode == "inorder":
             final_tree = decode_inorder(linearized_tree, self.unary_joiner)
         elif self.mode == "preorder":
