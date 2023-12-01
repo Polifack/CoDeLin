@@ -144,7 +144,7 @@ if __name__=="__main__":
         if n_diff_labels is not None:
             print('%10s' % ('unique labels'),n_diff_labels)
         if n_heur != 0:
-            print('%10s' % ('heuristics in trees'),n_heur)
+            print('%10s' % ('trees w/ heuristics'),n_heur)
             print('%10s' % ('heuristics percentage'),"{:.5f}".format(n_heur/n_trees))
         print('%10s' % ('time per label'),ls_str)
         print('%10s' % ('time per tree'),ts_str)

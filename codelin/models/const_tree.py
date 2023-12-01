@@ -522,8 +522,8 @@ class C_Tree:
             if self.features is not None:
                 features_str = "##" + "|".join([key+"="+value for key,value in self.features.items()])
             
-            label_str = label_str.replace("(","-LRB-")
-            label_str = label_str.replace(")","-RRB-")
+            label_str = label_str.replace("(","-LBR-")
+            label_str = label_str.replace(")","-RBR-")
             label_str = label_str.replace(" ","-BLK-")
         else:
             label_str =  "(" + self.label + " "

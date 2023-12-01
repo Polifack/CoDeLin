@@ -69,7 +69,22 @@ class LinearizedTree:
         self.postags.append(postag)
         self.additional_feats.append(additional_feat)
         self.labels.append(label)
-    
+
+    def sort_words(self, d_tree):
+        '''
+        Sorts the nodes of the linearized tree using the words to 
+        match the order of the nodes in the dependency tree.
+        '''
+        print(d_tree.get_sentence())
+        print(self.get_sentence())
+        fixed_ltree = LinearizedTree.empty_tree()
+        for i in range(len(d_tree)):
+            for j in range(len(self)):
+                if d_tree.nodes[i].form == self.get_word(j):
+                    fixed_ltree.add_row(self.get_word(j), self.get_postag(j), self.get_additional_feat(j), self.get_label(j))
+                    break
+        return fixed_ltree
+            
     def iterrows(self, dir='l2r'):
         if dir == 'l2r':
             for i in range(len(self)):

@@ -20,6 +20,12 @@ class D_HexatagEncoding(ADEncoding):
         bht_tree = D_Tree.to_bht(dep_tree, include_reltype=True)
         tagger = C_Tetratag(separator=self.separator, unary_joiner="[+]", mode="inorder", binary_marker="[b]")
         lin_tree = tagger.encode(bht_tree)
+
+        # resort the words of the linearized tree to match the original order
+        # this is necessary because the tetratagging process may change the order
+        # of the words in the tree
+        lin_tree = LinearizedTree.sort_words(lin_tree, dep_tree)
+
         return lin_tree
         
     def decode(self, lin_tree):
@@ -27,11 +33,14 @@ class D_HexatagEncoding(ADEncoding):
         bht_tree = tagger.decode(lin_tree)
         dectree = D_Tree.from_bht(bht_tree)
 
-        #print(dectree)
-
         # remove first node if id = 0 and form = '-ROOT-'
         if dectree.nodes[0].id == 0 and dectree.nodes[0].form == "-ROOT-":
             dectree.nodes.pop(0)
+
+        # remove -NONE- nodes
+        for node in dectree.nodes:
+            if node.form == "-NONE-":
+                dectree.nodes.remove(node)
         
         # fix ids starting in 0
         if dectree.nodes[0].id == 0:

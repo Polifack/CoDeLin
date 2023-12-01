@@ -769,43 +769,54 @@ class D_Tree:
         Converts a constituent tree shaped as a binary head tree back into
         a dependency tree.
         '''
-        def from_bht_rec(node):
+        def from_bht_rec(node, recursion_depth=0):
+            
             if node.is_terminal():
                 return node
+            
             if node.is_preterminal():
                 return node.children[0]
+            
             if node.children[0].is_preterminal():
+                print("=> processing word:",node.children[0].children[0].label, "with recursion depth", recursion_depth)
                 return node.children[0].children[0]
             
-            left  = from_bht_rec(node.children[0])
+            left  = from_bht_rec(node.children[0], recursion_depth+1)
             if len(node.children) >= 2:
-                right = from_bht_rec(node.children[1])
+                print("looking for right child with recursion depth", recursion_depth)
+                right = from_bht_rec(node.children[1], recursion_depth+1)
             else:
                 right = D_Node.empty_node()
             
             if node.label == 'L':
+                print("node is L")
                 # L => head to the left and dependant to the right
                 node_head      = word_idxs[left]   if type(left) is C_Tree else int(left.head)
                 node_dependant = word_idxs[right]  if type(right) is C_Tree else int(right.head)
                 node_deprel    = word_deprels[node_dependant]
                 node_postag    = word_postags[node_dependant]
                 node_form = right.label if type(right) is C_Tree else str(idx_words[node_dependant])
+                print("creating node:", node_form, node_dependant, node_head, node_deprel, "with recursion depth", recursion_depth)
                 n = D_Node(wid=node_dependant, upos=node_postag, form=node_form, head=node_head, deprel=node_deprel)
                 nodes.append(n)
             else:
                 # R => head to the right and dependant to the left
+                print("node is R")
+                print("             left=", left)
+                print("            right=", right)
                 node_head      = word_idxs[right] if type(right) is C_Tree else int(right.head)
                 node_dependant = word_idxs[left]  if type(left) is C_Tree else int(left.head)
                 node_deprel    = word_deprels[node_dependant]
                 node_postag    = word_postags[node_dependant]
+                print(left, idx_words[node_dependant])
                 node_form = left.label if type(left) is C_Tree else str(idx_words[node_dependant])
+                print("creating node:", node_form, node_dependant, node_head, node_deprel, "with recursion depth", recursion_depth)
                 n = D_Node(wid=node_dependant, upos=node_postag, form=node_form, head=node_head, deprel=node_deprel)
                 nodes.append(n)
                 
-            return n
-        
+            return n        
         nodes=[]
-        
+
         # build a dictionary of the info stored in the unary chains
         word_idxs = {}
         word_dict = {}
@@ -819,12 +830,18 @@ class D_Tree:
             word_deprels[i] = word.parent.parent.label if (word.parent is not None and word.parent.parent is not None) else "-NONE-"
             i+=1
         idx_words = {value: key for key, value in word_idxs.items()}
-
         from_bht_rec(bht)
-
-        # sort nodes by id
         nodes = sorted(nodes, key=lambda x: x.id)
+        
+        # fix brackets
+        for node in nodes:
+            if node.form == '-RBR-':
+                node.form = ')'
+            if node.form == '-LRB-':
+                node.form = '('
+
         # fix for non-found nodes
+        print(idx_words)
         for i, n in enumerate(nodes):
             if n.id != i and i in idx_words and i in word_postags and i in word_deprels:
                 # new nodes will hang from root
@@ -836,6 +853,8 @@ class D_Tree:
                 new_node.relation = str(word_deprels[i])
                 nodes.insert(i, new_node)
 
+        print(nodes)
+        
         return D_Tree(nodes)
         
 
