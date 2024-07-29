@@ -29,7 +29,7 @@ def encode_constituent(in_path, out_path, encoding_type, reverse, separator, mul
     elif encoding_type == C_TETRA_ENCODING:
         encoder = C_Tetratag(separator, unary_joiner, traverse_dir, binary_marker)
     elif encoding_type == C_GAPS_ENCODING:
-        encoder = C_GapsEncoding(separator, unary_joiner, binary_direction, binary_marker, gap_mode)
+        encoder = C_GapsEncoding(separator, unary_joiner, binary_direction, reverse, binary_marker, gap_mode)
     elif encoding_type == C_JUXTAPOSED_ENCODING:
         encoder = C_JuxtaposedEncoding(separator, unary_joiner, binary, binary_direction, binary_marker)
 
