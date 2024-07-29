@@ -495,7 +495,7 @@ class D_Tree:
         '''
         Read a conllu file and return a list of ConllTree objects.
         '''
-        with open(file_path, 'r') as f:
+        with open(file_path, 'r', encoding="utf-8") as f:
             data = f.read()
         data = data.split('\n\n')
         # remove last empty line
@@ -778,39 +778,30 @@ class D_Tree:
                 return node.children[0]
             
             if node.children[0].is_preterminal():
-                print("=> processing word:",node.children[0].children[0].label, "with recursion depth", recursion_depth)
                 return node.children[0].children[0]
             
             left  = from_bht_rec(node.children[0], recursion_depth+1)
             if len(node.children) >= 2:
-                print("looking for right child with recursion depth", recursion_depth)
                 right = from_bht_rec(node.children[1], recursion_depth+1)
             else:
                 right = D_Node.empty_node()
             
             if node.label == 'L':
-                print("node is L")
                 # L => head to the left and dependant to the right
                 node_head      = word_idxs[left]   if type(left) is C_Tree else int(left.head)
                 node_dependant = word_idxs[right]  if type(right) is C_Tree else int(right.head)
                 node_deprel    = word_deprels[node_dependant]
                 node_postag    = word_postags[node_dependant]
-                node_form = right.label if type(right) is C_Tree else str(idx_words[node_dependant])
-                print("creating node:", node_form, node_dependant, node_head, node_deprel, "with recursion depth", recursion_depth)
+                node_form = right.label if type(right) is C_Tree else str(idx_words[node_dependant])                
                 n = D_Node(wid=node_dependant, upos=node_postag, form=node_form, head=node_head, deprel=node_deprel)
                 nodes.append(n)
             else:
                 # R => head to the right and dependant to the left
-                print("node is R")
-                print("             left=", left)
-                print("            right=", right)
                 node_head      = word_idxs[right] if type(right) is C_Tree else int(right.head)
                 node_dependant = word_idxs[left]  if type(left) is C_Tree else int(left.head)
                 node_deprel    = word_deprels[node_dependant]
                 node_postag    = word_postags[node_dependant]
-                print(left, idx_words[node_dependant])
                 node_form = left.label if type(left) is C_Tree else str(idx_words[node_dependant])
-                print("creating node:", node_form, node_dependant, node_head, node_deprel, "with recursion depth", recursion_depth)
                 n = D_Node(wid=node_dependant, upos=node_postag, form=node_form, head=node_head, deprel=node_deprel)
                 nodes.append(n)
                 
@@ -841,7 +832,6 @@ class D_Tree:
                 node.form = '('
 
         # fix for non-found nodes
-        print(idx_words)
         for i, n in enumerate(nodes):
             if n.id != i and i in idx_words and i in word_postags and i in word_deprels:
                 # new nodes will hang from root
@@ -852,9 +842,6 @@ class D_Tree:
                 new_node.head = 0
                 new_node.relation = str(word_deprels[i])
                 nodes.insert(i, new_node)
-
-        print(nodes)
-        
         return D_Tree(nodes)
         
 
@@ -931,3 +918,17 @@ class D_Tree:
             avgs.append(sum(tree_dependants.values())/len(tree_dependants))        
         return sum(avgs)/len(avgs)
         
+    @staticmethod
+    def get_avg_distance_head_dependant(trees):
+        '''
+        Given a list of trees returns the average distance
+        between the head and the dependant (root is considered
+        to be at position 0)
+        '''
+        avgs=[]
+        for tree in trees:
+            distances = []
+            for node in tree.nodes:
+                distances.append(abs(node.head - node.id))
+            avgs.append(sum(distances)/len(distances))
+        return sum(avgs)/len(avgs)

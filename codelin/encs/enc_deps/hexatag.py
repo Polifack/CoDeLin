@@ -18,6 +18,7 @@ class D_HexatagEncoding(ADEncoding):
         # to encode hexatags we employ tetratagging into a bht converted dependency tree
         # the reltype encoding will be dealt by the unary chain encoding mechanism
         bht_tree = D_Tree.to_bht(dep_tree, include_reltype=True)
+        print(bht_tree)
         tagger = C_Tetratag(separator=self.separator, unary_joiner="[+]", mode="inorder", binary_marker="[b]")
         lin_tree = tagger.encode(bht_tree)
 

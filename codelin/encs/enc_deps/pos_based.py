@@ -21,8 +21,8 @@ class D_PosBasedEncoding(ADEncoding):
                 # skip dummy root
                 continue
 
-            li = node.relation     
-            pi = dep_tree[node.head].upos           
+            li = node.relation
+            pi = dep_tree[node.head].upos
             oi = 0
             
             # move left or right depending if the node 

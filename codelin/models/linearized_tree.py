@@ -75,8 +75,6 @@ class LinearizedTree:
         Sorts the nodes of the linearized tree using the words to 
         match the order of the nodes in the dependency tree.
         '''
-        print(d_tree.get_sentence())
-        print(self.get_sentence())
         fixed_ltree = LinearizedTree.empty_tree()
         for i in range(len(d_tree)):
             for j in range(len(self)):
@@ -99,12 +97,8 @@ class LinearizedTree:
     def __repr__(self):        
         return self.to_string()
     
-    def to_string(self, f_idx_dict=None, add_bos_eos=True, separate_columns=False):
-        n_cols = (len(f_idx_dict.keys())+1) if f_idx_dict else 1
-        if separate_columns:
-            n_cols += len(str(self.labels[0]).split(self.labels[0].separator))
-
-
+    def to_string(self, f_idx_dict=None, add_bos_eos=True, separate_columns=False, n_label_cols=1):
+        n_cols = (len(f_idx_dict.keys()) + 1 + n_label_cols) if f_idx_dict else 1 + n_label_cols
         if add_bos_eos:
             self.words = [BOS] + self.words + [EOS]
             self.postags = [BOS] + self.postags + [EOS]
@@ -146,7 +140,10 @@ class LinearizedTree:
                 elif l == EOS:
                     output_line += [BOS]*(n_cols-1)
                 else:
-                    output_line += str(l).split(l.separator)
+                    label_split = str(l).split(l.separator)
+                    if len(label_split) < n_label_cols:
+                        label_split += [C_NONE_LABEL] * (n_label_cols - len(label_split))
+                    output_line += label_split
             else:
                 output_line.append(str(l))
             tree_string+=u"\t".join(output_line)+u"\n"

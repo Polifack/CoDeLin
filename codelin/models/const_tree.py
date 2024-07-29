@@ -475,7 +475,16 @@ class C_Tree:
             if conflict_strat == C_STRAT_LAST:
                 self.label = labels[len(labels)-1]
 
-    def postprocess_tree(self, conflict_strat=C_STRAT_MAX, clean_nulls=True, default_root="S"):
+    def clean_binary_nodes(self, binary_marker):
+        '''
+        Removes binary node marks that may stay as leftovers for binary trees.
+        '''
+        if binary_marker in self.label:
+            self.label = self.label.replace(binary_marker, "")
+        for c in self.children:
+            c.clean_binary_nodes(binary_marker)
+
+    def postprocess_tree(self, conflict_strat=C_STRAT_MAX, clean_nulls=True, default_root="S", binary_marker="[b]"):
         '''
         Returns a C_Tree object with conflicts in node labels removed
         and with NULL nodes cleaned.
@@ -486,6 +495,7 @@ class C_Tree:
             t = self.prune_nones()
         
         t.remove_conflicts(conflict_strat)
+        t.clean_binary_nodes(binary_marker)
         return t
         
         # print( fix_tree)
@@ -551,6 +561,29 @@ class C_Tree:
         return item in self.label or item in self.children
 
     @staticmethod
+    def pretty_print(tree, level=0):
+        '''
+        Prints the tree in a pretty format using tabs 
+        according to the level of the tree. An exception will be
+        the part-of-speech tags that will be printed without tabs.
+        Part-of-speech tags will be the preterminal nodes of the tree.
+        '''
+        indent = '\t' * level
+
+        if not tree.children:
+            # Terminal node
+            print(indent + tree.label)
+        elif len(tree.children) == 1 and not tree.children[0].children:
+            # Preterminal node (POS tag)
+            print(indent + '(' + tree.label + ' ' + tree.children[0].label + ')')
+        else:
+            # Non-terminal node
+            print(indent + '(' + tree.label)
+            for child in tree.children:
+                C_Tree.pretty_print(child, level + 1)
+            print(indent + ')')
+
+    @staticmethod
     def to_latex(tree):
         '''
         Returns a latex representation of the tree
@@ -583,12 +616,10 @@ class C_Tree:
         latex_str = "\\begin{tikzpicture}[scale=0.75]\n"
         latex_str += "\\Tree\n"
         latex_str += "\t[." + tree.label + "\n"
-        
         latex_str += "\t\t" + " ".join([C_Tree.to_latex(child) for child in tree.children]) + "\n"
         latex_str += "\t]\n"
         latex_str += "\\end{tikzpicture}"
-
-        pass
+        print(latex_str)
 
 # Tree creation
     @staticmethod
@@ -633,6 +664,18 @@ class C_Tree:
 
             i+=1
         return t
+
+    @staticmethod
+    def read_trees_file(file_path):
+        trees = []
+        with open(file_path, "r", encoding="utf-8") as f:
+            for line in f:
+                # fix for windows
+                if line.endswith("\n"):
+                    line = line[:-1]
+                    
+                trees.append(C_Tree.from_string(line))
+        return trees
 
 # Transformation
     @staticmethod
@@ -681,9 +724,9 @@ class C_Tree:
             if type(c1) is C_Tree:
                 c1 = C_Tree.to_binary_right(c1, binary_marker)
 
-            # add the binary marker to the label            
+            # add the binary marker to the label
             if binary_marker not in t.label:
-                c2_label = t.label+binary_marker
+                c2_label = t.label + binary_marker
             else:
                 c2_label = t.label
 
@@ -711,7 +754,16 @@ class C_Tree:
         
         bt.children = new_children
         return bt
-                   
+
+    @staticmethod
+    def to_k_children(t, artificial_nodes_marker="*", transformation_direction="R", k=2):
+        '''
+        Given a Constituent Tree returns its transformation into another constituent
+        tree with exactly k-children per node.
+        '''
+        pass
+
+
 # Traversals
     @staticmethod
     def preorder(node, fn):

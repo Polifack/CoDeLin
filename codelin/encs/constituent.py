@@ -9,7 +9,7 @@ from codelin.models.const_tree import C_Tree
 
 ## Encoding and decoding
 
-def encode_constituent(in_path, out_path, encoding_type, reverse, separator, multitask, unary_joiner, features, binary, binary_direction, binary_marker, traverse_dir):
+def encode_constituent(in_path, out_path, encoding_type, reverse, separator, multitask, n_label_cols, unary_joiner, features, binary, binary_direction, binary_marker, traverse_dir, gap_mode):
     '''
     Encodes the selected file according to the specified parameters:
     :param in_path: Path of the file to be encoded
@@ -29,7 +29,7 @@ def encode_constituent(in_path, out_path, encoding_type, reverse, separator, mul
     elif encoding_type == C_TETRA_ENCODING:
         encoder = C_Tetratag(separator, unary_joiner, traverse_dir, binary_marker)
     elif encoding_type == C_GAPS_ENCODING:
-        encoder = C_GapsEncoding(separator, unary_joiner, binary_direction, binary_marker)
+        encoder = C_GapsEncoding(separator, unary_joiner, binary_direction, binary_marker, gap_mode)
     elif encoding_type == C_JUXTAPOSED_ENCODING:
         encoder = C_JuxtaposedEncoding(separator, unary_joiner, binary, binary_direction, binary_marker)
 
@@ -46,8 +46,8 @@ def encode_constituent(in_path, out_path, encoding_type, reverse, separator, mul
             f_idx_dict[f]=i
             i+=1
 
-    file_out = open(out_path, "w")
-    file_in = open(in_path, "r")
+    file_out = open(out_path, "w", encoding='utf-8')
+    file_in = open(in_path, "r", encoding='utf-8')
 
     tree_counter = 0
     labels_counter = 0
@@ -57,7 +57,7 @@ def encode_constituent(in_path, out_path, encoding_type, reverse, separator, mul
         line = line.rstrip()
         tree = C_Tree.from_string(line)
         linearized_tree = encoder.encode(tree)
-        file_out.write(linearized_tree.to_string(f_idx_dict, separate_columns=multitask))
+        file_out.write(linearized_tree.to_string(f_idx_dict, separate_columns=multitask, n_label_cols=n_label_cols))
         file_out.write("\n")
         tree_counter += 1
         labels_counter += len(linearized_tree)
@@ -66,7 +66,7 @@ def encode_constituent(in_path, out_path, encoding_type, reverse, separator, mul
     
     return labels_counter, tree_counter, len(label_set)
 
-def decode_constituent(in_path, out_path, encoding_type, reverse, separator,  multitask, unary_joiner, conflicts, nulls, postags, lang, binary, binary_marker, traverse_dir):
+def decode_constituent(in_path, out_path, encoding_type, reverse, separator,  multitask, unary_joiner, conflicts, nulls, postags, lang, binary, binary_marker, traverse_dir, gap_mode):
     '''
     Decodes the selected file according to the specified parameters:
     :param in_path: Path of the labels file to be decoded
@@ -84,7 +84,7 @@ def decode_constituent(in_path, out_path, encoding_type, reverse, separator,  mu
     elif encoding_type == C_DYNAMIC_ENCODING:
         decoder = C_NaiveDynamicEncoding(separator, unary_joiner, reverse, binary, None, binary_marker)
     elif encoding_type == C_GAPS_ENCODING:
-        decoder = C_GapsEncoding(separator, unary_joiner, None, binary_marker)
+        decoder = C_GapsEncoding(separator, unary_joiner, None, reverse, binary_marker, gap_mode)
     elif encoding_type == C_TETRA_ENCODING:
         decoder = C_Tetratag(separator, unary_joiner, traverse_dir, binary_marker)
     elif encoding_type == C_JUXTAPOSED_ENCODING:

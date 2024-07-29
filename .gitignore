@@ -5,7 +5,9 @@
 /labels_dec
 /ncrf_configs
 /results
+/notebooks
 /models
+/test
 /hfmtl
 /__pycache__
 

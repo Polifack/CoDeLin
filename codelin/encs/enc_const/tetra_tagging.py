@@ -74,7 +74,7 @@ def encode_inorder(tree, sep, ujoiner):
             
             ### INORDER => Append in non-terminals
             w_i = words[i]
-            p_i = tags[i]
+            p_i = tags[i] if i < len(tags) else "POS"
             
             # p_i = extract feats
             nc_i = "".join(cl)
@@ -94,7 +94,7 @@ def encode_inorder(tree, sep, ujoiner):
 
     # last reduce action
     w_i = words[i]
-    p_i = tags[i]
+    p_i = tags[i] if i < len(tags) else "POS"
     
     # p_i = extract feats
     nc_i = "".join(cl)
@@ -225,7 +225,6 @@ def decode_preorder(l_in, ujoiner):
         for op in operators:
             if op == 'r':
                 # r => node is a left terminal children, add it to the stack
-                
                 terminal_tree = C_Tree(postag, children=[C_Tree(word)])
                 
                 if label.unary_chain is not None:
@@ -446,13 +445,13 @@ class C_Tetratag(ACEncoding):
         return "Constituent Tetratagging"
     
     def encode(self, constituent_tree):
-    
         # It is needed to collapse unary before binary
         constituent_tree = constituent_tree.collapse_unary(self.unary_joiner)
         
         if self.mode == "inorder":
-            # Inorder must be linearized to the right
+            # Inorder can be linearized in either direction
             constituent_tree = C_Tree.to_binary_right(constituent_tree, self.binary_marker)
+            # constituent_tree = C_Tree.to_binary_left(constituent_tree, self.binary_marker)
             return encode_inorder(constituent_tree, self.separator, self.unary_joiner)
         elif self.mode == "preorder":
             # Preorder must be linearized to the right

@@ -85,6 +85,9 @@ if __name__=="__main__":
     parser.add_argument('--traverse', required=False, choices= ['preorder','postorder','inorder'], default='inorder',
                         help = 'Traverse order for tetratagging')
     
+    parser.add_argument('--gap_mode', required=False, choices= ['open','close'], default='open',
+                        help = 'Gaps encoding use open or close mode')
+    
     parser.add_argument('--hfr', required=False, action='store_true', default=False,
                         help = 'Hang from root strategy for dependency encoding')
     
@@ -105,14 +108,14 @@ if __name__=="__main__":
             n_labels, n_trees, n_diff_labels = encode_constituent(args.input, args.output, args.enc, args.incremental,
                                                                   args.sep, args.multitask, args.ujoiner, args.feats, 
                                                                   args.binary, args.b_direction, args.b_marker,
-                                                                  args.traverse)
+                                                                  args.traverse, args.gap_mode)
         
         elif args.operation == OP_DEC:
             n_diff_labels = None
             n_trees, n_labels = decode_constituent(args.input, args.output, args.enc, args.incremental, args.sep, 
                                                    args.multitask, args.ujoiner, args.conflict, args.nulls, 
                                                    args.postags, args.lang, 
-                                                   args.binary, args.b_marker, args.traverse)
+                                                   args.binary, args.b_marker, args.traverse, args.gap_mode)
     
     elif args.formalism == F_DEPENDENCY:
         

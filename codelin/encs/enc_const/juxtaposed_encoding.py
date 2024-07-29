@@ -120,8 +120,11 @@ def oracle_action_sequence(t):
         return []
     
     if len(t.children)==0 or (len(t.children)==1 and t.children[0].is_preterminal()):
-        p = t.children[0].label
-        w = t.children[0].children[0].label
+        p = t.children[0].label if len(t.children) > 0 else "POS"
+        w = t.children[0].children[0].label if len(t.children) > 0 else "WORD"
+
+        # print("[WARNING] Tree has no children. Adding a dummy node.")
+        # print("[WARNING]",t)
     
         a = Action(name="attach", target_node=0, parent_label=t.label, new_label=None)
         lin_tree_row = (w, p, a)

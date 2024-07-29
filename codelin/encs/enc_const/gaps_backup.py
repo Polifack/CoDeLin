@@ -100,10 +100,7 @@ class C_GapsEncoding(ACEncoding):
         words = []
 
         tree = C_Tree(C_ROOT_LABEL, [])
-        open_gaps_stack = []
         current_level = tree
-        open_gaps_stack.append(current_level)
-
         if self.reverse:
             linearized_tree.reverse_tree(ignore_bos_eos=False)
 
@@ -111,6 +108,10 @@ class C_GapsEncoding(ACEncoding):
             last_nt = label.last_common
             unary_chain = label.unary_chain
             n_gaps = label.n_commons
+            
+            print(word, postag, label)
+            postags.append(postag)
+            words.append(word)
 
             node = C_Tree(postag, children=[C_Tree(word)])
 
@@ -120,53 +121,41 @@ class C_GapsEncoding(ACEncoding):
                 for unary in reversed(leaf_unary_chain):
                     node = C_Tree(unary, children=[node])
             
-            # create the open gaps. if no gaps to create, just add the node to the tree
-            # at the current level (rightmost open gap)
-            insert_level = open_gaps_stack.pop() if open_gaps_stack else C_Tree(C_NONE_LABEL, [])
-            old_insert_level = insert_level
-            while insert_level.parent and insert_level.parent.parent and len(insert_level.children) == 2:
-                insert_level = insert_level.parent
-            
-            if len(insert_level.children) == 2:
-                insert_level = old_insert_level
-                # perform a juxtapose
-                rightmost_subtree = insert_level.r_child()
-                new_subtree = C_Tree(C_NONE_LABEL, [])
-                for _ in range(n_gaps):
-                    new_subtree.add_child(C_Tree(C_NONE_LABEL, []))
-                    new_subtree = new_subtree.r_child()
-                
-                new_subtree.add_child(rightmost_subtree)
-                new_subtree.add_child(node)
-                insert_level.children[-1] = new_subtree
-                open_gaps_stack.append(insert_level)
-            
-            else:
-                for _ in range(n_gaps):
-                    if len(insert_level.children)< 2 and insert_level.label not in postags and insert_level.label not in words:
-                        insert_level.add_child(C_Tree(C_NONE_LABEL, []))
-                    insert_level = insert_level.r_child()
+            # create the open gaps
+            for _ in range(n_gaps):
+                print(current_level)
+                if len(current_level.children)< 2 and current_level.label not in postags and current_level.label not in words:
+                    current_level.add_child(C_Tree(C_NONE_LABEL, []))
+                current_level = current_level.r_child()
 
-                insert_level.add_child(node)
-                open_gaps_stack.append(insert_level)
+            # ensure that we are inserting in a node that has less than 2 children
+            while len(current_level.children) >= 2:
+                current_level = current_level.r_child()
 
-            # set the label of the deepest common non terminal. we know what the deepest common non terminal
-            # is because we are building the tree from the bottom up
-            current_level = insert_level
-            while current_level.parent and len(current_level.children) == 2 and current_level.parent.label != C_ROOT_LABEL:
+            print(current_level)
+            # insert the node
+            current_level.add_child(node)
+            
+            # insert the non terminal at the first -none- label
+            while current_level.label != "-NONE-":
+                if not current_level.parent:
+                    break
                 current_level = current_level.parent
-            if last_nt == "$$":
-                continue
-            else:
-                current_level.label = current_level.label + C_CONFLICT_SEPARATOR + last_nt if current_level.label != C_NONE_LABEL else last_nt
-            postags.append(postag)
-            words.append(word)
-        # C_Tree.pretty_print(tree)
+            
+            # fix for last label
+            if not current_level.parent:
+                current_level = current_level.l_child()
+            
+            current_level.label = last_nt if last_nt!="$$" else current_level.label
+            C_Tree.pretty_print(tree)
+            print(15*"-")
+        
         final_tree = tree.l_child()
         if self.reverse:
             final_tree.reverse_tree()
         final_tree = C_Tree.restore_from_binary(final_tree, self.binary_marker)
         final_tree = final_tree.uncollapse_unary(self.unary_joiner)
+        
         return final_tree
     
     def decode_close_gaps(self, linearized_tree):
