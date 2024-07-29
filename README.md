@@ -54,6 +54,7 @@ Constituent only parameters:
 - Binary Direction: Direction to follow during the tree binarization algorithm. It corresponds with right-branch or left-branch binarization. Indicated by --b_direction [L | R]
 - Binary Marker: Character or characters added to the artificial intermediate non-terminal nodes. Indicated by --b_marker string. 
 - Traverse: Traversal order for tetratagging encoding. Indicated by --traverse [preorder | postorder | inorder]
+- Gaps Mode: Open or closed gaps for the gaps encoding. Indicated by --gap_mode [open | close]
 
 Dependency only parameters:
 - Displacement: Flag indicating to use displacement in bracket based encodings (i.e. encode the label of word w_i in l_i+1); Indicated by the flag --disp.
@@ -96,11 +97,6 @@ If we so desire, we can output the labels in a multi-task ready format
 | members       | IN            | 3         | PP       |
 | of            | DT            | 2         | NP       |
 
-
-### Compatible Sequence Labeling Tools
-
-The system output format has been tested with [NCRFpp](https://github.com/jiesutd/NCRFpp) tagger and [Machamp](https://github.com/machamp-nlp/machamp) Multi Task Learning Tagger.
-
 ## Usage as library
 
 To use CODELIN as a library for a custom workflow it can be used by cloning the repository inside the project working directory and importing it as
@@ -111,11 +107,6 @@ from codelin.encs import *
 from codelin.utils import *
 ```
 
-For more information please check the notebook examples.ipynb
+## Acknowledgments
 
-## To Do List
-
-- PIP release
-- Add head-driven phrase structure grammars as formalism. 
-- Add semantic dependency parsing structure option.
-- Explore the addition of Named Entity Recognition and Part of Speech Tagging to labels.
+This work has received funding by the European Research Council (ERC), under the Horizon Europe research and innovation programme (SALSA, grant agreement No 101100615), ERDF/MICINN-AEI (SCANNER-UDC, PID2020113230RB-C21), Xunta de Galicia (ED431C 2020/11), Grant GAP (PID2022-139308OA-I00) funded by MCIN/AEI/10.13039/501100011033/ and by ERDF “A way of making Europe”, and Centro de Investigación de Galicia “CITIC”, funded by the Xunta de Galicia through the collaboration agreement between the Consellería de Cultura, Educación, Formación Profesional e Universidades and the Galician universities for the reinforcement of the research centres of the Galician University System (CIGUS).
