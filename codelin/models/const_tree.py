@@ -69,6 +69,18 @@ class C_Tree:
         self.children.remove(child)
         child.parent = None
 
+    def set_dummy_preterminals(self):
+        '''
+        Creates preterminal dummy nodes with label _ in case the given trees do not have them
+        '''
+        for node in self.get_terminals():
+            node_parent = node.parent
+            temp_node = C_Tree(C_NONE_LABEL, [node])
+            node.parent = temp_node
+            node_parent.children[node_parent.children.index(node)] = temp_node
+                
+                
+
 # Getters
     def r_child(self):
         '''
@@ -130,7 +142,7 @@ class C_Tree:
 
     def get_preterminals(self):
         '''
-        Function that returns the terminal nodes of a tree
+        Function that returns the preterminal nodes of a tree
         '''
         if self.is_preterminal():
             return [self]
@@ -146,14 +158,6 @@ class C_Tree:
         else:
             return [node for child in self.children for node in child.get_words()]
 
-    def get_postags(self):
-        '''
-        Function that returns the preterminal nodes of a tree
-        '''
-        if self.is_preterminal():
-            return [self.label]
-        else:
-            return [node for child in self.children for node in child.get_postags()]
 
 # Tree stats
 
@@ -273,7 +277,7 @@ class C_Tree:
 
     def is_unary_chain(self):
         # Returns true if the tree is an intermediate unary chain
-        if len(self.children)==1 and not (self.is_preterminal() or self.is_terminal()):
+        if len(self.children)==1 and not (self.is_preterminal() or self.is_terminal() or self.is_root()):
             return True
         else:
             return False

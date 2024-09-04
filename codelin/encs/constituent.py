@@ -9,7 +9,8 @@ from codelin.models.const_tree import C_Tree
 
 ## Encoding and decoding
 
-def encode_constituent(in_path, out_path, encoding_type, reverse, separator, multitask, n_label_cols, unary_joiner, features, binary, binary_direction, binary_marker, traverse_dir, gap_mode):
+def encode_constituent(in_path, out_path, encoding_type, reverse, separator, multitask, n_label_cols, unary_joiner, features, binary, binary_direction, 
+                       binary_marker, traverse_dir, gap_mode, ignore_postags):
     '''
     Encodes the selected file according to the specified parameters:
     :param in_path: Path of the file to be encoded
@@ -56,6 +57,11 @@ def encode_constituent(in_path, out_path, encoding_type, reverse, separator, mul
     for line in file_in:
         line = line.rstrip()
         tree = C_Tree.from_string(line)
+
+        if ignore_postags:
+            tree.set_dummy_preterminals()
+            print(tree)
+        
         linearized_tree = encoder.encode(tree)
         file_out.write(linearized_tree.to_string(f_idx_dict, separate_columns=multitask, n_label_cols=n_label_cols))
         file_out.write("\n")
@@ -66,7 +72,8 @@ def encode_constituent(in_path, out_path, encoding_type, reverse, separator, mul
     
     return labels_counter, tree_counter, len(label_set)
 
-def decode_constituent(in_path, out_path, encoding_type, reverse, separator,  multitask, unary_joiner, conflicts, nulls, postags, lang, binary, binary_marker, traverse_dir, gap_mode):
+def decode_constituent(in_path, out_path, encoding_type, reverse, separator,  multitask, n_label_cols, unary_joiner, conflicts, nulls, postags, lang, binary, 
+                       binary_marker, traverse_dir, gap_mode):
     '''
     Decodes the selected file according to the specified parameters:
     :param in_path: Path of the labels file to be decoded
@@ -106,16 +113,18 @@ def decode_constituent(in_path, out_path, encoding_type, reverse, separator,  mu
     for line in f_in:
         if line == "\n":
             tree_string = tree_string.rstrip()
-            current_tree = LinearizedTree.from_string(tree_string, mode="CONST", separator=separator, unary_joiner=unary_joiner, separate_columns=multitask)
+            current_tree = LinearizedTree.from_string(tree_string, mode="CONST", separator=separator, unary_joiner=unary_joiner, separate_columns=multitask, ignore_postags=True, n_label_cols=n_label_cols)
             
             if postags:
                 c_tags = nlp(current_tree.get_sentence())
                 current_tree.set_postags([word.pos for word in c_tags])
-                
+            
             decoded_tree = decoder.decode(current_tree)
             decoded_tree = decoded_tree.postprocess_tree(conflicts, nulls)
-
-            f_out.write(str(decoded_tree).replace('\n','')+'\n')
+            
+            tree_string = str(decoded_tree).replace('\n','')+'\n'
+            f_out.write(tree_string)
+            
             tree_string   = ""
             tree_counter+=1
         tree_string += line

@@ -28,6 +28,9 @@ if __name__=="__main__":
 
     parser.add_argument('--multitask', action='store_true', required=False, default=False,
                         help='Flag to indicate that the output file will be shaped with one column per field.')
+    
+    parser.add_argument('--n_label_cols', required=False, type=int, default=1,
+                        help='Flag to indicate the number of columns to separate the label.')
 
     parser.add_argument("--time", action='store_true', required=False, 
                         help='Flag to measure decoding time.')
@@ -96,6 +99,9 @@ if __name__=="__main__":
 
     parser.add_argument('--sep_bits', required=False, type=int, default=None,
                         help = 'Separate bits in the label at the specified index (only for dependency encoding)')
+    
+    parser.add_argument('--ignore_postags', required=False, action='store_true', default=False,
+                        help = 'Remove the part of speech tags prediction')
 
     args = parser.parse_args()
 
@@ -106,14 +112,15 @@ if __name__=="__main__":
         
         if args.operation == OP_ENC:
             n_labels, n_trees, n_diff_labels = encode_constituent(args.input, args.output, args.enc, args.incremental,
-                                                                  args.sep, args.multitask, args.ujoiner, args.feats, 
+                                                                  args.sep, args.multitask, args.n_label_cols,
+                                                                  args.ujoiner, args.feats, 
                                                                   args.binary, args.b_direction, args.b_marker,
-                                                                  args.traverse, args.gap_mode)
+                                                                  args.traverse, args.gap_mode, args.ignore_postags)
         
         elif args.operation == OP_DEC:
             n_diff_labels = None
             n_trees, n_labels = decode_constituent(args.input, args.output, args.enc, args.incremental, args.sep, 
-                                                   args.multitask, args.ujoiner, args.conflict, args.nulls, 
+                                                   args.multitask, args.n_label_cols, args.ujoiner, args.conflict, args.nulls, 
                                                    args.postags, args.lang, 
                                                    args.binary, args.b_marker, args.traverse, args.gap_mode)
     
@@ -125,9 +132,9 @@ if __name__=="__main__":
         
         elif args.operation == OP_DEC:
             n_diff_labels = None
-            n_trees, n_labels, n_heur = decode_dependencies(args.input, args.output, args.enc, args.sep, args.multitask,
+            n_trees, n_labels, n_heur = decode_dependencies(args.input, args.output, args.enc, args.sep, args.multitask, args.n_label_cols,
                                                     args.disp, args.rsingle, args.rsearch, 
-                                                    args.hfr, args.postags, args.lang, args.sep_bits, args.count_heur)
+                                                    args.hfr, args.lang, args.sep_bits, args.count_heur)
 
 
 

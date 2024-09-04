@@ -97,8 +97,14 @@ class LinearizedTree:
     def __repr__(self):        
         return self.to_string()
     
-    def to_string(self, f_idx_dict=None, add_bos_eos=True, separate_columns=False, n_label_cols=1):
-        n_cols = (len(f_idx_dict.keys()) + 1 + n_label_cols) if f_idx_dict else 1 + n_label_cols
+    def to_string(self, f_idx_dict=None, add_bos_eos=True, separate_columns=False, n_label_cols=1, ignore_postags=False):
+        
+        # set the columns to split the label if needed
+        n_cols = (len(f_idx_dict.keys()) + 1 + n_label_cols) if f_idx_dict else (1 + n_label_cols)
+        # n_cols = n_cols-1 if ignore_postags else n_cols
+        print(n_cols)
+        
+        # add bos eos
         if add_bos_eos:
             self.words = [BOS] + self.words + [EOS]
             self.postags = [BOS] + self.postags + [EOS]
@@ -110,9 +116,11 @@ class LinearizedTree:
             self.labels = [BOS] + self.labels + [EOS]
         
         tree_string = ""
+        
+        # creat the tree
         for w, p, af, l in self.iterrows():
             # create the output line of the linearized tree
-            output_line = [w,p]
+            output_line = [w,p] 
             
             # check for features
             if f_idx_dict:
@@ -144,8 +152,10 @@ class LinearizedTree:
                     if len(label_split) < n_label_cols:
                         label_split += [C_NONE_LABEL] * (n_label_cols - len(label_split))
                     output_line += label_split
+            
             else:
                 output_line.append(str(l))
+            
             tree_string+=u"\t".join(output_line)+u"\n"
         
         if add_bos_eos:
@@ -163,7 +173,7 @@ class LinearizedTree:
         return temp_tree
 
     @staticmethod
-    def from_string(content, mode, separator="[_]", unary_joiner="[+]", separate_columns=False, n_features=0, sep_bits=-1):
+    def from_string(content, mode, separator="[_]", unary_joiner="[+]", separate_columns=False, n_label_cols=1, ignore_postags=False, n_features=0, sep_bits=-1):
         '''
         Reads a linearized tree from a string shaped as
         -BOS- \t -BOS- \t (...) \t -BOS- \n
@@ -199,28 +209,20 @@ class LinearizedTree:
                 continue
             
             if separate_columns:
-                # fix for not found unary chains
-                if len(line_columns) == 4 and mode == "CONST":
-                    line_columns.append(C_NONE_LABEL)
-                
-                if mode=="CONST":
-                    label_cols = 3
-                elif mode=="DEPS":
-                    label_cols = 2
-                if len(line_columns) == 1+label_cols:
+                if len(line_columns) == 1+n_label_cols:
                     word, *label = line_columns
                     postag = C_NO_POSTAG_LABEL
                     feats = "_"
                     label = separator.join(label)
                 
-                elif len(line_columns) == 2+label_cols:
+                elif len(line_columns) == 2+n_label_cols:
                     word, postag, *label = line_columns
                     feats = "_"
                     label = separator.join(label)
                 
                 else:
-                    label = line_columns[-label_cols:]
-                    word, postag, *feats = line_columns[:-label_cols]
+                    label = line_columns[-n_label_cols:]
+                    word, postag, *feats = line_columns[:-n_label_cols]
                     label = separator.join(label)
 
             else:
@@ -228,9 +230,11 @@ class LinearizedTree:
                     word, label = line_columns
                     postag = C_NO_POSTAG_LABEL
                     feats = "_"
+                
                 elif len(line_columns) == 3:
                     word, postag, label = line_columns[0], line_columns[1], line_columns[2]
                     feats = "_"
+                
                 else:
                     word, postag, *feats, label = line_columns[0], line_columns[1], line_columns[1:-1], line_columns[-1]
             

@@ -20,6 +20,8 @@ train_models.ipynb
 /evalb
 /evalud
 /scripts
+/ner_data
+/.venv
 
 # project related stuff
 /notes
