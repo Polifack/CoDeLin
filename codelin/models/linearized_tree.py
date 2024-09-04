@@ -102,8 +102,7 @@ class LinearizedTree:
         # set the columns to split the label if needed
         n_cols = (len(f_idx_dict.keys()) + 1 + n_label_cols) if f_idx_dict else (1 + n_label_cols)
         # n_cols = n_cols-1 if ignore_postags else n_cols
-        print(n_cols)
-        
+
         # add bos eos
         if add_bos_eos:
             self.words = [BOS] + self.words + [EOS]
