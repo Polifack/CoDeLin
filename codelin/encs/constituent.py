@@ -60,7 +60,6 @@ def encode_constituent(in_path, out_path, encoding_type, reverse, separator, mul
 
         if ignore_postags:
             tree.set_dummy_preterminals()
-            print(tree)
         
         linearized_tree = encoder.encode(tree)
         file_out.write(linearized_tree.to_string(f_idx_dict, separate_columns=multitask, n_label_cols=n_label_cols))
