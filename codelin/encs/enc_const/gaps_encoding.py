@@ -28,6 +28,15 @@ class C_GapsEncoding(ACEncoding):
         self.mode = mode
         self.reverse = reverse
 
+        print("[*] Constituent Gaps Based Encoding initialized.")
+        print(f"[*] Separator: {separator}")
+        print(f"[*] Unary Joiner: {unary_joiner}")
+        print(f"[*] Binary Marker: {binary_marker}")
+        print(f"[*] Binary Direction: {binary_direction}")
+        print(f"[*] Mode: {mode}")
+        print(f"[*] Reverse: {reverse}")
+
+
     def __str__(self):
         return "Constituent Gaps Based Encoding"
 
@@ -64,7 +73,7 @@ class C_GapsEncoding(ACEncoding):
             elif node.is_terminal():
                 word     = node.label
                 node     = node.parent
-                n_gaps  = 0
+                n_gaps   = 0
                 
                 if self.mode == "close":
                     while node.parent and node.is_right_child():
@@ -75,7 +84,6 @@ class C_GapsEncoding(ACEncoding):
                     while node.parent and node.is_left_child():
                         n_gaps += 1
                         node    = node.parent
-                    
 
             else:
                 non_terminal = node.label
