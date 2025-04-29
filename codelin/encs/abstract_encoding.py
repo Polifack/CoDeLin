@@ -1,5 +1,7 @@
 from abc import ABC, abstractmethod
 import re
+from concurrent.futures import ProcessPoolExecutor
+import multiprocessing
 
 class ADEncoding(ABC):
     '''
@@ -31,7 +33,11 @@ class ACEncoding(ABC):
         self.separator = separator
         self.unary_joiner = ujoiner
         self.reverse = reverse
-
+    
+    def batch_encode(self, tree_list):
+        with ProcessPoolExecutor(max_workers=multiprocessing.cpu_count()) as executor:
+            return list(executor.map(self.encode, tree_list))
+    
     def get_unary_chain(self, postag):
         unary_chain = None
         leaf_unary_chain = postag.split(self.unary_joiner)

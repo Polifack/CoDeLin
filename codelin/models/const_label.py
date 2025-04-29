@@ -30,7 +30,6 @@ class C_Label:
     @staticmethod
     def from_string(l, sep, uj):
         label_components = l.split(sep)
-        
         if len(label_components)== 2:
             nc, lc = label_components
             uc = None

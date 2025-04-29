@@ -1,0 +1,127 @@
+from codelin.encs.abstract_encoding import ACEncoding
+from codelin.utils.constants import C_RIGHT_DESC_ENCODING, C_ROOT_LABEL, C_CONFLICT_SEPARATOR, C_NONE_LABEL
+from codelin.models.const_label import C_Label
+from codelin.models.linearized_tree import LinearizedTree
+from codelin.models.const_tree import C_Tree
+from copy import deepcopy
+import time
+
+from concurrent.futures import ThreadPoolExecutor
+
+
+def merge_if_free(nt, parent, children):
+    '''
+    Given the label of a non-terminal node, a parent node and a children node,
+    it merges the children node with the parent node if the parent node has a
+    free gap in the right side of the tree. Otherwise, it creates a new node
+    with the given label and the parent and children nodes as children.
+    '''
+    if C_NONE_LABEL in [c.label for c in parent.children]:
+        parent.children[1] = children        
+    else:
+        parent = C_Tree(nt, children=[parent, children])
+    return parent
+
+class C_RightDescendant(ACEncoding):
+    def __init__(self, separator, unary_joiner, binary_direction, look_behind, binary_marker):
+        self.separator = separator
+        self.unary_joiner = unary_joiner
+        self.binary=True
+        self.binary_marker = binary_marker
+        self.binary_direction = binary_direction
+        self.look_behind = look_behind
+
+
+    def __str__(self):
+        return "Right Descendant Encoding binary"+self.binary_direction+(" look-behind" if self.look_behind else "")
+    
+    def encode(self, constituent_tree: C_Tree):
+        constituent_tree = constituent_tree.collapse_unary(self.unary_joiner)
+
+        if self.binary_direction == "R":
+            constituent_tree = C_Tree.to_binary_right(constituent_tree, self.binary_marker)
+        elif self.binary_direction == "L":
+            constituent_tree = C_Tree.to_binary_left(constituent_tree, self.binary_marker)
+        else:
+            raise Exception("Binary direction not supported")
+
+        constituent_tree.add_start_node() 
+        constituent_tree.precompute_rmost_child()
+        lc_tree = LinearizedTree.empty_tree()
+        leaf_paths = constituent_tree.path_to_leaves_nodes()
+
+        for i in range(len(leaf_paths) - 1, 0, -1):
+            path_a = leaf_paths[i]
+            path_b = leaf_paths[i - 1]
+
+            word_node = path_a[-1]
+            word = word_node.label
+            postag = path_a[-2].label
+
+            unary_chain, postag = self.get_unary_chain(postag)
+            postag, feats = self.get_features(postag)
+
+            j = 0
+            while j < len(path_a) and j < len(path_b) and path_a[j] == path_b[j]:
+                j += 1
+
+            last_common = path_a[j - 1].label 
+            n_commons = sum(1 for k in range(j) if path_a[k]._rmost_child == word_node)
+
+            last_common = self.clean_last_common(last_common)
+            c_label = C_Label(n_commons, last_common, unary_chain, C_RIGHT_DESC_ENCODING,
+                            self.separator, self.unary_joiner)
+            lc_tree.add_row(word, postag, feats, c_label)
+        
+        lc_tree.reverse_tree()
+        
+        # non-terminal displacement
+        first_lc = lc_tree.labels[0].last_common
+        for i in range(len(lc_tree.labels)-1):
+            lc_tree.labels[i].last_common=lc_tree.labels[i+1].last_common
+        lc_tree.labels[-1].last_common=first_lc
+        
+        if self.look_behind:
+            lc_tree = LinearizedTree.to_look_behind(lc_tree)
+        
+        return lc_tree
+
+
+    
+    def decode(self, linearized_tree):
+        if not linearized_tree:
+            print("[*] Error while decoding: Null tree.")
+            return
+        
+        if self.look_behind:
+            linearized_tree = LinearizedTree.undo_look_behind(linearized_tree)
+        
+        nodes_stack = []
+        for word, postag, feats, label in linearized_tree.iterrows():
+            last_nt = label.last_common
+            unary_chain = label.unary_chain
+            n_gaps = label.n_commons
+
+            node = C_Tree(postag, children=[C_Tree(word)])
+
+            # build leaf unary chain
+            leaf_unary_chain = unary_chain.split(self.unary_joiner) if unary_chain else []
+            if len(leaf_unary_chain) > 0:
+                for unary in reversed(leaf_unary_chain):
+                    node = C_Tree(unary, children=[node])
+            
+            for _ in range(n_gaps):
+                stack_top = nodes_stack.pop() if nodes_stack else C_Tree(C_NONE_LABEL)
+                node = merge_if_free(last_nt, stack_top, node)
+
+            if linearized_tree.words.index(word) != len(linearized_tree.words)-1:
+                node = C_Tree(last_nt, children=[node, C_Tree(C_NONE_LABEL)])
+                nodes_stack.append(node)
+
+        final_tree = node        
+        final_tree = C_Tree.restore_from_binary(final_tree, self.binary_marker)
+        final_tree = final_tree.uncollapse_unary(self.unary_joiner)
+
+        final_tree = final_tree.postprocess_tree()
+
+        return final_tree

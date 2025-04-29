@@ -2,10 +2,20 @@ import stanza
 import copy
 from codelin.models.linearized_tree import LinearizedTree
 from codelin.models.deps_label import D_Label
-from codelin.utils.extract_feats import extract_features_deps
 from codelin.encs.enc_deps import *
 from codelin.utils.constants import *
 from codelin.models.deps_tree import D_Tree
+
+
+def extract_features_deps(in_path):
+    feats_list=set()
+    trees = D_Tree.read_conllu_file(in_path, filter_projective=False)
+    for t in trees:
+        for node in t:
+            if node.feats != "_":
+                feats_list = feats_list.union(a for a in (node.feats.keys()))
+
+    return sorted(feats_list)
 
 # Encoding
 def encode_dependencies(in_path, out_path, encoding_type, separator, multitask, displacement, planar_alg, root_enc, features, sep_bit):
@@ -64,7 +74,7 @@ def encode_dependencies(in_path, out_path, encoding_type, separator, multitask, 
                 xi = l.separate_bits(sep_bit)
                 l.xi = separator.join(xi)
 
-        file_out.write(linearized_tree.to_string(f_idx_dict, separate_columns=multitask))
+        file_out.write(linearized_tree.to_string(f_idx_dict, separate_columns=multitask, add_bos_eos=add_bos_eos))
         file_out.write("\n")
         
         tree_counter += 1

@@ -25,11 +25,14 @@ train_models.ipynb
 # project related stuff
 /notes
 /deprecated
+/project_scripts
 /logs
 /default_cfgs
 
 .vscode/
 /src/models/__pycache__
+/src/encs/__pycache__
+/scr/utils/__pycache__
 *.pyc
 scripts/
 test.ipynb
