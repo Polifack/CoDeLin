@@ -309,10 +309,11 @@ class C_Tree:
 # Checkers
     def is_right_child(self):
         '''
-        Returns if a given subtree is the 
-        rightmost child of its parent
+        Returns if this node is the rightmost child of its parent.
         '''
-        return self.parent is not None and len(self.parent.children)>1 and self.parent.children.index(self)==len(self.parent.children)-1
+        if self.parent is None or len(self.parent.children) <= 1:
+            return False
+        return self is self.parent.children[-1]
 
     def is_rightmost_word_in_subtree(self, subtree, idx):
         '''
@@ -322,14 +323,15 @@ class C_Tree:
         '''
         word = self.get_terminals()[idx]
         rmost_child = subtree.rmost_child()
-        return word == rmost_child
-
+        return word is rmost_child
+    
     def is_left_child(self):
         '''
-        Returns if a given subtree is the
-        leftmost child of its parent
+        Returns if this node is the leftmost child of its parent.
         '''
-        return self.parent is None or self.parent.children.index(self)==0
+        if self.parent is None:
+            return True
+        return self is self.parent.children[0]
     
     def is_leftmost_word_in_subtree(self, subtree, idx):
         '''
@@ -339,7 +341,7 @@ class C_Tree:
         '''
         word = self.get_terminals()[idx]
         lmost_child = subtree.lmost_child()
-        return word == lmost_child
+        return word is lmost_child
 
     def has_none_child(self):
         '''
@@ -565,7 +567,7 @@ class C_Tree:
         Function that adds a dummy end node to the 
         rightmost part of the tree
         '''
-        self.add_child(C_Tree(C_END_LABEL, []))
+        self.add_child(C_Tree(C_END_LABEL, [C_Tree(C_END_LABEL, [])]))
 
     def add_start_node(self):
         '''
@@ -683,6 +685,7 @@ class C_Tree:
         and with NULL nodes cleaned.
         '''
         if clean_nulls:
+            # problem here, we should not enforce a default root, we should inherit the tree if possible
             if self.label == C_NONE_LABEL:
                 self.label = default_root
             t = self.prune_nones()
@@ -925,12 +928,11 @@ class C_Tree:
     @staticmethod
     def to_binary_left(t, binary_marker="*"):
         '''
-        Converts a tree to its binary form using left binarization (iterative version).
+        Converts a tree to its binary form using left binarization.
         '''
         if not t:
             return None
 
-        # Stack stores tuples of (current node, parent, child index in parent)
         stack = [(t, None, -1)]
         new_root = None
 
@@ -938,21 +940,20 @@ class C_Tree:
             current, parent, child_index = stack.pop()
 
             if len(current.children) == 0:
-                # Leaf node: no changes needed
                 if parent:
                     parent.children[child_index] = current
+
             elif len(current.children) == 1:
-                # Single child: no binarization needed
                 child = current.children[0]
                 stack.append((child, current, 0))
+
             elif len(current.children) == 2:
-                # Two children: no binarization needed
                 left_child = current.children[0]
                 right_child = current.children[1]
                 stack.append((right_child, current, 1))
                 stack.append((left_child, current, 0))
+
             else:
-                # More than two children: perform left binarization
                 last_child = current.children[-1]
                 rest_label = (
                     current.label + binary_marker
@@ -960,20 +961,18 @@ class C_Tree:
                     else current.label
                 )
                 rest_children = C_Tree(rest_label, current.children[:-1])
-                stack.append((last_child, current, 1))  # Process last_child next
-                stack.append((rest_children, current, 0))  # Process rest_children first
+                stack.append((last_child, current, 1))
+                stack.append((rest_children, current, 0))
 
-                # Update the current node to have only two children
                 current.children = [rest_children, last_child]
-                # update parent
                 for c in current.children:
-                    c.parent=current
+                    c.parent = current
 
-            # Track the new root of the tree
             if not parent:
                 new_root = current
 
         return new_root
+
         
     @staticmethod
     def to_binary_right(t, binary_marker="*"):
@@ -1029,22 +1028,23 @@ class C_Tree:
     @staticmethod
     def restore_from_binary(bt, binary_marker="*"):
         '''
-        Restores a binarized tree to its original form by removing markers and flattening nodes.
+        Restores a binarized Constituent Tree to its original form.
         '''
         if len(bt.children) == 0:  # Leaf node
             return bt
 
+        # Recursively restore children
         restored_children = []
         for c in bt.children:
             restored_child = C_Tree.restore_from_binary(c, binary_marker)
-            if binary_marker in restored_child.label:  # Flatten marker nodes
+            # Flatten only if the binary node has more than one child
+            if binary_marker in restored_child.label and len(restored_child.children) > 1:
                 restored_children.extend(restored_child.children)
             else:
                 restored_children.append(restored_child)
 
         bt.children = restored_children
         return bt
-
 # Traversals
     @staticmethod
     def preorder(node, fn):

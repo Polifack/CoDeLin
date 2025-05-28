@@ -111,7 +111,7 @@ if __name__=="__main__":
     if args.formalism == F_CONSTITUENT:
         
         if args.operation == OP_ENC:
-            n_labels, n_trees, n_diff_labels = encode_constituent(args.input, args.output, args.enc, args.incremental,
+            n_labels, n_trees, n_diff_labels, label_set, lci_set, nci_set, uci_set = encode_constituent(args.input, args.output, args.enc, args.incremental,
                                                                   args.sep, args.multitask, args.n_label_cols,
                                                                   args.ujoiner, args.feats, 
                                                                   args.binary, args.b_direction, args.b_marker,

@@ -163,10 +163,10 @@ class C_AttachJuxtapose(ACEncoding):
             uc, p = self.get_unary_chain(p)
             p, f = self.get_features(p)
             
-            lc_str = "an="+str(a.name)+\
-                ("[;]"+"pl="+str(a.parent_label) if a.parent_label is not None else "")+\
+            lc_str = ("pl="+str(a.parent_label) if a.parent_label is not None else "")+\
                     ("[;]"+"nl="+str(a.new_label) if a.new_label is not None else "")
-            l = C_Label(nc=a.target_node, lc=lc_str, uc=uc, et=C_JUXTAPOSED_ENCODING, sp=self.separator, uj=self.unary_joiner)
+            nc_str = str(a.name)+"-"+str(a.target_node)
+            l = C_Label(nc=nc_str, lc=lc_str, uc=uc, et=C_JUXTAPOSED_ENCODING, sp=self.separator, uj=self.unary_joiner)
             
             lc_tree.add_row(w, p, f, l)
         

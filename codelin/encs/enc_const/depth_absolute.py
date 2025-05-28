@@ -21,9 +21,10 @@ class C_DepthBasedAbsolute(ACEncoding):
             (f" binary{self.binary_direction}" if self.binary else "")+\
                 (" look-behind" if self.look_behind else "")
 
-    def encode(self, constituent_tree):
+    def encode(self, constituent_tree: C_Tree):
 
         constituent_tree = constituent_tree.collapse_unary(self.unary_joiner)
+        # print(constituent_tree)
         
         if self.binary:
             if self.binary_direction == "R":
@@ -42,6 +43,7 @@ class C_DepthBasedAbsolute(ACEncoding):
             last_common = ""
             n_commons   = 0
             for a,b in zip(path_a, path_b):
+                # print(a,b)
                 if (a!=b):
                     # Remove the digits and aditional feats in the last common node
                     last_common = self.clean_last_common(last_common)
@@ -55,7 +57,6 @@ class C_DepthBasedAbsolute(ACEncoding):
                     
                     # Clean the POS Tag and extract additional features
                     postag, feats = self.get_features(postag)
-
                     c_label = C_Label(n_commons, last_common, unary_chain, C_ABSOLUTE_ENCODING, 
                                                 self.separator, self.unary_joiner)
                     lc_tree.add_row(word, postag, feats, c_label)

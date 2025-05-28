@@ -76,7 +76,7 @@ def encode_inorder(tree: C_Tree, sep, ujoiner):
 
     for node in nodes:
         if node.is_terminal():
-            # print("word:",node.label)/
+            # print(f"[DEBUG] processing node {node.label} and it is a right child {node.is_right_child()}")
             lbl = shift_action(node)
             cl.append(lbl)
         else:
@@ -105,10 +105,12 @@ def encode_inorder(tree: C_Tree, sep, ujoiner):
     
     return lintree
 
+
 def decode_inorder(l_in, ujoiner):
     stack = []
     idx = 0
     for word, postag, feats, label in l_in.iterrows():
+        # print(word, label, '\n', stack)
         idx+=1
 
         if type(label.n_commons)==int:
@@ -486,14 +488,14 @@ class C_Tetratag(ACEncoding):
     
     def encode(self, constituent_tree: C_Tree):
         constituent_tree = constituent_tree.collapse_unary(self.unary_joiner)
-        print(f"collapsed tree: {constituent_tree}")
+        # print(f"collapsed tree: {constituent_tree}")
         if self.binary_direction=="R":
             constituent_tree = C_Tree.to_binary_right(constituent_tree, self.binary_marker)
         elif self.binary_direction=="L":
             constituent_tree = C_Tree.to_binary_left(constituent_tree, self.binary_marker)
         else:
             raise Exception("Binary direction not supported")
-
+        # print(constituent_tree)
         if self.mode == "inorder":
             constituent_tree.add_root_node()
             return encode_inorder(constituent_tree, self.separator, self.unary_joiner)
@@ -513,7 +515,8 @@ class C_Tetratag(ACEncoding):
             final_tree = decode_preorder(linearized_tree, self.unary_joiner)
         elif self.mode == "postorder":
             final_tree = decode_postorder(linearized_tree, self.unary_joiner)
-
+        # print(final_tree)
         C_Tree.restore_from_binary(final_tree, binary_marker=self.binary_marker)
         final_tree = final_tree.uncollapse_unary(self.unary_joiner)
+        final_tree = final_tree.children[0]
         return final_tree

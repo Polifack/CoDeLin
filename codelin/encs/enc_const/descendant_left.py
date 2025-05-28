@@ -41,11 +41,9 @@ class C_LeftDescendant(ACEncoding):
             raise Exception("Binary direction not supported")
         
         constituent_tree.add_end_node() 
-        constituent_tree.precompute_lmost_child()       # precompute lmost child for the whole tree to speedup the process
+        constituent_tree.precompute_lmost_child()
         lc_tree = LinearizedTree.empty_tree()
         leaf_paths = constituent_tree.path_to_leaves_nodes()
-
-        # C_Tree.pretty_print(constituent_tree)
 
         for i in range(0, len(leaf_paths)-1):
             path_a = leaf_paths[i]
@@ -54,23 +52,23 @@ class C_LeftDescendant(ACEncoding):
             word_node = path_a[-1]
             word = word_node.label
             postag = path_a[-2].label
-            
+
             unary_chain, postag = self.get_unary_chain(postag)
             postag, feats = self.get_features(postag)
             
             j = 0
-            while j < len(path_a) and j < len(path_b) and path_a[j] == path_b[j]:
+            while j < len(path_a) and j < len(path_b) and path_a[j] is path_b[j]:
                 j += 1
 
-            last_common = path_a[j - 1].label 
+            last_common = path_a[j - 1].label
             n_commons = sum(1 for k in range(j) if path_a[k]._lmost_child == word_node)
 
             last_common = self.clean_last_common(last_common)
             c_label = C_Label(n_commons, last_common, unary_chain, C_LEFT_DESC_ENCODING,
                             self.separator, self.unary_joiner)
-                            
             lc_tree.add_row(word, postag, feats, c_label)
             
+        lc_tree.labels[-1].last_common="-NONE-"
         if self.look_behind:
             lc_tree = LinearizedTree.to_look_behind(lc_tree)
 
@@ -89,6 +87,7 @@ class C_LeftDescendant(ACEncoding):
         words = []
 
         tree = C_Tree(C_ROOT_LABEL, [])
+        
         open_gaps_stack = []
         current_level = tree
         open_gaps_stack.append(current_level)
@@ -137,7 +136,7 @@ class C_LeftDescendant(ACEncoding):
             current_level = insert_level
             while current_level.parent and len(current_level.children) == 2 and current_level.parent.label != C_ROOT_LABEL:
                 current_level = current_level.parent
-            if last_nt == "$$" or last_nt in words or last_nt in postags:
+            if last_nt == "-NONE-" or last_nt in words or last_nt in postags:
                 continue
             else:
                 current_level.label = current_level.label + C_CONFLICT_SEPARATOR + last_nt if current_level.label != C_NONE_LABEL else last_nt

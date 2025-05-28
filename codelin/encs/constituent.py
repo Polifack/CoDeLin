@@ -71,6 +71,9 @@ def encode_constituent(in_path, out_path, encoding_type, reverse, separator, mul
     tree_counter = 0
     labels_counter = 0
     label_set = set()
+    nci_set = set()
+    lci_set = set()
+    uci_set = set()
 
     # Read and parse all trees first
     parsed_trees = []
@@ -106,8 +109,11 @@ def encode_constituent(in_path, out_path, encoding_type, reverse, separator, mul
         labels_counter += len(linearized_tree)
         for lbl in linearized_tree.labels:
             label_set.add(str(lbl))
+            lci_set.add(str(lbl.last_common))
+            nci_set.add(str(lbl.n_commons))
+            uci_set.add(str(lbl.unary_chain))
 
-    return labels_counter, tree_counter, len(label_set)
+    return labels_counter, tree_counter, len(label_set), label_set, lci_set, nci_set, uci_set
 
 def decode_constituent(
     in_path, out_path, encoding_type, lookbehind, separator, multitask, n_label_cols,
@@ -133,22 +139,23 @@ def decode_constituent(
     :param traverse_dir: Direction for tree traversal.
     """
 
-    # Select the appropriate decoder based on encoding type
-    decoders = {
-        C_ABSOLUTE_ENCODING: C_DepthBasedAbsolute,
-        C_RELATIVE_ENCODING: C_DepthBasedRelative,
-        C_DYNAMIC_ENCODING: C_DepthBasedDynamic,
-        C_LEFT_DESC_ENCODING: C_LeftDescendant,
-        C_RIGHT_DESC_ENCODING: C_RightDescendant,
-        C_TETRA_ENCODING: C_Tetratag,
-        C_JUXTAPOSED_ENCODING: C_AttachJuxtapose,
-    }
+    if encoding_type == C_ABSOLUTE_ENCODING:
+        decoder = C_DepthBasedAbsolute(separator, unary_joiner, lookbehind, binary,  None, binary_marker)
+    elif encoding_type == C_RELATIVE_ENCODING:
+        decoder = C_DepthBasedRelative(separator, unary_joiner, lookbehind, binary,  None, binary_marker)
+    elif encoding_type == C_DYNAMIC_ENCODING:
+        decoder = C_DepthBasedDynamic(separator, unary_joiner, lookbehind, binary,  None, binary_marker)
+    elif encoding_type == C_TETRA_ENCODING:
+        decoder = C_Tetratag(separator, unary_joiner, traverse_dir, None, binary_marker)
+    elif encoding_type == C_LEFT_DESC_ENCODING:
+        decoder = C_LeftDescendant(separator, unary_joiner, None, lookbehind, binary_marker)
+    elif encoding_type == C_RIGHT_DESC_ENCODING:
+        decoder = C_RightDescendant(separator, unary_joiner, None, lookbehind, binary_marker)
+    elif encoding_type == C_JUXTAPOSED_ENCODING:
+        decoder = C_AttachJuxtapose(separator, unary_joiner, binary, None, binary_marker)
+    else:
+        raise Exception("Unknown encoding type")
 
-    if encoding_type not in decoders:
-        raise ValueError(f"Unknown encoding type: {encoding_type}")
-
-    decoder : ACEncoding = decoders[encoding_type](separator, unary_joiner, lookbehind, binary, None, binary_marker)
-    
     # Initialize POS tagging if required
     nlp = None
     if postags:

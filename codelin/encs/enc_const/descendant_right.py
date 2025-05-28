@@ -62,10 +62,12 @@ class C_RightDescendant(ACEncoding):
             postag, feats = self.get_features(postag)
 
             j = 0
-            while j < len(path_a) and j < len(path_b) and path_a[j] == path_b[j]:
+            while j < len(path_a) and j < len(path_b) and path_a[j] is path_b[j]:
                 j += 1
 
             last_common = path_a[j - 1].label 
+            print(last_common)
+
             n_commons = sum(1 for k in range(j) if path_a[k]._rmost_child == word_node)
 
             last_common = self.clean_last_common(last_common)
@@ -76,10 +78,9 @@ class C_RightDescendant(ACEncoding):
         lc_tree.reverse_tree()
         
         # non-terminal displacement
-        first_lc = lc_tree.labels[0].last_common
         for i in range(len(lc_tree.labels)-1):
             lc_tree.labels[i].last_common=lc_tree.labels[i+1].last_common
-        lc_tree.labels[-1].last_common=first_lc
+        lc_tree.labels[-1].last_common="-NONE-"
         
         if self.look_behind:
             lc_tree = LinearizedTree.to_look_behind(lc_tree)
@@ -117,8 +118,17 @@ class C_RightDescendant(ACEncoding):
             if linearized_tree.words.index(word) != len(linearized_tree.words)-1:
                 node = C_Tree(last_nt, children=[node, C_Tree(C_NONE_LABEL)])
                 nodes_stack.append(node)
+        
+        final_tree = node
 
-        final_tree = node        
+        # remove empty root nodes that may have been created during decoding
+        if final_tree.label == C_NONE_LABEL:
+            if final_tree.children[0].label != C_NONE_LABEL:
+                final_tree = final_tree.children[0]
+            else:
+                final_tree = final_tree.children[1]
+
+
         final_tree = C_Tree.restore_from_binary(final_tree, self.binary_marker)
         final_tree = final_tree.uncollapse_unary(self.unary_joiner)
 
