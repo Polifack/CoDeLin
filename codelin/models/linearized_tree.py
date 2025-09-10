@@ -191,19 +191,13 @@ class LinearizedTree:
             word = line_columns[0]
 
             if separate_columns:
-                if len(line_columns) == 1 + n_label_cols:
-                    word, *label = line_columns
-                    postag = C_NO_POSTAG_LABEL
-                    feats = "_"
-                    label = separator.join(label)
-                elif len(line_columns) == 2 + n_label_cols:
-                    word, postag, *label = line_columns
-                    feats = "_"
-                    label = separator.join(label)
-                else:
-                    label = line_columns[-n_label_cols:]
-                    word, postag, *feats = line_columns[:-n_label_cols]
-                    label = separator.join(label)
+                ## dirty fix for ner > try to apply it for all
+                label_elements = (line_columns[-n_label_cols:])
+                label_elements = [t for t in label_elements if t not in ["-NONE-"]]
+                label = separator.join(label_elements)
+                word = line_columns[0]
+                postag = line_columns[1]
+                feats = "_"
             else:
                 if len(line_columns) == 2:
                     word, label = line_columns
@@ -224,7 +218,7 @@ class LinearizedTree:
             additional_feats.append(feats)
 
             if mode == "CONST":
-                labels.append(C_Label.from_string(label, separator, unary_joiner))
+                    labels.append(C_Label.from_string(label, separator, unary_joiner))
             elif mode == "DEPS":
                 if sep_bits > 0:
                     label_parts = label.split(separator)

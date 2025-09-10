@@ -87,7 +87,6 @@ def encode_inorder(tree: C_Tree, sep, ujoiner):
             # print(f"processing node {node.label} and trying to access word {i}")
             w_i = words[i]
             p_i = tags[i] if i < len(tags) else "POS"
-            
             # p_i = extract feats
             nc_i = "".join(cl)
             lc_i = lc
@@ -108,69 +107,94 @@ def encode_inorder(tree: C_Tree, sep, ujoiner):
 
 def decode_inorder(l_in, ujoiner):
     stack = []
-    idx = 0
     for word, postag, feats, label in l_in.iterrows():
-        # print(word, label, '\n', stack)
-        idx+=1
-
-        if type(label.n_commons)==int:
+        # ensure n_commons is a str
+        if isinstance(label.n_commons, int):
             label.n_commons = 'l'
-        
         operators = list(label.n_commons)
-        
+
         for op in operators:
+
+            # --- SHIFT = build a leaf subtree + unary chain, then push (if 'r') or combine (if 'l') ---
+
             if op == 'r':
-                terminal_tree = C_Tree(postag, children=[C_Tree(word)])
+                # build leaf
+                if postag == C_NONE_LABEL:
+                    t = C_Tree(word)
+                else:
+                    t = C_Tree(postag, [C_Tree(word)])
                 
-                if label.unary_chain is not None:
+                # unary-chain (e.g. FIRST, NAME, etc)
+                if label.unary_chain:
                     for uc in reversed(label.unary_chain.split(ujoiner)):
-                        terminal_tree = C_Tree(uc, [terminal_tree])
-                
-                stack.append(terminal_tree)
-            
+                        t = C_Tree(uc, [t])
+                stack.append(t)
+
             elif op == 'l':
-                terminal_tree = C_Tree(postag, children=[C_Tree(word)])
-
-                if label.unary_chain is not None:
+                # build leaf
+                if postag == C_NONE_LABEL:
+                    t = C_Tree(word)
+                else:
+                    t = C_Tree(postag, [C_Tree(word)])
+                if label.unary_chain:
                     for uc in reversed(label.unary_chain.split(ujoiner)):
-                        terminal_tree = C_Tree(uc, [terminal_tree])
-                
-                if len(stack)==0:
-                    stack.append(terminal_tree)
-                else:                          
-                    stack[-1] = combine(stack[-1], terminal_tree)
+                        t = C_Tree(uc, [t])
 
-            # for the last node, avoid the nonterminal label
-            # if idx==len(l_in):
-            #     continue
+                # combine into placeholder on top-of-stack (or push if empty)
+                if not stack:
+                    stack.append(t)
+                else:
+                    stack[-1] = combine(stack[-1], t)
+
+            # --- REDUCE = build a new NT with one child + ∅ placeholder ---
 
             elif op.startswith("R"):
                 nt = label.last_common
-                tree = C_Tree(nt, [stack[-1], C_Tree.empty_tree()]) if len(stack)>0 else C_Tree(nt, [C_Tree.empty_tree(), C_Tree.empty_tree()])
-                
-                if len(stack)==0:
+                if not stack:
+                    # first operator is R => we must first build the leaf
+                    if postag == C_NONE_LABEL:
+                        t = C_Tree(word)
+                    else:
+                        t = C_Tree(postag, [C_Tree(word)])
+                    if label.unary_chain:
+                        for uc in reversed(label.unary_chain.split(ujoiner)):
+                            t = C_Tree(uc, [t])
+                    # now wrap
+                    tree = C_Tree(nt, [t, C_Tree.empty_tree()])
                     stack.append(tree)
                 else:
+                    # normal left-corner reduce
+                    tree = C_Tree(nt, [stack[-1], C_Tree.empty_tree()])
                     stack[-1] = tree
 
             elif op.startswith("L"):
                 nt = label.last_common
-                tree = stack.pop()
-                tree = C_Tree(nt, [tree, C_Tree.empty_tree()])
-                
-                if len(stack)==0:
+                if not stack:
+                    # first operator is L => same hack
+                    if postag == C_NONE_LABEL:
+                        t = C_Tree(word)
+                    else:
+                        t = C_Tree(postag, [C_Tree(word)])
+                    if label.unary_chain:
+                        for uc in reversed(label.unary_chain.split(ujoiner)):
+                            t = C_Tree(uc, [t])
+                    tree = C_Tree(nt, [t, C_Tree.empty_tree()])
                     stack.append(tree)
                 else:
-                    stack[-1] = combine(stack[-1], tree)
+                    # normal right-corner reduce
+                    child = stack.pop()
+                    tree  = C_Tree(nt, [child, C_Tree.empty_tree()])
+                    if stack:
+                        stack[-1] = combine(stack[-1], tree)
+                    else:
+                        stack.append(tree)
 
-    while(len(stack)>1):
-        tree = stack.pop()
-        tree = combine(stack[-1], tree)
-        stack[-1] = tree
+    # join up any remaining pieces
+    while len(stack) > 1:
+        t = stack.pop()
+        stack[-1] = combine(stack[-1], t)
 
-    final_tree = stack.pop()
-    # final_tree.inherit_tree(force=True)
-    return final_tree
+    return stack.pop()
 
 ## Preorder functions
 
@@ -515,7 +539,7 @@ class C_Tetratag(ACEncoding):
             final_tree = decode_preorder(linearized_tree, self.unary_joiner)
         elif self.mode == "postorder":
             final_tree = decode_postorder(linearized_tree, self.unary_joiner)
-        # print(final_tree)
+        
         C_Tree.restore_from_binary(final_tree, binary_marker=self.binary_marker)
         final_tree = final_tree.uncollapse_unary(self.unary_joiner)
         final_tree = final_tree.children[0]

@@ -18,7 +18,8 @@ def extract_features_deps(in_path):
     return sorted(feats_list)
 
 # Encoding
-def encode_dependencies(in_path, out_path, encoding_type, separator, multitask, displacement, planar_alg, root_enc, features, sep_bit):
+def encode_dependencies(in_path, out_path, encoding_type, separator, multitask, displacement, 
+                        planar_alg, root_enc, features, sep_bit, add_bos_eos):
     '''
     Encodes the selected file according to the specified parameters:
     :param in_path: Path of the file to be encoded
