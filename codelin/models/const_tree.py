@@ -652,19 +652,34 @@ class C_Tree:
             return [c.prune_nones() for c in self.children]
     
     def prune_artificial_root(self):
-        '''
-        Returns a new C_Tree where all the nodes with
-        label -ROOT- are removed.
-        '''
-        if self.label != C_ROOT_LABEL or self.label == "":
+        """
+        Returns a new C_Tree where all nodes with label -ROOT-
+        are removed. If -ROOT- has multiple children, they are
+        merged into the first one.
+        """
+        if self.label != C_ROOT_LABEL:
+            # Normal case: copy node and recurse on children
             t = C_Tree(self.label, [])
-            new_childs = [c.prune_artificial_root() for c in self.children]
-            t.add_child(new_childs)
+            for c in self.children:
+                t.add_child(c.prune_artificial_root())
             return t
-        
         else:
-            return [c.prune_artificial_root() for c in self.children]
-            
+            if not self.children:
+                return None
+            # Recurse on children
+            pruned_children = [c.prune_artificial_root() for c in self.children]
+
+            # If single child, just return it
+            if len(pruned_children) == 1:
+                return pruned_children[0]
+
+            # If multiple children, merge them into the first
+            first = pruned_children[0]
+            for extra in pruned_children[1:]:
+                if extra is not None:
+                    first.children.append(extra)
+            return first
+
     def remove_conflicts(self, conflict_strat):
         '''
         Removes all conflicts in the label of the tree generated
