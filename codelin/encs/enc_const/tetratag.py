@@ -184,18 +184,14 @@ def decode_inorder(l_in, ujoiner):
                     child = stack.pop()
                     tree  = C_Tree(nt, [child, C_Tree.empty_tree()])
                     if stack:
-                        print(f"combining at stack-1 {stack[-1]} with {tree}")
                         stack[-1] = combine(stack[-1], tree)
                     else:
                         stack.append(tree)
 
-    print(f"stack at the end {stack}")
     while len(stack) > 1:
         t = stack.pop()
         stack[-1] = combine(stack[-1], t)
-    print(f"stack after merge {stack}")
     final_tree=stack.pop()
-    print("final returning tree:",final_tree)
     return final_tree
 
 ## Preorder functions
@@ -541,11 +537,8 @@ class C_Tetratag(ACEncoding):
             final_tree = decode_preorder(linearized_tree, self.unary_joiner)
         elif self.mode == "postorder":
             final_tree = decode_postorder(linearized_tree, self.unary_joiner)
-        print(final_tree)
         C_Tree.restore_from_binary(final_tree, binary_marker=self.binary_marker)
         final_tree = final_tree.uncollapse_unary(self.unary_joiner)
-        print(final_tree)
         if final_tree.label == C_ROOT_LABEL:
             final_tree = final_tree.children[0]
-        print(final_tree.get_words())
         return final_tree
