@@ -708,19 +708,17 @@ class C_Tree:
         for c in self.children:
             c.clean_binary_nodes(binary_marker)
 
-    def postprocess_tree(self, conflict_strat=C_STRAT_MAX, clean_nulls=True, default_root="S", binary_marker="[b]", clean_froot=True):
+    def postprocess_tree(self, conflict_strat=C_STRAT_MAX, clean_nulls=True, default_root="S", binary_marker="[b]", clean_artificial_root=True):
         '''
         Returns a C_Tree object with conflicts in node labels removed
         and with NULL nodes cleaned.
         '''
-        if clean_nulls:
-            if self.label == C_NONE_LABEL:
-                self.label = default_root
-            t = self.prune_nones()
-
-        if clean_froot:
+        if clean_artificial_root:
             t = self.prune_artificial_root()
-        
+
+        if clean_nulls:
+            t = self.prune_nones()
+            
         t.remove_conflicts(conflict_strat)
         t.clean_binary_nodes(binary_marker)
         return t

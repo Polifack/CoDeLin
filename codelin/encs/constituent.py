@@ -182,13 +182,13 @@ def decode_constituent(
                 if postags and nlp:
                     c_tags = nlp(current_tree.get_sentence())
                     current_tree.set_postags([word.pos for word in c_tags.words])
-                
                 try:
                     decoded_tree : C_Tree = decoder.decode(current_tree)
                     decoded_tree = decoded_tree.postprocess_tree(conflicts, nulls)
                 except Exception as e:
                     print(f"[*] Error decoding tree {tree_counter + 1}:\n{current_tree}\n{e}")
-                    continue
+                    print(f"[*] Exiting...")
+                    break
                 
                 f_out.write(str(decoded_tree).replace('\n', '') + '\n')
                 tree_string = ""
