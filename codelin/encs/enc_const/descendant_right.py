@@ -86,8 +86,6 @@ class C_RightDescendant(ACEncoding):
             lc_tree = LinearizedTree.to_look_behind(lc_tree)
         
         return lc_tree
-
-
     
     def decode(self, linearized_tree):
         if not linearized_tree:

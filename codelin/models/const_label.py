@@ -3,7 +3,7 @@ from codelin.utils.constants import C_ABSOLUTE_ENCODING, C_RELATIVE_ENCODING, C_
 class C_Label:
     def __init__(self, nc, lc, uc, et, sp, uj):
         self.encoding_type = et
-        self.n_commons = nc        
+        self.n_commons = int(nc) if et in [C_ABSOLUTE_ENCODING, C_RELATIVE_ENCODING] else nc
         self.last_common = lc
         self.unary_chain = uc if uc != C_NONE_LABEL else None
         self.separator = sp

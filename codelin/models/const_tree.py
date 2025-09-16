@@ -650,7 +650,21 @@ class C_Tree:
         
         else:
             return [c.prune_nones() for c in self.children]
+    
+    def prune_artificial_root(self):
+        '''
+        Returns a new C_Tree where all the nodes with
+        label -ROOT- are removed.
+        '''
+        if self.label != C_ROOT_LABEL or self.label == "":
+            t = C_Tree(self.label, [])
+            new_childs = [c.prune_artificial_root() for c in self.children]
+            t.add_child(new_childs)
+            return t
         
+        else:
+            return [c.prune_artificial_root() for c in self.children]
+            
     def remove_conflicts(self, conflict_strat):
         '''
         Removes all conflicts in the label of the tree generated
@@ -679,16 +693,18 @@ class C_Tree:
         for c in self.children:
             c.clean_binary_nodes(binary_marker)
 
-    def postprocess_tree(self, conflict_strat=C_STRAT_MAX, clean_nulls=True, default_root="S", binary_marker="[b]"):
+    def postprocess_tree(self, conflict_strat=C_STRAT_MAX, clean_nulls=True, default_root="S", binary_marker="[b]", clean_froot=True):
         '''
         Returns a C_Tree object with conflicts in node labels removed
         and with NULL nodes cleaned.
         '''
         if clean_nulls:
-            # problem here, we should not enforce a default root, we should inherit the tree if possible
             if self.label == C_NONE_LABEL:
                 self.label = default_root
             t = self.prune_nones()
+
+        if clean_froot:
+            t = self.prune_artificial_root()
         
         t.remove_conflicts(conflict_strat)
         t.clean_binary_nodes(binary_marker)
