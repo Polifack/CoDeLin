@@ -537,8 +537,11 @@ class C_Tetratag(ACEncoding):
             final_tree = decode_preorder(linearized_tree, self.unary_joiner)
         elif self.mode == "postorder":
             final_tree = decode_postorder(linearized_tree, self.unary_joiner)
-        C_Tree.restore_from_binary(final_tree, binary_marker=self.binary_marker)
-        final_tree = final_tree.uncollapse_unary(self.unary_joiner)
+        
         if final_tree.label == C_ROOT_LABEL:
             final_tree = final_tree.children[0]
+
+        C_Tree.restore_from_binary(final_tree, binary_marker=self.binary_marker)
+        final_tree = final_tree.uncollapse_unary(self.unary_joiner)
+        
         return final_tree
